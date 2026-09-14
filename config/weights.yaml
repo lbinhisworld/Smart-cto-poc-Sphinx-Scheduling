@@ -1,0 +1,6 @@
+# 优先级权重（BR-46），禁止在代码中硬编码
+urgency: 0.5
+customer_level: 0.2
+amount: 0.1
+ready: 0.2
+strategic: 0.0

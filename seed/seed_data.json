@@ -1,0 +1,246 @@
+{
+  "meta": {
+    "name": "斯芬克斯排程服务 POC 种子数据",
+    "today": "2026-09-15",
+    "note": "today 为固定值，所有测试与演示均以此为准；周末（六/日）为非工作日。2026-09-15 为周二。",
+    "expected_results": {
+      "SO-001": "420版 -> 手工组 9/22:120版(3.2h) + 9/23:300版(8h)",
+      "SO-002": "1236版 -> 模具组 9/29:36版 + 9/30,10/1,10/2,10/5,10/6,10/7 各200版 (共7天)；半成品 S2 净需求282版，due=9/25 -> 二部半成品组 9/25:282版(7.05h)",
+      "SO-003": "312版 -> 浇注组 9/24:312版(7.8h)",
+      "demo_change_due_to_0930": "半成品 due 变 9/18，落在冻结区(9/15~9/19) -> 需人工确认提示，非红警",
+      "demo_change_due_to_0923": "半成品来不及 -> E2 红色，最快可交期 9/29",
+      "all_orders_global": "三张单分属 手工组/模具组/浇注组，全局排产无冲突（默认 sort_mode=DUE_DESC：SO-002 → SO-003 → SO-001）；SO-002 触发半成品工单 S2 282版"
+    }
+  },
+
+  "config": {
+    "fence_days": 4,
+    "protocol_days": 10,
+    "ripple_limit": 10,
+    "deadband_days": 0.5,
+    "deadband_hours_ratio": 0.10,
+    "reserved_ratio": 0.15,
+    "reserved_ratio_in_tests": 0.0,
+    "horizon_days": 21,
+    "jit": true,
+    "sort_mode": "DUE_DESC",
+    "sort_mode_on_insert_or_change": "PIN_FIRST",
+    "default_lead_time_days": 4,
+    "weights": {
+      "urgency": 0.5,
+      "customer_level": 0.2,
+      "amount": 0.1,
+      "ready": 0.2,
+      "strategic": 0.0
+    }
+  },
+
+  "groups": [
+    { "code": "MANUAL",  "name": "手工组",       "dept": "FINISHED_DEPT", "headcount": 3, "hours_per_day": 8 },
+    { "code": "MOLD",    "name": "模具组",       "dept": "FINISHED_DEPT", "headcount": 2, "hours_per_day": 8 },
+    { "code": "POURING", "name": "浇注组",       "dept": "FINISHED_DEPT", "headcount": 2, "hours_per_day": 8 },
+    { "code": "SEMI",    "name": "二部半成品组", "dept": "SEMI_DEPT",     "headcount": 4, "hours_per_day": 8 }
+  ],
+
+  "items": [
+    {
+      "item_code": "P1",
+      "item_name": "巧克力装饰片A",
+      "dept": "FINISHED_DEPT",
+      "group_code": "MANUAL",
+      "unit_sale": "BOX",
+      "pcs_per_board": 24,
+      "board_per_box": 4,
+      "loss_rate": 0.05,
+      "color": "黑",
+      "is_semi": false,
+      "computable": true
+    },
+    {
+      "item_code": "P2",
+      "item_name": "卡通造型件B",
+      "dept": "FINISHED_DEPT",
+      "group_code": "MOLD",
+      "unit_sale": "BOX",
+      "pcs_per_board": 20,
+      "board_per_box": 6,
+      "loss_rate": 0.03,
+      "color": "白",
+      "is_semi": false,
+      "computable": true
+    },
+    {
+      "item_code": "S2",
+      "item_name": "造型件B胚（半成品）",
+      "dept": "SEMI_DEPT",
+      "group_code": "SEMI",
+      "unit_sale": "BOARD",
+      "pcs_per_board": 20,
+      "board_per_box": 1,
+      "loss_rate": 0.03,
+      "color": "白",
+      "is_semi": true,
+      "computable": true
+    },
+    {
+      "item_code": "P4",
+      "item_name": "浇注件C",
+      "dept": "FINISHED_DEPT",
+      "group_code": "POURING",
+      "unit_sale": "BOX",
+      "pcs_per_board": 30,
+      "board_per_box": 5,
+      "loss_rate": 0.04,
+      "color": "牛奶",
+      "is_semi": false,
+      "computable": true
+    }
+  ],
+
+  "uom_converts": [
+    { "item_code": "P1", "from_uom": "BOX",   "to_uom": "BOARD", "factor": 4 },
+    { "item_code": "P1", "from_uom": "BOARD", "to_uom": "PCS",   "factor": 24 },
+    { "item_code": "P2", "from_uom": "BOX",   "to_uom": "BOARD", "factor": 6 },
+    { "item_code": "P2", "from_uom": "BOARD", "to_uom": "PCS",   "factor": 20 },
+    { "item_code": "S2", "from_uom": "BOX",   "to_uom": "BOARD", "factor": 1 },
+    { "item_code": "S2", "from_uom": "BOARD", "to_uom": "PCS",   "factor": 20 },
+    { "item_code": "P4", "from_uom": "BOX",   "to_uom": "BOARD", "factor": 5 },
+    { "item_code": "P4", "from_uom": "BOARD", "to_uom": "PCS",   "factor": 30 }
+  ],
+
+  "routes": [
+    {
+      "item_code": "P1",
+      "needs_semi": false,
+      "semi_item_code": null,
+      "semi_board_per_box": null,
+      "lead_time_days": 4,
+      "changeover_min": 30
+    },
+    {
+      "item_code": "P2",
+      "needs_semi": true,
+      "semi_item_code": "S2",
+      "semi_board_per_box": 2,
+      "lead_time_days": 4,
+      "changeover_min": 30
+    },
+    {
+      "item_code": "P4",
+      "needs_semi": false,
+      "semi_item_code": null,
+      "semi_board_per_box": null,
+      "lead_time_days": 4,
+      "changeover_min": 30
+    }
+  ],
+
+  "sph": [
+    {
+      "item_code": "P1",
+      "group_code": "MANUAL",
+      "sph_value": 300,
+      "sph_basis": "SINGLE",
+      "sph_crew": null,
+      "sph_uom": "PCS",
+      "crew_std": 3,
+      "confidence": "MID",
+      "effective_date": "2026-01-01",
+      "source": "财务下发",
+      "derived_group_rate_board_per_hour": 37.5,
+      "derived_day_capacity_board": 300
+    },
+    {
+      "item_code": "P2",
+      "group_code": "MOLD",
+      "sph_value": 250,
+      "sph_basis": "SINGLE",
+      "sph_crew": null,
+      "sph_uom": "PCS",
+      "crew_std": 2,
+      "confidence": "MID",
+      "effective_date": "2026-01-01",
+      "source": "财务下发",
+      "derived_group_rate_board_per_hour": 25,
+      "derived_day_capacity_board": 200
+    },
+    {
+      "item_code": "S2",
+      "group_code": "SEMI",
+      "sph_value": 40,
+      "sph_basis": "CREW",
+      "sph_crew": 4,
+      "sph_uom": "BOARD",
+      "crew_std": 4,
+      "confidence": "LOW",
+      "effective_date": "2026-01-01",
+      "source": "暂估",
+      "derived_group_rate_board_per_hour": 40,
+      "derived_day_capacity_board": 320
+    },
+    {
+      "item_code": "P4",
+      "group_code": "POURING",
+      "sph_value": 600,
+      "sph_basis": "SINGLE",
+      "sph_crew": null,
+      "sph_uom": "PCS",
+      "crew_std": 2,
+      "confidence": "HIGH",
+      "effective_date": "2026-01-01",
+      "source": "实测校准",
+      "derived_group_rate_board_per_hour": 40,
+      "derived_day_capacity_board": 320
+    }
+  ],
+
+  "calendar": {
+    "range": ["2026-09-15", "2026-10-15"],
+    "workdays": [1, 2, 3, 4, 5],
+    "hours_per_day": 8,
+    "exceptions": []
+  },
+
+  "stock": {
+    "S2": 130
+  },
+
+  "orders": [
+    {
+      "order_no": "SO-001",
+      "customer": "客户A",
+      "item_code": "P1",
+      "qty_order": 100,
+      "unit": "BOX",
+      "due_date": "2026-09-23",
+      "ready_date": "2026-09-15",
+      "customer_level": 3,
+      "amount": 12000,
+      "is_urgent": false
+    },
+    {
+      "order_no": "SO-002",
+      "customer": "客户B",
+      "item_code": "P2",
+      "qty_order": 200,
+      "unit": "BOX",
+      "due_date": "2026-10-07",
+      "ready_date": "2026-09-15",
+      "customer_level": 4,
+      "amount": 48000,
+      "is_urgent": false
+    },
+    {
+      "order_no": "SO-003",
+      "customer": "客户C",
+      "item_code": "P4",
+      "qty_order": 60,
+      "unit": "BOX",
+      "due_date": "2026-09-24",
+      "ready_date": "2026-09-20",
+      "customer_level": 2,
+      "amount": 9000,
+      "is_urgent": false
+    }
+  ]
+}

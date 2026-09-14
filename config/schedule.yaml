@@ -1,0 +1,12 @@
+# 排程默认参数（§13 A1–A10）。测试时 reserved_ratio 由 conftest override 为 0。
+fence_days: 4
+protocol_days: 10
+ripple_limit: 10
+deadband_days: 0.5
+deadband_hours_ratio: 0.10
+reserved_ratio: 0.15
+horizon_days: 21
+jit: true
+sort_mode: DUE_DESC
+sort_mode_on_insert_or_change: PIN_FIRST
+default_lead_time_days: 4
