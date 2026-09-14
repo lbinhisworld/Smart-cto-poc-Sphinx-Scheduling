@@ -12,7 +12,9 @@ import yaml
 
 from engine.models import (
     CalendarDay,
+    Dept,
     Group,
+    GroupCode,
     Item,
     ItemRoute,
     Order,
@@ -21,8 +23,13 @@ from engine.models import (
     ScheduleInput,
     SortMode,
     Sph,
+    Uom,
     UomConvert,
+    Wo,
+    WoStatus,
+    WoType,
 )
+from engine.schedule import schedule
 
 ROOT = Path(__file__).resolve().parents[1]
 SEED_PATH = ROOT / "seed" / "seed_data.json"
@@ -237,3 +244,79 @@ def order_with_due():
         return order.model_copy(update={"due_date": due})
 
     return _patch
+
+
+def _ripple_items_and_sph(schedule_input: ScheduleInput) -> ScheduleInput:
+    """§13 涟漪算例：品项 A/C/E 共用 P1 手工组 SPH。"""
+    p1 = schedule_input.items["P1"]
+    items = dict(schedule_input.items)
+    uom = dict(schedule_input.uom)
+    sph = dict(schedule_input.sph)
+    for code in ("A", "C", "E"):
+        items[code] = p1.model_copy(update={"item_code": code, "item_name": f"ripple-{code}"})
+        uom[code] = list(schedule_input.converts_for("P1"))
+        sph[(code, GroupCode.MANUAL.value)] = schedule_input.sph_of("P1", "MANUAL")
+    return schedule_input.model_copy(update={"items": items, "uom": uom, "sph": sph, "orders": []})
+
+
+@pytest.fixture
+def ripple_input(schedule_input: ScheduleInput) -> ScheduleInput:
+    return _ripple_items_and_sph(schedule_input)
+
+
+@pytest.fixture
+def ripple_wos(today):
+    def _build(*, qty_a: int = 300, qty_c: int = 300, qty_e: int = 300) -> list[Wo]:
+        def _one(code: str, due: date, qty: int) -> Wo:
+            return Wo(
+                wo_no=code,
+                wo_type=WoType.FINISHED,
+                source_order_no=code,
+                item_code=code,
+                group_code=GroupCode.MANUAL,
+                dept=Dept.FINISHED_DEPT,
+                qty_order=Decimal(qty),
+                qty_board_plan=qty,
+                due_date=due,
+                earliest_start=today,
+                crew_plan=3,
+                status=WoStatus.DRAFT,
+            )
+
+        return [
+            _one("E", date(2026, 9, 21), qty_e),
+            _one("C", date(2026, 9, 22), qty_c),
+            _one("A", date(2026, 9, 23), qty_a),
+        ]
+
+    return _build
+
+
+@pytest.fixture
+def run_ripple(ripple_input: ScheduleInput):
+    def _run(
+        wos: list[Wo],
+        *,
+        sort_mode: SortMode = SortMode.DUE_DESC,
+        pinned: list[str] | None = None,
+        baseline=None,
+        deadband_trigger: list[str] | None = None,
+    ):
+        cfg = ripple_input.config.model_copy(
+            update={
+                "sort_mode": sort_mode,
+                "pinned_wo_nos": pinned or [],
+            }
+        )
+        return schedule(
+            ripple_input.model_copy(
+                update={
+                    "finished_override": wos,
+                    "config": cfg,
+                    "baseline": baseline,
+                    "deadband_trigger_wo_nos": deadband_trigger or [],
+                }
+            )
+        )
+
+    return _run

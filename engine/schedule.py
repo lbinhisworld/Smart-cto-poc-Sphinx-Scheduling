@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from engine.backward import apply_plan_dates, backward_place, seed_occupied
 from engine.conflicts import detect_conflicts, enrich_unplaced_earliest
+from engine.deadband import apply_deadband
 from engine.expand import expand_order, expand_semi
 from engine.models import (
     Order,
@@ -74,6 +75,11 @@ def _schedule_wos(
     unplaced: list = []
     for wo in wos:
         if wo.is_locked:
+            locked_batch = [t for t in inp.locked_tasks if t.wo_no == wo.wo_no]
+            apply_plan_dates(wo, locked_batch)
+            if locked_batch:
+                wo.status = WoStatus.PLANNED
+            tasks.extend(locked_batch)
             continue
         batch, miss, next_task_id = backward_place(wo, inp, occupied, next_task_id)
         apply_plan_dates(wo, batch)
@@ -85,6 +91,20 @@ def _schedule_wos(
     return tasks, unplaced, next_task_id
 
 
+def _ripple_stats(baseline: ScheduleResult | None, result: ScheduleResult) -> tuple[int, bool]:
+    if baseline is None:
+        return 0, False
+    base = {wo.wo_no: wo for wo in baseline.wos}
+    affected = 0
+    for wo in result.wos:
+        old = base.get(wo.wo_no)
+        if old is None:
+            continue
+        if old.plan_start != wo.plan_start or old.plan_end != wo.plan_end:
+            affected += 1
+    return affected, False
+
+
 def schedule(inp: ScheduleInput) -> ScheduleResult:
     """纯函数倒排。先成品后半成品（BR-34）。不写 so_order.due_date。"""
     occupied = seed_occupied(inp)
@@ -93,25 +113,28 @@ def schedule(inp: ScheduleInput) -> ScheduleResult:
 
     finished: list[Wo] = []
     skipped: list[str] = []
-    for order in inp.orders:
-        item = inp.items.get(order.item_code)
-        if item is None or not item.computable:
-            skipped.append(order.order_no)
-            continue
-        sph = inp.sph.get((order.item_code, item.group_code.value))
-        wo = expand_order(
-            order,
-            item,
-            inp.converts_for(order.item_code),
-            inp.today,
-            sph=sph,
-        )
-        if wo is None:
-            skipped.append(order.order_no)
-            continue
-        src = orders_by_no[order.order_no]
-        wo.priority_score = priority_score(src, inp.today, inp.config, max_amount)
-        finished.append(wo)
+    if inp.finished_override is not None:
+        finished = [wo.model_copy(deep=True) for wo in inp.finished_override]
+    else:
+        for order in inp.orders:
+            item = inp.items.get(order.item_code)
+            if item is None or not item.computable:
+                skipped.append(order.order_no)
+                continue
+            sph = inp.sph.get((order.item_code, item.group_code.value))
+            wo = expand_order(
+                order,
+                item,
+                inp.converts_for(order.item_code),
+                inp.today,
+                sph=sph,
+            )
+            if wo is None:
+                skipped.append(order.order_no)
+                continue
+            src = orders_by_no[order.order_no]
+            wo.priority_score = priority_score(src, inp.today, inp.config, max_amount)
+            finished.append(wo)
 
     ordered_finished = sort_work_orders(finished, inp.config.sort_mode, inp.config.pinned_wo_nos)
 
@@ -177,5 +200,20 @@ def schedule(inp: ScheduleInput) -> ScheduleResult:
         skipped=skipped,
     )
     enrich_unplaced_earliest(inp, result)
+    result = apply_deadband(inp, result)
+    affected, _ = _ripple_stats(inp.baseline, result)
+    result.ripple_affected_count = affected
+    result.ripple_limit_exceeded = affected > inp.config.ripple_limit
     result.conflicts = detect_conflicts(inp, result)
+    if result.ripple_limit_exceeded:
+        from engine.models import Conflict, ConflictLv
+
+        result.conflicts.append(
+            Conflict(
+                code="RIPPLE",
+                level=ConflictLv.YELLOW,
+                message=f"受影响工单 {affected} 超过涟漪上限 {inp.config.ripple_limit}，需分批确认",
+                suggest="NOTIFY_SALES",
+            )
+        )
     return result

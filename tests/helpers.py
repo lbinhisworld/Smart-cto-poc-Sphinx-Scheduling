@@ -46,6 +46,20 @@ def has_conflict(
     return False
 
 
+def plan_start_of(result: ScheduleResult, item_code: str) -> date | None:
+    for wo in result.wos:
+        if wo.item_code == item_code and wo.wo_type == WoType.FINISHED:
+            return wo.plan_start
+    return None
+
+
+def due_of(result: ScheduleResult, item_code: str) -> date | None:
+    for wo in result.wos:
+        if wo.item_code == item_code and wo.wo_type == WoType.FINISHED:
+            return wo.due_date
+    return None
+
+
 def earliest_finish_from_result(result: ScheduleResult) -> date | None:
     for u in result.unplaced:
         if u.earliest_finish is not None:

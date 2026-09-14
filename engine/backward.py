@@ -72,6 +72,7 @@ def backward_place(
             wo.crew_plan,
             converts,
             inp.config.reserved_ratio,
+            inp.capacity_overrides,
         )
         free = cap - occupied.get(_occupied_key(wo.group_code, cursor), 0)
         if free <= 0:

@@ -8,6 +8,7 @@ from typing import Sequence
 
 from engine.models import (
     CalendarDay,
+    CapacityOverride,
     Conflict,
     ConflictLv,
     GroupCode,
@@ -77,7 +78,26 @@ def is_workday(calendar: Sequence[CalendarDay], group_code: GroupCode, work_date
     return bool(row and row.is_workday)
 
 
-def calendar_hours(calendar: Sequence[CalendarDay], group_code: GroupCode, work_date: date) -> Decimal:
+def _override_hours(
+    overrides: Sequence[CapacityOverride] | None,
+    group_code: GroupCode,
+    work_date: date,
+) -> Decimal | None:
+    for row in overrides or ():
+        if row.group_code == group_code and row.work_date == work_date:
+            return row.hours_per_day
+    return None
+
+
+def calendar_hours(
+    calendar: Sequence[CalendarDay],
+    group_code: GroupCode,
+    work_date: date,
+    overrides: Sequence[CapacityOverride] | None = None,
+) -> Decimal:
+    oh = _override_hours(overrides, group_code, work_date)
+    if oh is not None:
+        return oh
     row = calendar_day(calendar, group_code, work_date)
     if row is None:
         return Decimal(0)
@@ -92,11 +112,12 @@ def day_capacity(
     crew_plan: int,
     converts: Sequence[UomConvert],
     reserved_ratio: Decimal,
+    overrides: Sequence[CapacityOverride] | None = None,
 ) -> int:
     """组日容量（版），向下取整（BR-13）。
 
     有效工时 = hours_per_day × (1 − reserved_ratio)
     """
-    hours = calendar_hours(calendar, group_code, work_date) * (Decimal(1) - reserved_ratio)
+    hours = calendar_hours(calendar, group_code, work_date, overrides) * (Decimal(1) - reserved_ratio)
     raw = hours * group_rate(sph, crew_plan, converts)
     return int(raw.to_integral_value(rounding=ROUND_DOWN))

@@ -290,6 +290,15 @@ class ScheduleConfig(_Model):
     default_lead_time_days: int = 4
     weights: PriorityWeights = Field(default_factory=PriorityWeights)
     pinned_wo_nos: list[str] = Field(default_factory=list)
+    insert_strategy: InsertStrategy | None = None
+
+
+class CapacityOverride(_Model):
+    """策略 A：指定组×日临时提高可用工时。"""
+
+    group_code: GroupCode
+    work_date: date
+    hours_per_day: Decimal
 
 
 class ScheduleInput(_Model):
@@ -303,6 +312,10 @@ class ScheduleInput(_Model):
     stock: dict[str, Decimal]
     locked_tasks: list[WoTask] = Field(default_factory=list)
     config: ScheduleConfig
+    finished_override: list[Wo] | None = None
+    baseline: ScheduleResult | None = None
+    deadband_trigger_wo_nos: list[str] = Field(default_factory=list)
+    capacity_overrides: list[CapacityOverride] = Field(default_factory=list)
 
     def converts_for(self, item_code: str) -> list[UomConvert]:
         return self.uom.get(item_code, [])
@@ -319,3 +332,39 @@ class ScheduleResult(_Model):
     conflicts: list[Conflict] = Field(default_factory=list)
     unplaced: list[Unplaced] = Field(default_factory=list)
     skipped: list[str] = Field(default_factory=list)
+    ripple_affected_count: int = 0
+    ripple_limit_exceeded: bool = False
+
+
+class DiffEntry(_Model):
+    change_type: ChangeType
+    wo_no: str
+    message: str
+
+
+class DiffResult(_Model):
+    entries: list[DiffEntry] = Field(default_factory=list)
+    summary_text: str = ""
+
+
+class FeasibilityStatus(str, Enum):
+    OK = "OK"
+    OK_WITH_WARN = "OK_WITH_WARN"
+    INFEASIBLE = "INFEASIBLE"
+
+
+class FeasibilityResult(_Model):
+    status: FeasibilityStatus
+    message: str
+
+
+class InsertStrategyOutcome(_Model):
+    strategy: InsertStrategy
+    result: ScheduleResult
+    diff: DiffResult
+
+
+class InsertCompareResult(_Model):
+    strategies: list[InsertStrategyOutcome]
+    diff: DiffResult
+    feasibility: FeasibilityResult
