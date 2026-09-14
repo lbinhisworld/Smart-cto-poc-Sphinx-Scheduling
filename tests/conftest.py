@@ -205,13 +205,35 @@ def so_001(schedule_input: ScheduleInput) -> Order:
 
 
 @pytest.fixture
+def so_002(schedule_input: ScheduleInput) -> Order:
+    return next(o for o in schedule_input.orders if o.order_no == "SO-002")
+
+
+@pytest.fixture
 def so_003(schedule_input: ScheduleInput) -> Order:
     return next(o for o in schedule_input.orders if o.order_no == "SO-003")
 
 
 @pytest.fixture
 def input_builder(schedule_input: ScheduleInput):
-    def _build(orders: list[Order]) -> ScheduleInput:
-        return schedule_input.model_copy(update={"orders": list(orders)})
+    def _build(
+        orders: list[Order] | None = None,
+        *,
+        stock: dict[str, Decimal] | None = None,
+    ) -> ScheduleInput:
+        updates: dict = {}
+        if orders is not None:
+            updates["orders"] = list(orders)
+        if stock is not None:
+            updates["stock"] = stock
+        return schedule_input.model_copy(update=updates)
 
     return _build
+
+
+@pytest.fixture
+def order_with_due():
+    def _patch(order: Order, due: date) -> Order:
+        return order.model_copy(update={"due_date": due})
+
+    return _patch
