@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -10,8 +11,11 @@ from sqlalchemy.orm import Session
 
 from db.tables import PlanVersionRow, WoDependencyRow, WoRow, WoTaskRow
 from engine.models import (
+    Conflict,
     Dept,
     GroupCode,
+    KitAllocation,
+    KitCheckResult,
     ScheduleResult,
     Wo,
     WoDependency,
@@ -86,6 +90,7 @@ def save_schedule_result(
         session.add(
             WoTaskRow(
                 wo_no=task.wo_no,
+                dept=task.dept.value,
                 group_code=task.group_code.value,
                 task_date=task.task_date,
                 qty_board=task.qty_board,
@@ -106,11 +111,27 @@ def save_schedule_result(
                 offset_days=dep.offset_days,
             )
         )
+    version.conflicts_json = json.dumps(
+        [c.model_dump(mode="json") for c in result.conflicts],
+        ensure_ascii=False,
+    )
+    version.kit_json = json.dumps(
+        {
+            "kit_checks": [k.model_dump(mode="json") for k in result.kit_checks],
+            "kit_allocations": [a.model_dump(mode="json") for a in result.kit_allocations],
+        },
+        ensure_ascii=False,
+    )
     session.flush()
     return version_no
 
 
 def load_schedule_result(session: Session, version_no: int) -> ScheduleResult:
+    pv = session.get(PlanVersionRow, version_no)
+    conflicts: list[Conflict] = []
+    if pv and pv.conflicts_json:
+        conflicts = [Conflict.model_validate(row) for row in json.loads(pv.conflicts_json)]
+
     wos = [
         Wo(
             wo_no=r.wo_no,
@@ -138,6 +159,7 @@ def load_schedule_result(session: Session, version_no: int) -> ScheduleResult:
         WoTask(
             task_id=r.task_id,
             wo_no=r.wo_no,
+            dept=Dept(getattr(r, "dept", None) or "FINISHED_DEPT"),
             group_code=GroupCode(r.group_code),
             task_date=r.task_date,
             qty_board=r.qty_board,
@@ -163,4 +185,45 @@ def load_schedule_result(session: Session, version_no: int) -> ScheduleResult:
             )
         ).all()
     ]
-    return ScheduleResult(wos=wos, tasks=tasks, dependencies=deps)
+    kit_checks: list[KitCheckResult] = []
+    kit_allocations: list[KitAllocation] = []
+    if pv and pv.kit_json:
+        raw = json.loads(pv.kit_json)
+        kit_checks = [KitCheckResult.model_validate(k) for k in raw.get("kit_checks", [])]
+        kit_allocations = [
+            KitAllocation.model_validate(a) for a in raw.get("kit_allocations", [])
+        ]
+    return ScheduleResult(
+        wos=wos,
+        tasks=tasks,
+        dependencies=deps,
+        conflicts=conflicts,
+        kit_checks=kit_checks,
+        kit_allocations=kit_allocations,
+    )
+
+
+def log_insert(
+    session: Session,
+    *,
+    wo_no: str,
+    requester: str,
+    reason: str,
+    strategy: str,
+    version_before: int,
+    version_after: int,
+) -> None:
+    from db.tables import WoInsertLogRow
+
+    session.add(
+        WoInsertLogRow(
+            wo_no=wo_no,
+            requester=requester,
+            requested_at=datetime.now(UTC),
+            reason=reason,
+            strategy=strategy,
+            cost_json="{}",
+            plan_version_before=version_before,
+            plan_version_after=version_after,
+        )
+    )

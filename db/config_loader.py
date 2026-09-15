@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-from engine.models import PriorityWeights, ScheduleConfig, SortMode
+from engine.models import KitMode, PriorityWeights, ScheduleConfig, SortMode
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -31,4 +31,5 @@ def load_schedule_config(*, reserved_ratio: Decimal | None = None) -> ScheduleCo
         sort_mode=SortMode(raw["sort_mode"]),
         default_lead_time_days=raw["default_lead_time_days"],
         weights=PriorityWeights.model_validate(weights),
+        kit_mode=KitMode(raw.get("kit_mode", "WARN")),
     )

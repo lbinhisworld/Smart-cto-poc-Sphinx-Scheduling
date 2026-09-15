@@ -10,17 +10,23 @@ from pathlib import Path
 from tests.conftest import load_seed
 
 
-def test_seed_loads_four_items_three_orders_s2_stock():
+def test_seed_demo_catalog_three_archetypes():
     seed = load_seed()
-    assert len(seed["items"]) == 4
-    assert len(seed["orders"]) == 3
+    cat = seed["meta"]["demo_catalog"]
+    assert len(cat["MANUAL_NO_SEMI"]["orders"]) == 3
+    assert len(cat["MOLD_WITH_SEMI"]["orders"]) == 3
+    assert len(cat["POURING_NO_SEMI"]["orders"]) == 3
+    assert "MULTI_SEMI_COMBO" in cat
+    assert len(seed["items"]) == 15
+    assert len(seed["orders"]) == 12
     assert seed["stock"]["S2"] == 130
+    assert seed["stock"]["S6"] == 0
 
 
 def test_conftest_builds_schedule_input(schedule_input):
     assert schedule_input.today == date(2026, 9, 15)
-    assert len(schedule_input.items) == 4
-    assert len(schedule_input.orders) == 3
+    assert len(schedule_input.items) == 15
+    assert len(schedule_input.orders) == 12
     assert schedule_input.stock["S2"] == Decimal("130")
     assert schedule_input.config.reserved_ratio == Decimal("0")
 

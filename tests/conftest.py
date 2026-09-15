@@ -11,12 +11,15 @@ import pytest
 import yaml
 
 from engine.models import (
+    BomLine,
     CalendarDay,
+    ComponentRole,
     Dept,
     Group,
     GroupCode,
     Item,
     ItemRoute,
+    KitMode,
     Order,
     PriorityWeights,
     ScheduleConfig,
@@ -63,6 +66,7 @@ def load_schedule_config(*, reserved_ratio: Decimal | None = None) -> ScheduleCo
         sort_mode=SortMode(raw["sort_mode"]),
         default_lead_time_days=raw["default_lead_time_days"],
         weights=PriorityWeights.model_validate(weights),
+        kit_mode=KitMode(raw.get("kit_mode", "WARN")),
     )
 
 
@@ -79,7 +83,8 @@ def _expand_calendar(seed: dict, reserved_ratio: Decimal) -> list[CalendarDay]:
         for group in seed["groups"]:
             days.append(
                 CalendarDay(
-                    group_code=group["code"],
+                    dept=Dept(group["dept"]),
+                    group_code=GroupCode(group["code"]),
                     work_date=cursor,
                     is_workday=is_wd,
                     hours_per_day=hours,
@@ -112,12 +117,28 @@ def build_schedule_input(
         wanted = set(order_nos)
         orders = [o for o in orders if o.order_no in wanted]
     stock = {k: Decimal(str(v)) for k, v in seed["stock"].items()}
+    bom_lines: dict[str, list[BomLine]] = {}
+    for row in seed.get("bom_lines", []):
+        bl = BomLine(
+            parent_item_code=row["parent_item_code"],
+            line_no=row["line_no"],
+            component_item_code=row["component_item_code"],
+            component_role=ComponentRole(row["component_role"]),
+            qty_per_parent=Decimal(str(row["qty_per_parent"])),
+            qty_basis_uom=Uom(row.get("qty_basis_uom", "BOX")),
+            scrap_rate=Decimal(str(row["scrap_rate"])) if row.get("scrap_rate") is not None else None,
+            offset_days=row.get("offset_days", 0),
+            lead_time_days=row.get("lead_time_days", 4),
+            kit_critical=row.get("kit_critical", True),
+        )
+        bom_lines.setdefault(bl.parent_item_code, []).append(bl)
     return ScheduleInput(
         today=today,
         orders=orders,
         items=items,
         uom=uom,
         routes=routes,
+        bom_lines=bom_lines,
         sph=sph,
         calendar=_expand_calendar(seed, reserved_ratio),
         stock=stock,
@@ -198,7 +219,7 @@ def p1_sph(schedule_input: ScheduleInput):
 
 @pytest.fixture
 def s2_sph(schedule_input: ScheduleInput):
-    return schedule_input.sph_of("S2", "SEMI")
+    return schedule_input.sph_of("S2", "MOLD")
 
 
 @pytest.fixture

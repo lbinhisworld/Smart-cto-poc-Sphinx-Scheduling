@@ -96,7 +96,7 @@
 - 订单池（手工录入 + CSV 导入，模拟金蝶 Push）
 - **倒排引擎**（纯函数，五步）
 - 半成品两层排产（净需求 + 提前期倒排 + 依赖链）
-- 冲突检测 E1–E8（只提示不阻断）
+- 冲突检测 E1–E10（只提示不阻断）
 - 组×天交互看板（拖拽、改人力、锁定、拆合、what-if、撤销）
 - 插单流程（时间栅栏 + 四策略 + diff 视图 + 留痕）
 - 派工单导出（客户现有《组排程》Excel 格式）
@@ -187,6 +187,11 @@
 | **BR-34** | **必须先排成品、再排半成品**；成品一动，半成品 MUST 全部重算（含删除后重建） | ✅ |
 | **BR-35** | 半成品倒排同样受 BR-21/22/23 约束；无法在 `earliest` 前安置 → **E2 红色** | ✅ |
 | **BR-36** | 依赖表 `wo_dependency` 记录 `SEMI → FINISHED`，`type = FS`，`offset_days = lead_time_days` | ✅ |
+| **BR-32b** | 多订单共用同一库存快照时，按 **BR-25 处理顺序**逐成品 WO 从运行池扣减；每行 BOM `net` 决定 SEMI 工单量（与 BR-32 公式一致，但 `semi_stock_available` 为池内剩余） | ✅ |
+| **BR-37** | 成品 BOM 可有多行子件（`md_bom_line`）：`SEMI` 生成/扣库半成品 WO；`PURCHASED` 仅参与齐套与占库，**不生成 WO** | ✅ |
+| **BR-38** | 运行内 `KitSnapshot`：`consume(item, qty_board)` 记录占库流水；前序订单占用的库存对后序表现为可用量减少（冲突 **E10**） | ✅ |
+| **BR-39** | `kit_ready_date = max(SEMI 计划完工 + offset, 外购件就绪日)`；外购有库存则就绪日 = `today`，缺料记 shortage（WARN 下仍排产） | ✅ |
+| **BR-39b** | `kit_mode`: `WARN`（默认，仅 E9/E10 提示）\| `STRICT`（成品 `plan_start < kit_ready` 时推后或组合 E2/E9）；POC 默认 **WARN** | ✅ |
 
 ### 4.5 插单与重排
 
@@ -205,7 +210,7 @@
 
 | 编号 | 规则 |
 |---|---|
-| **BR-50** | 全部 8 条冲突（E1–E8）均为**软约束**：只提示、不阻断；人工违反时 MUST 填 `override_reason` |
+| **BR-50** | 全部冲突（E1–E8、**E9–E10**）均为**软约束**：只提示、不阻断；人工违反时 MUST 填 `override_reason` |
 
 ---
 
@@ -503,7 +508,7 @@ def expand_semi(finished_wo, route, item, stock) -> Wo | None:
 > **必须先排成品再排半成品**（BR-34）。成品 `plan_start` 变了 → 半成品工单**删除重建**（保留原 wo_no 便于 diff 时提示"已重排"）。
 > 若 `semi_due < today` 或半成品未安置完 → **E2 红色**，并计算 `最快可交期`（见 §6.6）。
 
-### 6.5 Step 4 · 冲突检测（E1–E8，全部软约束）
+### 6.5 Step 4 · 冲突检测（E1–E10，全部软约束）
 
 | 编号 | 判定表达式 | 级别 | 系统动作 | MUST |
 |---|---|---|---|---|
@@ -515,13 +520,15 @@ def expand_semi(finished_wo, route, item, stock) -> Wo | None:
 | **E6** | 同组同日存在 `changeover_min > 0` 的多任务 | ⚪ GREY | 显示换线时长，建议按颜色排序 | SHOULD |
 | **E7** | 同品项多个未合并订单落在相邻日期 | 🔵 BLUE | 提示"可合并，预计省 X 小时换线" | SHOULD |
 | **E8** | CREW 口径下 `crew_plan != sph_crew` | 🟡 YELLOW | "投入人数与 SPH 标定不符，结果不可信" | ✅ |
+| **E9** | 未齐套或成品 `plan_start < kit_ready_date` | 🟡 YELLOW | 齐套详情 + 缺料子件摘要 | ✅ |
+| **E10** | 库存被前序订单占用（`KitAllocation` 流水） | 🟡 YELLOW | 占库明细：订单 × 子件 × 版数 | ✅ |
 
 数据结构：
 
 ```python
 @dataclass
 class Conflict:
-    code: str          # E1..E8
+    code: str          # E1..E10
     level: ConflictLv
     wo_no: str | None
     task_id: int | None
@@ -683,6 +690,7 @@ RELEASED 且 plan_start < today+fence → 自动 is_locked=true
 | P4 | **插单对话框** | 四策略对比 + diff 视图 + 应用 | MUST |
 | P5 | **参数校准看板** | `confidence=LOW` 的品项数、覆盖率进度条 | SHOULD |
 | P6 | 派工单导出 | 选组+日期 → 导出《组排程》Excel | MUST |
+| P7 | **库存中心** | 品项可用量（版）、来源（LOCAL/ERP_MOCK/SEED）、本地改数、**模拟 ERP 同步**；排产后展示「计划占用」（来自最近一次齐套占库） | MUST |
 
 ### 8.2 看板 P3 详细规格（核心界面）
 
@@ -730,6 +738,12 @@ RELEASED 且 plan_start < today+fence → 自动 is_locked=true
 
 用 `openpyxl` + 模板，**列名与列序逐字一致**，生管零学习成本。
 
+### 8.5 库存中心（P7）
+
+- 表格：品项、名称、可用量（版）、来源、更新时间；标注「演示数据 · 非 ERP 真源」。
+- 行内改数 → `PATCH /api/stock/{item_code}`；顶栏 **模拟 ERP 同步** → `POST /api/stock/sync-erp-mock`（详见 `docs/库存与ERP对接说明.md`）。
+- 最近一次排产后展示 **计划占用**（齐套占库聚合）；BOM 页半成品卡片可跳转并带 `?item=` 过滤。
+
 ---
 
 ## 9. API 设计（REST，FastAPI）
@@ -754,6 +768,10 @@ RELEASED 且 plan_start < today+fence → 自动 is_locked=true
 | PATCH | `/api/task/{id}` | 改日期/人力/数量（人工干预，触发局部重算） |
 | POST | `/api/plan/{version}/release` | 下发（status → RELEASED） |
 | GET | `/api/dispatch/export?group=&date_from=&date_to=` | 导出派工单 xlsx |
+| GET | `/api/stock` | 库存列表 + meta（provider、last_sync） |
+| PATCH | `/api/stock/{item_code}` | POC 本地改可用量 |
+| POST | `/api/stock/sync-erp-mock` | 模拟 ERP 拉取并 upsert（`mode=merge\|replace`） |
+| GET | `/api/plan/kit-status?version=` | 齐套检查 + 占库流水（或随 schedule `result.kit_checks`） |
 | GET | `/api/health` | 健康检查 |
 
 统一响应：`{code: 0, data: ..., message: ""}`，异常码见 §10.5。
@@ -1045,8 +1063,12 @@ def test_insert_four_strategies():
 | T12 | 参数中心 + 订单池 + 导入导出 | 演示第 1 步可跑 | 1d |
 | T13 | 插单对话框（四策略 + diff） | 演示第 7 步可跑 | 1.5d |
 | T14 | 派工单 Excel 导出 + 演示脚本联调 | **POC 可交付** | 1d |
+| T15 | 库存表扩展 + StockProvider + `/api/stock` + `test_stock_api` | pytest 绿 | 0.5d |
+| T16 | `md_bom_line` + `kit_pool` + 多子件展开 + 双单抢库单测 | pytest 绿 | 1d |
+| T17 | `kitting` + E9/E10 + `kit_json` / kit-status API | pytest 绿 | 0.5d |
+| T18 | P7 库存中心 + 订单池齐套列 + 齐套抽屉 + 演示说明更新 | 端到端可演示 | 1d |
 
-> 合计约 **12–13 人日**，与"2 周 POC"一致。T1–T9（引擎 + 测试）约 6 天，是**不可压缩**的部分。
+> 合计约 **12–13 人日**（T1–T14），与"2 周 POC"一致；T15–T18 为库存/齐套升级增量。T1–T9（引擎 + 测试）约 6 天，是**不可压缩**的部分。
 
 ---
 

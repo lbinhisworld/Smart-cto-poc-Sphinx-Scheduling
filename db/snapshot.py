@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from db.config_loader import load_schedule_config
 from db.tables import (
+    MdBomLineRow,
     MdCapacityCalendarRow,
     MdItemRouteRow,
     MdItemRow,
@@ -21,7 +22,9 @@ from db.tables import (
     WoTaskRow,
 )
 from engine.models import (
+    BomLine,
     CalendarDay,
+    ComponentRole,
     Confidence,
     Dept,
     GroupCode,
@@ -109,6 +112,7 @@ def load_schedule_input(
     }
     calendar = [
         CalendarDay(
+            dept=Dept(getattr(row, "dept", None) or "FINISHED_DEPT"),
             group_code=GroupCode(row.group_code),
             work_date=row.work_date,
             is_workday=row.is_workday,
@@ -120,6 +124,22 @@ def load_schedule_input(
     ]
     stock = {r.item_code: _dec(r.qty_available) for r in session.scalars(select(StockRow)).all()}
 
+    bom_lines: dict[str, list[BomLine]] = {}
+    for row in session.scalars(select(MdBomLineRow)).all():
+        bl = BomLine(
+            parent_item_code=row.parent_item_code,
+            line_no=row.line_no,
+            component_item_code=row.component_item_code,
+            component_role=ComponentRole(row.component_role),
+            qty_per_parent=_dec(row.qty_per_parent),
+            qty_basis_uom=Uom(row.qty_basis_uom),
+            scrap_rate=_dec(row.scrap_rate) if row.scrap_rate is not None else None,
+            offset_days=row.offset_days,
+            lead_time_days=row.lead_time_days,
+            kit_critical=row.kit_critical,
+        )
+        bom_lines.setdefault(bl.parent_item_code, []).append(bl)
+
     q = select(SoOrderRow)
     if order_nos:
         q = q.where(SoOrderRow.order_no.in_(order_nos))
@@ -127,6 +147,7 @@ def load_schedule_input(
         Order(
             order_no=r.order_no,
             customer=r.customer,
+            sales_name=r.sales_name or "",
             item_code=r.item_code,
             qty_order=_dec(r.qty_order),
             unit=Uom(r.unit),
@@ -135,6 +156,7 @@ def load_schedule_input(
             customer_level=r.customer_level,
             amount=_dec(r.amount),
             is_urgent=r.is_urgent,
+            schedule_phase=r.schedule_phase or "PENDING",
         )
         for r in session.scalars(q).all()
     ]
@@ -146,6 +168,7 @@ def load_schedule_input(
         items=items,
         uom=uom,
         routes=routes,
+        bom_lines=bom_lines,
         sph=sph,
         calendar=calendar,
         stock=stock,
@@ -168,6 +191,7 @@ def _locked_tasks_for_fence(session: Session, today: date, fence_days: int) -> l
         WoTask(
             task_id=r.task_id,
             wo_no=r.wo_no,
+            dept=Dept(getattr(r, "dept", None) or "FINISHED_DEPT"),
             group_code=GroupCode(r.group_code),
             task_date=r.task_date,
             qty_board=r.qty_board,

@@ -16,9 +16,9 @@ def make_engine(db_path: Path | str = "data/scheduling.db"):
 
 
 def init_db(engine) -> None:
-    import db.tables  # noqa: F401
+    from db.migrate import ensure_schema
 
-    Base.metadata.create_all(engine)
+    ensure_schema(engine)
 
 
 def session_factory(engine):

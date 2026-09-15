@@ -64,13 +64,56 @@ def test_api_run_three_orders_matches_engine(api_client):
 
     payload = body["data"]["result"]
     seed = load_seed()
+    core = ["SO-001", "SO-002", "SO-003"]
     expected = schedule(
-        build_schedule_input(seed, today=TODAY, reserved_ratio=Decimal("0"))
+        build_schedule_input(
+            seed, today=TODAY, reserved_ratio=Decimal("0"), order_nos=core
+        )
     )
     for code in ("P1", "P2", "P4", "S2"):
         exp = [(d.isoformat(), q) for d, q in tasks_of(expected, code)]
         assert _tasks_from_payload(payload, code) == exp
     assert semi_wo_of(expected, "SO-002").qty_board_plan == 282
+
+
+def test_api_cell_detail_task_and_cell(api_client):
+    client, _ = api_client
+    run = client.post("/api/schedule/run", json=_run_body()).json()["data"]
+    task = next(
+        t
+        for t in run["result"]["tasks"]
+        if t["group_code"] == "MANUAL" and t.get("dept", "FINISHED_DEPT") == "FINISHED_DEPT"
+    )
+    resp = client.post(
+        "/api/plan/cell-detail",
+        json={
+            "today": TODAY.isoformat(),
+            "dept": task.get("dept", "FINISHED_DEPT"),
+            "group_code": "MANUAL",
+            "task_date": task["task_date"],
+            "focus_task_id": task["task_id"],
+            "plan_version": run["plan_version"],
+            "tasks": run["result"]["tasks"],
+            "reserved_ratio": 0,
+        },
+    )
+    assert resp.status_code == 200
+    detail = resp.json()["data"]
+    assert detail["focus_task_id"] == task["task_id"]
+    assert detail["task_metrics"] is not None
+    assert detail["orders"][0]["customer"]
+    cell_only = client.get(
+        "/api/plan/cell-detail",
+        params={
+            "today": TODAY.isoformat(),
+            "dept": task.get("dept", "FINISHED_DEPT"),
+            "group_code": "MANUAL",
+            "task_date": task["task_date"],
+            "version": run["plan_version"],
+        },
+    ).json()["data"]
+    assert cell_only["task_metrics"] is None
+    assert len(cell_only["tasks"]) >= 1
 
 
 def test_api_what_if_does_not_bump_version(api_client):
@@ -111,9 +154,119 @@ def test_api_user_patch_due_then_run_has_e2(api_client):
     assert due == "2026-09-23"
 
 
+def test_api_list_orders(api_client):
+    client, _ = api_client
+    resp = client.get("/api/orders")
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    orders = data["orders"]
+    nos = {o["order_no"] for o in orders}
+    assert nos >= {"SO-001", "SO-002", "SO-003"}
+    assert len(nos) == 12
+    so001 = next(o for o in orders if o["order_no"] == "SO-001")
+    assert so001.get("sales_name") == "陈雨桐"
+    assert data["orders_in_db"] == 12
+    assert data["seed_sync"]["order_count"] == 12
+
+
+def test_api_dev_import_seed_realoads(api_client):
+    client, factory = api_client
+    from sqlalchemy import delete
+
+    from db.tables import SoOrderRow
+
+    with factory() as session:
+        session.execute(delete(SoOrderRow).where(SoOrderRow.order_no == "SO-101"))
+        session.commit()
+    resp = client.post("/api/dev/import-seed", json={})
+    assert resp.status_code == 200
+    assert resp.json()["data"]["orders_in_db"] == 12
+    assert len(client.get("/api/orders").json()["data"]["orders"]) == 12
+
+
 def test_api_plan_get_after_run(api_client):
     client, _ = api_client
     client.post("/api/schedule/run", json=_run_body())
     resp = client.get("/api/plan")
     assert resp.json()["data"]["plan_version"] == 1
     assert resp.json()["data"]["result"]["tasks"]
+
+
+def test_api_conflicts_get_matches_run(api_client):
+    client, _ = api_client
+    client.patch("/api/orders/SO-002", json={"due_date": "2026-09-23"})
+    run_conflicts = client.post("/api/schedule/run", json=_run_body()).json()["data"]["result"][
+        "conflicts"
+    ]
+    got = client.get("/api/conflicts").json()["data"]
+    assert got["plan_version"] == 1
+    assert got["conflicts"] == run_conflicts
+
+
+def test_api_plan_diff_after_apply(api_client):
+    client, _ = api_client
+    client.post("/api/schedule/run", json=_run_body())
+    client.post("/api/schedule/apply", json=_run_body())
+    resp = client.get(
+        "/api/plan/diff",
+        params={"from_version": 1, "to_version": 2, "today": TODAY.isoformat()},
+    )
+    assert resp.status_code == 200
+    assert "diff" in resp.json()["data"]
+
+
+def test_api_insert_trial_and_apply(api_client):
+    client, factory = api_client
+    client.post("/api/schedule/run", json=_run_body())
+    insert_no = "SO-991"
+    new_order = {
+        "order_no": insert_no,
+        "customer": "插单客户",
+        "item_code": "P1",
+        "qty_order": 50,
+        "unit": "BOX",
+        "due_date": "2026-09-22",
+        "ready_date": TODAY.isoformat(),
+        "customer_level": 5,
+        "amount": 5000,
+        "is_urgent": True,
+    }
+    assert client.post("/api/orders", json=new_order).status_code == 200
+    trial = client.post(
+        "/api/schedule/insert",
+        json={"order_no": insert_no, "today": TODAY.isoformat(), "reason": "催单"},
+    )
+    assert trial.status_code == 200
+    data = trial.json()["data"]
+    assert len(data["strategies"]) == 4
+    assert data["feasibility"]["status"] in ("OK", "OK_WITH_WARN")
+
+    apply_resp = client.post(
+        "/api/schedule/insert/apply",
+        json={
+            "order_no": insert_no,
+            "today": TODAY.isoformat(),
+            "strategy": "B",
+            "reason": "催单",
+            "requester": "pytest",
+        },
+    )
+    assert apply_resp.status_code == 200
+    assert apply_resp.json()["data"]["plan_version"] == 2
+
+    from sqlalchemy import select
+
+    from db.tables import WoInsertLogRow
+
+    with factory() as session:
+        row = session.scalar(
+            select(WoInsertLogRow).where(
+                WoInsertLogRow.strategy == "B",
+                WoInsertLogRow.reason == "催单",
+            )
+        )
+        assert row is not None
+        assert insert_no in row.wo_no
+        assert row.strategy == "B"
+        assert row.plan_version_before == 1
+        assert row.plan_version_after == 2

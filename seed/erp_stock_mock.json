@@ -1,0 +1,10 @@
+{
+  "as_of": "2026-09-15T08:00:00+00:00",
+  "source": "ERP_MOCK",
+  "items": [
+    { "item_code": "S2", "qty": 130, "uom": "BOARD", "warehouse_code": "SEMI_WH" },
+    { "item_code": "S5", "qty": 200, "uom": "BOARD", "warehouse_code": "SEMI_WH" },
+    { "item_code": "S6", "qty": 0, "uom": "BOARD", "warehouse_code": "SEMI_WH" },
+    { "item_code": "PKG-P2", "qty": 500, "uom": "BOARD", "warehouse_code": "PKG_WH" }
+  ]
+}

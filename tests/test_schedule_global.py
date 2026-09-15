@@ -7,8 +7,9 @@ from tests.helpers import semi_wo_of, tasks_of
 
 
 def test_br25_global_three_orders_due_desc(input_builder, schedule_input):
-    result = schedule(input_builder(None))
-    assert len(schedule_input.orders) == 3
+    core = [o for o in schedule_input.orders if o.order_no in ("SO-001", "SO-002", "SO-003")]
+    result = schedule(input_builder(core))
+    assert len(core) == 3
     assert tasks_of(result, "P1") == [
         (date(2026, 9, 22), 120),
         (date(2026, 9, 23), 300),

@@ -8,4 +8,12 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 data/*.db
+data/schedule_logs/*.json
+data/schedule_logs/*.jsonl
 .DS_Store
+web/node_modules/
+web/dist/
+
+# 误创建的 venv 目录（勿提交；# 在 gitignore 中需转义）
+\#/
+若还没有/

@@ -1,7 +1,7 @@
 [project]
 name = "sphinx-scheduling-poc"
-version = "0.1.0"
-description = "斯芬克斯排程服务 POC"
+version = "0.2.0"
+description = "斯芬克斯一体化演示 POC"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
@@ -22,13 +22,17 @@ dev = [
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.package-dir]
+engine = "packages/engine"
+shared = "packages/shared"
+
 [tool.setuptools.packages.find]
-include = ["engine*", "api*", "db*"]
+include = ["engine*", "api*", "db*", "shared*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "packages"]
 
 [tool.coverage.run]
-source = ["engine"]
+source = ["packages/engine"]
 branch = true

@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal
 
 from engine.capacity import day_capacity, detect_e8, group_rate, hours_wall
-from engine.models import SphBasis
+from engine.models import Dept, SphBasis
 
 EPS = Decimal("0.0001")
 
@@ -36,6 +36,7 @@ def test_br11_sph_basis_error_magnitude(p1_sph, p1_converts):
 def test_br13_day_capacity_p1_reserved_zero(schedule_input, p1_sph, p1_converts):
     cap = day_capacity(
         schedule_input.calendar,
+        Dept.FINISHED_DEPT,
         p1_sph.group_code,
         date(2026, 9, 23),
         p1_sph,

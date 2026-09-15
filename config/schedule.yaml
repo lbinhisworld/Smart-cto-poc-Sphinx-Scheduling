@@ -10,3 +10,5 @@ jit: true
 sort_mode: DUE_DESC
 sort_mode_on_insert_or_change: PIN_FIRST
 default_lead_time_days: 4
+kit_mode: WARN
+stock_refresh_on_run: false

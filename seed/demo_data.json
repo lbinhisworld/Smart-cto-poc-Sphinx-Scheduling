@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "name": "斯芬克斯一体化 POC 演示扩展",
+    "demo_version": "2026-09-15-phase2",
+    "today": "2026-09-15",
+    "scheduling_seed": "seed/seed_data.json"
+  },
+  "crm": {
+    "customers": [
+      {"code": "C-001", "name": "好利来食品", "channel_l1": "烘焙", "channel_l2": "饼店", "owner_sales": "陈雨桐", "level": 1, "duplicate_flag": false},
+      {"code": "C-002", "name": "元祖食品", "channel_l1": "烘焙", "channel_l2": "KA", "owner_sales": "张伟", "level": 2, "duplicate_flag": false},
+      {"code": "C-003", "name": "味多美", "channel_l1": "休闲", "channel_l2": "CVS", "owner_sales": "周婷", "level": 2, "duplicate_flag": false},
+      {"code": "C-004", "name": "泸溪河", "channel_l1": "餐饮", "channel_l2": "工厂", "owner_sales": "韩磊", "level": 3, "duplicate_flag": false},
+      {"code": "C-005", "name": "好利来食品", "channel_l1": "烘焙", "channel_l2": "经销商", "owner_sales": "林佳", "level": 3, "duplicate_flag": true}
+    ],
+    "opportunities": [
+      {"name": "中秋礼盒造型", "customer_code": "C-001", "stage": "谈判", "amount": 86000, "owner_sales": "陈雨桐", "expect_close_date": "2026-10-15"},
+      {"name": "门店插件补货", "customer_code": "C-002", "stage": "方案", "amount": 42500, "owner_sales": "张伟", "expect_close_date": "2026-09-28"},
+      {"name": "新品打样跟进", "customer_code": "C-003", "stage": "商机", "amount": 18200, "owner_sales": "周婷", "expect_close_date": "2026-10-01"},
+      {"name": "浇注件年度框", "customer_code": "C-004", "stage": "成交", "amount": 120000, "owner_sales": "韩磊", "expect_close_date": "2026-09-20"},
+      {"name": "渠道开拓-华东", "customer_code": "C-002", "stage": "线索", "amount": 50000, "owner_sales": "张伟", "expect_close_date": "2026-11-30"},
+      {"name": "老品升级", "customer_code": "C-001", "stage": "报价", "amount": 32000, "owner_sales": "陈雨桐", "expect_close_date": "2026-09-25"}
+    ],
+    "samples": [
+      {"code": "SP-001", "customer_code": "C-001", "item_draft_name": "圣诞雪花插件", "current_stage": "打样", "round_no": 2, "owner_sales": "陈雨桐", "due_date": "2026-09-18", "is_old_product": false},
+      {"code": "SP-002", "customer_code": "C-003", "item_draft_name": "动物卡通片", "current_stage": "客户反馈", "round_no": 3, "owner_sales": "周婷", "due_date": "2026-09-22", "is_old_product": false},
+      {"code": "SP-003", "customer_code": "C-002", "item_draft_name": "经典款复刻", "current_stage": "结案", "round_no": 1, "owner_sales": "张伟", "due_date": "2026-08-30", "is_old_product": true},
+      {"code": "SP-004", "customer_code": "C-004", "item_draft_name": "淋酱长条", "current_stage": "寄样", "round_no": 1, "owner_sales": "韩磊", "due_date": "2026-09-20", "is_old_product": false},
+      {"code": "SP-005", "customer_code": "C-001", "item_draft_name": "婚庆组合", "current_stage": "申请", "round_no": 1, "owner_sales": "陈雨桐", "due_date": "2026-09-25", "is_old_product": false}
+    ]
+  },
+  "order_enrichment": {
+    "SO-001": {"customer_code": "C-001", "kitting_rate_pct": 95, "order_status": "SCHEDULED"},
+    "SO-002": {"customer_code": "C-002", "kitting_rate_pct": 88, "order_status": "SCHEDULED"},
+    "SO-003": {"customer_code": "C-003", "kitting_rate_pct": 72, "order_status": "CONFIRMED"},
+    "SO-004": {"customer_code": "C-004", "kitting_rate_pct": 35, "order_status": "CONFIRMED"},
+    "SO-005": {"customer_code": "C-001", "kitting_rate_pct": 90, "order_status": "CONFIRMED"}
+  },
+  "sales_role_filter": {
+    "SALES": "陈雨桐"
+  },
+  "kingdee_templates": {
+    "demo_p2": {
+      "label": "模具品 P2（走半成品）",
+      "customer": "金蝶推送·元祖食品",
+      "sales_name": "张伟",
+      "customer_code": "C-002",
+      "item_code": "P2",
+      "qty_order": 120,
+      "unit": "BOX",
+      "due_date": "2026-10-12",
+      "amount": 28800
+    },
+    "demo_p4": {
+      "label": "浇注 P4",
+      "customer": "金蝶推送·味多美",
+      "sales_name": "周婷",
+      "customer_code": "C-003",
+      "item_code": "P4",
+      "qty_order": 80,
+      "unit": "BOX",
+      "due_date": "2026-09-28",
+      "amount": 9600
+    }
+  }
+}

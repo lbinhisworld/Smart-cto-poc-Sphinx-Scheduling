@@ -1,0 +1,2 @@
+# 外部系统集成（POC 占位）
+stock_provider: local  # local | erp_mock | erp_http
