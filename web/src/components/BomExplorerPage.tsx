@@ -1,12 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchBomCatalog, fetchBomDesign, fetchBomExplode } from "../api/client";
+import { fetchBomCatalog, fetchBomDesign, fetchBomExplode, requestWithRole } from "../api/client";
+import { useAuth } from "../shell/auth";
 import type { BomCatalog, BomDesign, BomExplode } from "../types/bom";
 import { DEMO_TODAY } from "../constants/groups";
 import { BomDiagram } from "./BomDiagram";
 import { OPS_PANEL, OpsDarkPage } from "./OpsDarkPage";
 
+type ProductLabor = {
+  item_code: string;
+  plan_version: number;
+  hours_man_planned: number;
+  cost_planned: number;
+  order_count: number;
+};
+
 export function BomExplorerPage() {
+  const auth = useAuth();
   const [catalog, setCatalog] = useState<BomCatalog | null>(null);
+  const [productLabor, setProductLabor] = useState<ProductLabor | null>(null);
   const [selected, setSelected] = useState("P2");
   const [design, setDesign] = useState<BomDesign | null>(null);
   const [explodeQty, setExplodeQty] = useState(200);
@@ -53,6 +64,16 @@ export function BomExplorerPage() {
       cancelled = true;
     };
   }, [selected, explodeQty, catalog]);
+
+  useEffect(() => {
+    if (!auth.role || !selected) return;
+    requestWithRole<ProductLabor>(
+      `/api/hr/labor-cost/product/${encodeURIComponent(selected)}`,
+      auth.role,
+    )
+      .then(setProductLabor)
+      .catch(() => setProductLabor(null));
+  }, [selected, auth.role]);
 
   return (
     <OpsDarkPage>
@@ -128,6 +149,27 @@ export function BomExplorerPage() {
                   下方「数量展开」随输入刷新；「工艺路线」为固定主数据
                 </span>
               </div>
+              {productLabor && productLabor.plan_version > 0 && (
+                <div className="mb-3 rounded-lg border border-violet-800/60 bg-violet-950/30 px-3 py-2 text-xs text-violet-100">
+                  <p className="font-medium text-violet-200">
+                    计划人工成本（成品 {productLabor.item_code} · 计划 v
+                    {productLabor.plan_version}）
+                  </p>
+                  <p className="mt-1 text-violet-200/90">
+                    计划 {productLabor.hours_man_planned.toFixed(2)} 人·时 · 约{" "}
+                    {productLabor.cost_planned.toFixed(2)} 元（标准单价）
+                    {productLabor.order_count > 0 && (
+                      <span className="text-violet-300/70">
+                        {" "}
+                        · 当前计划含 {productLabor.order_count} 张订单分摊
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-1 text-[10px] text-violet-400/80">
+                    先「一键倒排」发布计划后此处才有数；与上方数量展开口径独立
+                  </p>
+                </div>
+              )}
               <BomDiagram design={design} explode={explode} />
             </>
           )}

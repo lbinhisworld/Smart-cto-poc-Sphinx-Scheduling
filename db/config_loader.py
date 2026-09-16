@@ -32,4 +32,5 @@ def load_schedule_config(*, reserved_ratio: Decimal | None = None) -> ScheduleCo
         default_lead_time_days=raw["default_lead_time_days"],
         weights=PriorityWeights.model_validate(weights),
         kit_mode=KitMode(raw.get("kit_mode", "WARN")),
+        attendance_scale_day_hours=bool(raw.get("attendance_scale_day_hours", True)),
     )

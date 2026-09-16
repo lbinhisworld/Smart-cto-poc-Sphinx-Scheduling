@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from db.bom_view import bom_explode
 from db.order_kitting import refresh_order_kitting
 from db.plan_store import current_plan_version, load_schedule_result
+from db.order_lines import lines_for_order
 from db.tables import SoOrderRow, WoRow, WoTaskRow
 
 
@@ -87,18 +88,24 @@ def order_breakdown(session: Session, order_no: str, *, today: date) -> dict | N
                     }
                 )
 
+    lines = lines_for_order(session, order_no)
     return {
         "order": {
             "order_no": row.order_no,
             "customer": row.customer,
+            "customer_code": row.customer_code,
+            "sales_name": row.sales_name,
             "item_code": row.item_code,
             "qty_order": float(row.qty_order),
             "unit": row.unit,
             "due_date": row.due_date.isoformat(),
+            "amount": float(row.amount),
+            "order_status": row.order_status,
             "order_source": row.order_source,
             "schedule_phase": row.schedule_phase,
             "kitting_rate_pct": row.kitting_rate_pct,
         },
+        "lines": lines,
         "kitting": kit,
         "mrp_explode": explode,
         "work_orders": wos,

@@ -10,6 +10,7 @@ from typing import Protocol
 
 from sqlalchemy.orm import Session
 
+from db.contract_queries import pick_active_contract, validate_order_contract
 from db.order_kitting import refresh_order_kitting
 from db.repositories import create_order
 from db.tables import KingdeeSyncLogRow, SoOrderRow
@@ -27,6 +28,7 @@ class PushOrderPayload:
     due_date: date
     amount: Decimal
     customer_code: str | None = None
+    contract_no: str | None = None
 
 
 class KingdeeAdapter(Protocol):
@@ -52,6 +54,41 @@ class MockKingdeeAdapter:
             session.add(log)
             return log
 
+        contract_no = payload.contract_no
+        if not contract_no and payload.customer_code:
+            contract_no = pick_active_contract(session, payload.customer_code)
+        if payload.customer_code:
+            if not contract_no:
+                log = KingdeeSyncLogRow(
+                    direction="PUSH_IN",
+                    doc_type="SALES_ORDER",
+                    doc_no=payload.order_no,
+                    status="FAILED",
+                    message="销售订单必须关联合同",
+                    payload_json=json.dumps(payload.__dict__, default=str, ensure_ascii=False),
+                    created_at=datetime.now(UTC),
+                )
+                session.add(log)
+                return log
+            try:
+                validate_order_contract(
+                    session,
+                    customer_code=payload.customer_code,
+                    contract_no=contract_no,
+                )
+            except ValueError as exc:
+                log = KingdeeSyncLogRow(
+                    direction="PUSH_IN",
+                    doc_type="SALES_ORDER",
+                    doc_no=payload.order_no,
+                    status="FAILED",
+                    message=str(exc),
+                    payload_json=json.dumps(payload.__dict__, default=str, ensure_ascii=False),
+                    created_at=datetime.now(UTC),
+                )
+                session.add(log)
+                return log
+
         order = Order(
             order_no=payload.order_no,
             customer=payload.customer,
@@ -75,6 +112,8 @@ class MockKingdeeAdapter:
         row.order_status = "CONFIRMED"
         row.customer_code = payload.customer_code
         row.owner_sales = payload.sales_name
+        if contract_no:
+            row.contract_no = contract_no
 
         kit = refresh_order_kitting(session, payload.order_no, today=today)
 

@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from db.demo_crm_seed import ensure_demo_crm
 from db.tables import KingdeeSyncLogRow
 from integrations.kingdee_adapter import MockKingdeeAdapter, PushOrderPayload
 from shared.auth import user_for_role
@@ -86,6 +87,7 @@ def register_kingdee(app, get_db):
         db: Session = Depends(get_db),
     ):
         _role(x_demo_role)
+        ensure_demo_crm(db)
         anchor = today or date(2026, 9, 15)
         tpl_all = _templates()
         key = body.template_key or next(iter(tpl_all.keys()), None)

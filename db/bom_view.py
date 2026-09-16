@@ -389,11 +389,6 @@ def bom_explode(
                     "shortage_board": net if line.component_role == ComponentRole.PURCHASED else 0,
                 }
             )
-            role_label = "半成品" if line.component_role == ComponentRole.SEMI else "外购"
-            steps.append(
-                f"{role_label} {line.component_item_code}：毛 {gross} 版，占库 {from_st}，"
-                f"{'净工单 ' + str(net) if line.component_role == ComponentRole.SEMI else '缺料 ' + str(net)} 版"
-            )
             if line.component_role == ComponentRole.SEMI and semi_block is None:
                 semi_block = {
                     "semi_item_code": line.component_item_code,

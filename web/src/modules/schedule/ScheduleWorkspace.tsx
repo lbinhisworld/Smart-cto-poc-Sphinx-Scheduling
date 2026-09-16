@@ -24,6 +24,7 @@ import { KitDetailDrawer } from "../../components/KitDetailDrawer";
 import { StockCenterPage } from "../../pages/StockCenterPage";
 import type { KitAllocation, KitCheck } from "../../types/kit";
 import type { HeadcountWarning, OrderImpact } from "../../components/AdjustImpactModal";
+import { InsertTrialPanel } from "../../components/InsertTrialPanel";
 import { SandboxCompareView } from "../../components/SandboxCompareView";
 import { BomExplorerPage } from "../../components/BomExplorerPage";
 import {
@@ -705,13 +706,11 @@ export function ScheduleWorkspace() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800 bg-slate-900 px-4 py-3">
+    <div className="flex min-h-0 flex-1 flex-col bg-slate-950 text-slate-100">
+      <header className="shrink-0 border-b border-slate-800 bg-slate-900 px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">
-              斯芬克斯 · 排产看板
-            </h1>
+            <h1 className="text-lg font-semibold tracking-tight">生产排程 · 排产看板</h1>
             <p className="text-xs text-slate-500">
               演示基准日 {today}
               {planVersion > 0 && (
@@ -828,6 +827,10 @@ export function ScheduleWorkspace() {
             >
               试排
             </button>
+            <InsertTrialPanel
+              today={today}
+              onApplied={(data) => void applyResult(data as { plan_version: number; result: ScheduleResult })}
+            />
             <label className="flex items-center gap-1 text-[11px] text-slate-400">
               <input
                 type="checkbox"
@@ -844,6 +847,16 @@ export function ScheduleWorkspace() {
               title="算完再放慢演示，不重新计算"
             >
               回放刚才的倒排
+            </button>
+            <button
+              type="button"
+              disabled={busy || planVersion <= 0}
+              onClick={() => {
+                window.open("/api/plan/export-dispatch", "_blank");
+              }}
+              className="rounded border border-emerald-700 px-3 py-1.5 text-sm text-emerald-200 hover:bg-emerald-950 disabled:opacity-40"
+            >
+              导出派工单
             </button>
             <button
               type="button"

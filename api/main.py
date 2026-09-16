@@ -575,12 +575,37 @@ def create_app(session_factory: sessionmaker) -> FastAPI:
             raise HTTPException(status_code=404, detail="品项不存在") from None
         return ok(design)
 
+    from apps.api.routers.changes import register_changes
+    from apps.api.routers.cockpit import register_cockpit
+    from apps.api.routers.hr import register_hr
+    from apps.api.routers.labor import register_labor
+    from apps.api.routers.demo import register_demo
+    from apps.api.routers.crm import register_crm
     from apps.api.routers.kingdee import register_kingdee
     from apps.api.routers.mis import register_mis
     from apps.api.routers.portal import router as portal_router
+    from apps.api.routers.wecom import register_wecom
+    from db.dispatch_export import build_dispatch_workbook_bytes
+    from fastapi.responses import Response
+
+    @app.get("/api/plan/export-dispatch")
+    def export_dispatch(db: Session = Depends(get_db)):
+        data = build_dispatch_workbook_bytes(db)
+        return Response(
+            content=data,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="dispatch.xlsx"'},
+        )
 
     app.include_router(portal_router)
     register_mis(app, get_db)
     register_kingdee(app, get_db)
+    register_crm(app, get_db)
+    register_changes(app, get_db)
+    register_wecom(app, get_db)
+    register_cockpit(app, get_db)
+    register_hr(app, get_db)
+    register_labor(app, get_db)
+    register_demo(app, get_db)
 
     return app

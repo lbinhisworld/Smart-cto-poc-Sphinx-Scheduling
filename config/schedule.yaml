@@ -12,3 +12,5 @@ sort_mode_on_insert_or_change: PIN_FIRST
 default_lead_time_days: 4
 kit_mode: WARN
 stock_refresh_on_run: false
+# 出勤实到人数覆盖 md_capacity_calendar.headcount；并按实到/在编比例缩放组×日墙钟上限
+attendance_scale_day_hours: true

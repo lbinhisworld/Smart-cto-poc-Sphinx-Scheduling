@@ -17,6 +17,7 @@ from engine.models import (
     SphBasis,
     UomConvert,
 )
+from engine.attendance import scaled_day_hours
 from engine.uom import sph_to_board_per_hour
 
 HOURS_Q = Decimal("0.0001")
@@ -103,6 +104,8 @@ def calendar_hours(
     group_code: GroupCode,
     work_date: date,
     overrides: Sequence[CapacityOverride] | None = None,
+    *,
+    attendance_scale: bool = False,
 ) -> Decimal:
     oh = _override_hours(overrides, dept, group_code, work_date)
     if oh is not None:
@@ -110,7 +113,7 @@ def calendar_hours(
     row = calendar_day(calendar, dept, group_code, work_date)
     if row is None:
         return Decimal(0)
-    return row.hours_per_day
+    return scaled_day_hours(row, row.hours_per_day, scale=attendance_scale)
 
 
 def day_capacity(

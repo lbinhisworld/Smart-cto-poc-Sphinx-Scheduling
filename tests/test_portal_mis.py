@@ -13,9 +13,9 @@ def test_portal_roles():
     r = client.get("/api/portal/roles")
     assert r.status_code == 200
     data = r.json()["data"]
-    assert len(data) == 7
+    assert len(data) == 8
     codes = {x["code"] for x in data}
-    assert "PMC" in codes and "SALES" in codes
+    assert "PMC" in codes and "SALES" in codes and "TEAM_LEADER" in codes
 
 
 def test_portal_menu_requires_role():

@@ -191,7 +191,13 @@ def detect_conflicts(inp: ScheduleInput, result: ScheduleResult) -> list[Conflic
 
         dept = Dept(dept_val)
         group_code = GroupCode(group_val)
-        limit = calendar_hours(inp.calendar, dept, group_code, task_date)
+        limit = calendar_hours(
+            inp.calendar,
+            dept,
+            group_code,
+            task_date,
+            attendance_scale=inp.config.attendance_scale_day_hours,
+        )
         if total_wall > limit:
             over = total_wall - limit
             pct = (total_wall / limit * Decimal("100")).quantize(Decimal("0.1"))

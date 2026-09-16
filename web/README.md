@@ -2,7 +2,7 @@
 
 React 18 + TypeScript + Vite + Tailwind + React Router。
 
-- **/login** 角色登录 · **/portal** 首页 · **/orders** 销售订单 · **/schedule** 排程 · **/stock** · **/bom**
+- **/login** 角色登录 · **/portal** 首页 · **/demo** 九幕剧本 · **/todos** 待办 · **/orders** · **/schedule** · **/stock** · **/bom** · **/cockpit**
 
 ## 开发
 
@@ -35,11 +35,18 @@ npm run dev
 2. **重启后端**（启动时会自动补 `conflicts_json` 等库表字段）。
 3. 仍失败时在项目根执行：`./scripts/reset_db.sh`（删除并重建 `data/scheduling.db`），再重启后端并刷新页面。
 
-## 演示路径（对齐 §2.2 第 2 / 4 步）
+## 九幕演示路径（Phase 8 · 详见 `/demo`）
 
-1. 订单池勾选三单 → **一键倒排** → 看板出现各组×天任务与产能条。
-2. **拖拽**任务到其他日期/组 → 本地预览 + 产能条重算；**改人力**同理。
-3. **试排** / **应用方案** / **丢弃预览** 与后端 what-if、apply 联动。
-4. 修改 SO-002 交期后重新倒排 → 右侧冲突面板出现 E2 等待定位。
+1. **驾驶舱** `/cockpit` — 现状与 M1–M7  
+2. **BOM** `/bom` — P2 工艺  
+3. **金蝶** `/kingdee` — Mock 进单  
+4. **订单/库存** — 入排产池  
+5. **CTP** `/crm/ctp` — SO-002 试算  
+6. **排程** `/schedule` — 一键倒排、试排、导出派工  
+7. **变更** `/changes` — 影响清单 + 企微铃铛  
+8. **插单** — 排程页 **插单试排** 四策略  
+9. **验收** — `/demo` 范围说明 + BR-27 交期锚  
 
-> 拖拽/改人力当前为 **UI 预览 + 产能条重算**；落库级任务 PATCH 与全栈撤销栈在后续阶段补齐。
+快捷入口：**/portal** · **/todos** · 文档 `docs/POC范围说明.md`、`docs/售前答复-实施与培训.md`
+
+> 拖拽/改人力为 UI 预览 + 产能条重算；与后端 interactive apply 已部分联动。

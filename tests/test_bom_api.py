@@ -110,6 +110,7 @@ def test_bom_explode_p9_line_details(api_client):
     assert len(e["line_details"]) == 4
     semi_lines = [ln for ln in e["line_details"] if ln["role"] == "SEMI"]
     assert len(semi_lines) == 3
+    assert len(e["steps"]) == 2
 
 
 def test_bom_not_found(api_client):

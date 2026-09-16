@@ -7,6 +7,7 @@ export function isOpsDarkRoute(pathname: string): boolean {
   );
 }
 
-export function isScheduleImmersive(pathname: string): boolean {
-  return pathname.startsWith("/schedule");
+/** 排程已嵌入一体化 Shell（保留左侧导航），不再全屏沉浸 */
+export function isScheduleImmersive(_pathname: string): boolean {
+  return false;
 }

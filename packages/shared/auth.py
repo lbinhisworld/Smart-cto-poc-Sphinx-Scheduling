@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-RoleCode = Literal["GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR"]
+RoleCode = Literal["GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR", "TEAM_LEADER"]
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,7 @@ DEMO_USERS: tuple[DemoUser, ...] = (
     DemoUser("WH", "仓库", "刘仓库", "/orders"),
     DemoUser("FIN", "财务总监", "李财务", "/portal"),
     DemoUser("HR", "人事", "周人事", "/portal"),
+    DemoUser("TEAM_LEADER", "班组长", "王强", "/modules/production/time-report"),
 )
 
 
@@ -38,11 +39,27 @@ class MenuItem:
 
 MENU: tuple[MenuItem, ...] = (
     MenuItem("portal", "首页", "/portal", frozenset({"GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR"}), "M0"),
+    MenuItem("todos", "待办中心", "/todos", frozenset({"GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR"}), "M0"),
+    MenuItem("demo", "演示控制台", "/demo", frozenset({"GM", "SALES_MGR", "PMC"}), "M0"),
+    MenuItem("cockpit", "管理驾驶舱", "/cockpit", frozenset({"GM", "FIN"}), "M0"),
+    MenuItem("crm_customers", "客户档案", "/crm/customers", frozenset({"GM", "SALES_MGR", "SALES"}), "M2"),
+    MenuItem("crm_opportunities", "商机列表", "/crm/opportunities", frozenset({"GM", "SALES_MGR", "SALES"}), "M2"),
+    MenuItem("crm_samples", "样品流程", "/crm/samples", frozenset({"GM", "SALES_MGR", "SALES"}), "M2"),
+    MenuItem("crm_reports", "销售报表", "/crm/reports", frozenset({"GM", "SALES_MGR"}), "M2"),
+    MenuItem("ctp", "交期试算 CTP", "/crm/ctp", frozenset({"GM", "SALES_MGR", "SALES"}), "M2"),
+    MenuItem("changes", "订单变更", "/changes", frozenset({"GM", "SALES_MGR", "SALES", "PMC"}), "M3"),
     MenuItem("orders", "销售订单", "/orders", frozenset({"GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN"}), "M3"),
     MenuItem("kingdee", "金蝶同步", "/kingdee", frozenset({"GM", "PMC", "WH"}), "M3"),
     MenuItem("schedule", "生产排程", "/schedule", frozenset({"GM", "PMC"}), "M8"),
     MenuItem("stock", "库存中心", "/stock", frozenset({"GM", "PMC", "WH"}), "M4"),
     MenuItem("bom", "BOM 工艺", "/bom", frozenset({"GM", "PMC"}), "M4"),
+    MenuItem("hr_roster", "花名册", "/modules/hr/roster", frozenset({"GM", "HR"}), "M1"),
+    MenuItem("hr_attendance", "考勤管理", "/modules/hr/attendance", frozenset({"GM", "HR"}), "M1"),
+    MenuItem("hr_labor_cost", "生产成本", "/modules/hr/labor-cost", frozenset({"GM", "HR", "FIN", "PMC"}), "M1"),
+    MenuItem("labor_time_report", "组×日报工", "/modules/production/time-report", frozenset({"GM", "PMC", "TEAM_LEADER"}), "M5"),
+    MenuItem("production", "生产运营", "/modules/production", frozenset({"GM", "PMC"}), "M5"),
+    MenuItem("finance", "财务摘要", "/modules/finance", frozenset({"GM", "FIN"}), "M6"),
+    MenuItem("project", "项目交付", "/modules/project", frozenset({"GM"}), "M7"),
 )
 
 

@@ -8,6 +8,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from db.attendance_capacity import apply_attendance_to_calendar
 from db.config_loader import load_schedule_config
 from db.tables import (
     MdBomLineRow,
@@ -122,6 +123,7 @@ def load_schedule_input(
         )
         for row in session.scalars(select(MdCapacityCalendarRow)).all()
     ]
+    calendar = apply_attendance_to_calendar(session, calendar)
     stock = {r.item_code: _dec(r.qty_available) for r in session.scalars(select(StockRow)).all()}
 
     bom_lines: dict[str, list[BomLine]] = {}

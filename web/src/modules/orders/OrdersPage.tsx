@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { formatUnit } from "../../utils/uomDisplay";
 import { ObjectTable } from "../../ui/ObjectTable";
 import {
   renderDate,
@@ -10,6 +11,7 @@ import {
   type OrderRow,
 } from "../../ui/cellRenderers";
 import { useAuth } from "../../shell/auth";
+import { CreateOrderModal } from "./CreateOrderModal";
 import { OrderDetailDrawer } from "./OrderDetailDrawer";
 
 type ApiData = {
@@ -19,16 +21,30 @@ type ApiData = {
   field_perm: { amount_hidden: boolean };
 };
 
+const ORDER_VIEWS = new Set([
+  "all",
+  "pending",
+  "in_scheduling",
+  "pending_schedule",
+  "near_due",
+  "low_kitting",
+]);
+
 export function OrdersPage() {
   const auth = useAuth();
   const navigate = useNavigate();
-  const [view, setView] = useState("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = searchParams.get("view");
+  const [view, setView] = useState(() =>
+    initialView && ORDER_VIEWS.has(initialView) ? initialView : "all",
+  );
   const [search, setSearch] = useState("");
   const [data, setData] = useState<ApiData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailNo, setDetailNo] = useState<string | null>(null);
   const [poolBusy, setPoolBusy] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const load = useCallback(() => {
     setError(null);
@@ -46,6 +62,19 @@ export function OrdersPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    const v = searchParams.get("view");
+    if (v && ORDER_VIEWS.has(v) && v !== view) setView(v);
+  }, [searchParams, view]);
+
+  const onViewChange = (id: string) => {
+    setView(id);
+    const next = new URLSearchParams(searchParams);
+    if (id === "all") next.delete("view");
+    else next.set("view", id);
+    setSearchParams(next, { replace: true });
+  };
 
   const filtered = useMemo(() => {
     const rows = data?.rows ?? [];
@@ -91,6 +120,31 @@ export function OrdersPage() {
     }
   };
 
+  const canChange =
+    auth.role === "GM" || auth.role === "SALES" || auth.role === "SALES_MGR" || auth.role === "PMC";
+  const canDelete = auth.role === "GM" || auth.role === "PMC" || auth.role === "SALES_MGR";
+
+  const formatSummary = (raw: string) =>
+    raw.replace(/\bBOX\b/g, formatUnit("BOX")).replace(/\bPCS\b/g, formatUnit("PCS"));
+
+  const cancelOrder = useCallback(
+    async (orderNo: string) => {
+      if (!window.confirm(`确认作废 ${orderNo}？`)) return;
+      try {
+        const r = await fetch(`/api/mis/orders/${encodeURIComponent(orderNo)}`, {
+          method: "DELETE",
+          headers: auth.headers(),
+        });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.detail || j.message);
+        load();
+      } catch (e) {
+        setError(String(e));
+      }
+    },
+    [auth, load],
+  );
+
   const columns = useMemo(() => {
     const canSelect = auth.role === "GM" || auth.role === "PMC";
     const cols = [
@@ -126,6 +180,23 @@ export function OrdersPage() {
       },
       { key: "customer", label: "客户", render: (r: OrderRow) => r.customer },
       {
+        key: "lines",
+        label: "产品清单",
+        render: (r: OrderRow) => (
+          <button
+            type="button"
+            className="max-w-[220px] truncate text-left text-xs text-[var(--text-body)] hover:text-[var(--accent)]"
+            title={r.lines_summary}
+            onClick={() => setDetailNo(r.order_no)}
+          >
+            {r.lines_summary ? formatSummary(r.lines_summary) : r.item_code}
+            {(r.line_count ?? 1) > 1 && (
+              <span className="ml-1 text-[var(--text-muted)]">({r.line_count}行)</span>
+            )}
+          </button>
+        ),
+      },
+      {
         key: "amount",
         label: "金额",
         align: "right" as const,
@@ -153,15 +224,57 @@ export function OrdersPage() {
         render: (r: OrderRow) => renderStatusTag(r.order_status),
       },
       { key: "sales", label: "销售", render: (r: OrderRow) => r.sales_name },
+      {
+        key: "actions",
+        label: "操作",
+        width: 120,
+        render: (r: OrderRow) => (
+          <span className="flex flex-wrap gap-1 text-[11px]">
+            <button
+              type="button"
+              className="text-[var(--accent)] hover:underline"
+              onClick={() => setDetailNo(r.order_no)}
+            >
+              明细
+            </button>
+            {canChange && (
+              <Link
+                to={`/changes?order=${encodeURIComponent(r.order_no)}&due=${r.due_date}`}
+                className="text-sky-400 hover:underline"
+              >
+                变更
+              </Link>
+            )}
+            {canDelete && (
+              <button
+                type="button"
+                className="text-rose-400 hover:underline"
+                onClick={() => void cancelOrder(r.order_no)}
+              >
+                删除
+              </button>
+            )}
+          </span>
+        ),
+      },
     ];
     if (data?.field_perm.amount_hidden) {
       return cols.filter((c) => c.key !== "amount");
     }
     return cols;
-  }, [auth.role, data?.field_perm.amount_hidden, selected]);
+  }, [
+    auth.role,
+    canChange,
+    canDelete,
+    cancelOrder,
+    data?.field_perm.amount_hidden,
+    selected,
+  ]);
 
   const stats = data?.stats;
   const canPool = auth.role === "GM" || auth.role === "PMC";
+  const canCreate =
+    auth.role === "GM" || auth.role === "SALES" || auth.role === "SALES_MGR" || auth.role === "PMC";
 
   return (
     <div>
@@ -179,12 +292,14 @@ export function OrdersPage() {
         title="销售订单"
         views={[
           { id: "all", label: "全部", count: stats?.total },
+          { id: "pending", label: "待排产", count: undefined },
+          { id: "in_scheduling", label: "排程池", count: undefined },
           { id: "pending_schedule", label: "待排产池", count: stats?.pending_schedule },
           { id: "near_due", label: "临期7天", count: stats?.near_due },
           { id: "low_kitting", label: "齐套不足" },
         ]}
         activeView={view}
-        onViewChange={setView}
+        onViewChange={onViewChange}
         stats={[
           { label: "订单总数", value: stats?.total ?? "—" },
           { label: "待排产", value: stats?.pending_schedule ?? "—" },
@@ -197,7 +312,17 @@ export function OrdersPage() {
         rows={filtered}
         rowKey={(r) => r.order_no}
         toolbar={
-          canPool ? (
+          <>
+            {canCreate && (
+              <button
+                type="button"
+                className="rounded bg-[var(--accent)] px-2 py-1 text-xs font-medium text-slate-950"
+                onClick={() => setCreateOpen(true)}
+              >
+                新建订单
+              </button>
+            )}
+            {canPool ? (
             <>
               <button
                 type="button"
@@ -222,13 +347,28 @@ export function OrdersPage() {
                 一键倒排 →
               </Link>
             </>
-          ) : undefined
+            ) : null}
+          </>
         }
+      />
+      <CreateOrderModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(orderNo) => {
+          setView("pending");
+          onViewChange("pending");
+          load();
+          setDetailNo(orderNo);
+        }}
       />
       {selected.size > 0 && canPool && (
         <p className="px-6 text-xs text-[var(--text-muted)]">已选 {selected.size} 张单</p>
       )}
-      <OrderDetailDrawer orderNo={detailNo} onClose={() => setDetailNo(null)} />
+      <OrderDetailDrawer
+        orderNo={detailNo}
+        onClose={() => setDetailNo(null)}
+        onChanged={() => load()}
+      />
     </div>
   );
 }

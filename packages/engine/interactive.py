@@ -6,6 +6,7 @@ from collections import defaultdict
 from datetime import date
 from decimal import Decimal
 
+from engine.attendance import effective_headcount
 from engine.backward import apply_plan_dates
 from engine.capacity import calendar_hours, hours_man, hours_wall
 from engine.models import Dept, GroupCode, ScheduleInput, ScheduleResult, Wo, WoTask
@@ -79,8 +80,14 @@ def headcount_warnings(
             ),
             None,
         )
-        headcount = cal_row.headcount if cal_row else 0
-        limit_h = calendar_hours(inp.calendar, dept, group_code, task_date)
+        headcount = effective_headcount(cal_row) if cal_row else 0
+        limit_h = calendar_hours(
+            inp.calendar,
+            dept,
+            group_code,
+            task_date,
+            attendance_scale=inp.config.attendance_scale_day_hours,
+        )
         wall_sum = sum(t.hours_wall for t in cell_tasks)
         crew_sum = sum(t.crew_plan for t in cell_tasks)
         max_crew = max(t.crew_plan for t in cell_tasks)

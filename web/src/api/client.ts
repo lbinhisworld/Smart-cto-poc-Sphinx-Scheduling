@@ -63,16 +63,46 @@ async function request<T>(
         `加入/移出排程接口未加载（后端进程过旧，POST 被当成改订单）。请重启后端：${backendHint}`,
       );
     }
-    if (res.status === 500 && !raw) {
-      detail = `无法连接后端 API（请先启动：${backendHint}）`;
+    if ((res.status === 500 || res.status === 502 || res.status === 503) && !raw.trim()) {
+      detail = `无法连接后端 API（请先启动：${backendHint} 或 ./scripts/start.sh）`;
     }
     throw new Error(detail || `${res.status} ${res.statusText}`);
   }
-  const body = JSON.parse(raw) as ApiResponse<T>;
+  if (!raw.trim()) {
+    throw new Error(
+      "无法连接后端 API（请先启动：./scripts/start.sh，端口 8000）",
+    );
+  }
+  let body: ApiResponse<T>;
+  try {
+    body = JSON.parse(raw) as ApiResponse<T>;
+  } catch {
+    throw new Error(`接口返回非 JSON：${raw.slice(0, 120)}`);
+  }
   if (body.code !== 0) {
     throw new Error(body.message || "API error");
   }
   return body.data;
+}
+
+export function requestWithRole<T>(
+  path: string,
+  role: string,
+  init?: RequestInit,
+): Promise<T> {
+  return request<T>(path, {
+    ...init,
+    headers: { "X-Demo-Role": role, ...init?.headers },
+  });
+}
+
+export async function checkApiHealth(): Promise<boolean> {
+  try {
+    const data = await request<{ status?: string }>("/api/health");
+    return data.status === "ok";
+  } catch {
+    return false;
+  }
 }
 
 export type OrdersPayload = {

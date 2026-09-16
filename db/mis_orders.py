@@ -9,6 +9,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from db.order_lines import lines_for_order, lines_summary
 from db.tables import SoOrderRow
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,12 +32,17 @@ def list_mis_orders(
 ) -> tuple[list[dict], dict]:
     q = select(SoOrderRow).order_by(SoOrderRow.due_date, SoOrderRow.order_no)
     rows = list(session.scalars(q).all())
+    rows = [r for r in rows if (r.order_status or "") != "CANCELLED"]
 
     sales_as = _sales_filter_for_role(role)
     if role == "SALES" and sales_as:
         rows = [r for r in rows if (r.sales_name or r.owner_sales) == sales_as]
 
-    if view == "pending_schedule":
+    if view == "pending":
+        rows = [r for r in rows if (r.schedule_phase or "PENDING") == "PENDING"]
+    elif view == "in_scheduling":
+        rows = [r for r in rows if (r.schedule_phase or "") == "IN_SCHEDULING"]
+    elif view == "pending_schedule":
         rows = [
             r
             for r in rows
@@ -58,6 +64,7 @@ def list_mis_orders(
     out: list[dict] = []
     for r in rows:
         remain = (r.due_date - today).days
+        lines = lines_for_order(session, r.order_no)
         out.append(
             {
                 "order_no": r.order_no,
@@ -70,10 +77,16 @@ def list_mis_orders(
                 "kitting_rate_pct": r.kitting_rate_pct,
                 "order_status": r.order_status or "CONFIRMED",
                 "schedule_phase": r.schedule_phase or "PENDING",
+                "line_count": len(lines),
+                "lines_summary": lines_summary(lines),
             }
         )
 
-    all_rows = list(session.scalars(select(SoOrderRow)).all())
+    all_rows = [
+        r
+        for r in session.scalars(select(SoOrderRow)).all()
+        if (r.order_status or "") != "CANCELLED"
+    ]
     stats = {
         "total": len(all_rows),
         "pending_schedule": sum(

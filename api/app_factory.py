@@ -40,8 +40,13 @@ finally:
 session = factory()
 try:
     from db.demo_crm_seed import ensure_demo_crm
+    from db.order_lines import ensure_order_lines
 
     ensure_demo_crm(session)
+    ensure_order_lines(session)
+    from db.hr_seed import ensure_hr_seed
+
+    ensure_hr_seed(session)
     session.commit()
 except Exception:
     session.rollback()

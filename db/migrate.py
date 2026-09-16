@@ -86,6 +86,42 @@ def ensure_schema(engine: Engine) -> None:
                 )
             )
 
+    if "hr_employee" in tables:
+        cols = {c["name"] for c in insp.get_columns("hr_employee")}
+        alters_hr: list[tuple[str, str]] = []
+        if "employee_kind" not in cols:
+            alters_hr.append(("employee_kind", "TEXT NOT NULL DEFAULT 'STAFF'"))
+        if "is_team_leader" not in cols:
+            alters_hr.append(("is_team_leader", "BOOLEAN NOT NULL DEFAULT 0"))
+        if "schedule_dept" not in cols:
+            alters_hr.append(("schedule_dept", "TEXT"))
+        if "group_code" not in cols:
+            alters_hr.append(("group_code", "TEXT"))
+        if "contract_start" not in cols:
+            alters_hr.append(("contract_start", "DATE"))
+        if "contract_end" not in cols:
+            alters_hr.append(("contract_end", "DATE"))
+        if "contract_remind_days" not in cols:
+            alters_hr.append(("contract_remind_days", "INTEGER NOT NULL DEFAULT 30"))
+        if alters_hr:
+            with engine.begin() as conn:
+                for name, ddl in alters_hr:
+                    conn.execute(text(f"ALTER TABLE hr_employee ADD COLUMN {name} {ddl}"))
+
+    if "hr_labor_rate" not in tables:
+        Base.metadata.tables["hr_labor_rate"].create(engine)
+
+    if "prod_time_report" not in tables:
+        Base.metadata.tables["prod_time_report"].create(engine)
+
+    if "crm_opportunity" in tables:
+        cols = {c["name"] for c in insp.get_columns("crm_opportunity")}
+        if "sample_code" not in cols:
+            with engine.begin() as conn:
+                conn.execute(
+                    text("ALTER TABLE crm_opportunity ADD COLUMN sample_code TEXT")
+                )
+
     if "so_order" in tables:
         cols = {c["name"] for c in insp.get_columns("so_order")}
         if "sales_name" not in cols:
@@ -121,3 +157,27 @@ def ensure_schema(engine: Engine) -> None:
             with engine.begin() as conn:
                 for name, ddl in alters_so:
                     conn.execute(text(f"ALTER TABLE so_order ADD COLUMN {name} {ddl}"))
+        cols = {c["name"] for c in insp.get_columns("so_order")}
+        if "contract_no" not in cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE so_order ADD COLUMN contract_no TEXT"))
+
+    for name in ("crm_contract", "crm_contract_payment_plan", "crm_payment_receipt"):
+        if name not in tables:
+            Base.metadata.tables[name].create(engine)
+
+    if "crm_sample_step" in tables:
+        cols = {c["name"] for c in insp.get_columns("crm_sample_step")}
+        alters_step: list[tuple[str, str]] = []
+        if "evidence_text" not in cols:
+            alters_step.append(("evidence_text", "TEXT NOT NULL DEFAULT ''"))
+        if "evidence_images_json" not in cols:
+            alters_step.append(("evidence_images_json", "TEXT NOT NULL DEFAULT '[]'"))
+        if "is_final" not in cols:
+            alters_step.append(("is_final", "BOOLEAN NOT NULL DEFAULT 0"))
+        if "round_no" not in cols:
+            alters_step.append(("round_no", "INTEGER"))
+        if alters_step:
+            with engine.begin() as conn:
+                for name, ddl in alters_step:
+                    conn.execute(text(f"ALTER TABLE crm_sample_step ADD COLUMN {name} {ddl}"))

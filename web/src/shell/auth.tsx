@@ -22,7 +22,8 @@ export type RoleCode =
   | "PMC"
   | "WH"
   | "FIN"
-  | "HR";
+  | "HR"
+  | "TEAM_LEADER";
 
 type AuthState = {
   role: RoleCode;

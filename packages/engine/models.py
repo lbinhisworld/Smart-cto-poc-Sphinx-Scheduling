@@ -251,6 +251,7 @@ class CalendarDay(_Model):
     is_workday: bool
     hours_per_day: Decimal
     headcount: int
+    headcount_present: int | None = None
     reserved_ratio: Decimal = Decimal("0.15")
 
 
@@ -391,6 +392,7 @@ class ScheduleConfig(_Model):
     pinned_wo_nos: list[str] = Field(default_factory=list)
     insert_strategy: InsertStrategy | None = None
     kit_mode: KitMode = KitMode.WARN
+    attendance_scale_day_hours: bool = True
 
 
 class CapacityOverride(_Model):

@@ -1,7 +1,8 @@
 {
   "meta": {
     "name": "斯芬克斯一体化 POC 演示扩展",
-    "demo_version": "2026-09-15-phase2",
+    "demo_version": "2026-09-16-sample-round-v1",
+    "hr_demo_version": "2026-09-16-hr-contract-v2",
     "today": "2026-09-15",
     "scheduling_seed": "seed/seed_data.json"
   },
@@ -11,33 +12,200 @@
       {"code": "C-002", "name": "元祖食品", "channel_l1": "烘焙", "channel_l2": "KA", "owner_sales": "张伟", "level": 2, "duplicate_flag": false},
       {"code": "C-003", "name": "味多美", "channel_l1": "休闲", "channel_l2": "CVS", "owner_sales": "周婷", "level": 2, "duplicate_flag": false},
       {"code": "C-004", "name": "泸溪河", "channel_l1": "餐饮", "channel_l2": "工厂", "owner_sales": "韩磊", "level": 3, "duplicate_flag": false},
-      {"code": "C-005", "name": "好利来食品", "channel_l1": "烘焙", "channel_l2": "经销商", "owner_sales": "林佳", "level": 3, "duplicate_flag": true}
+      {"code": "C-005", "name": "好利来食品", "channel_l1": "烘焙", "channel_l2": "经销商", "owner_sales": "林佳", "level": 3, "duplicate_flag": true},
+      {"code": "C-006", "name": "蓝岛烘焙供应链（无锡）", "channel_l1": "烘焙", "channel_l2": "工厂", "owner_sales": "陈雨桐", "level": 2, "duplicate_flag": false},
+      {"code": "C-007", "name": "童乐坊创意礼品", "channel_l1": "礼品", "channel_l2": "企业", "owner_sales": "张伟", "level": 3, "duplicate_flag": false},
+      {"code": "C-008", "name": "甜研西点工坊（杭州）", "channel_l1": "烘焙", "channel_l2": "门店", "owner_sales": "周婷", "level": 2, "duplicate_flag": false},
+      {"code": "C-009", "name": "云顶精选酒店集采", "channel_l1": "餐饮", "channel_l2": "酒店", "owner_sales": "王芷若", "level": 1, "duplicate_flag": false},
+      {"code": "C-010", "name": "臻选味来电商", "channel_l1": "电商", "channel_l2": "平台", "owner_sales": "孙悦", "level": 3, "duplicate_flag": false}
     ],
     "opportunities": [
-      {"name": "中秋礼盒造型", "customer_code": "C-001", "stage": "谈判", "amount": 86000, "owner_sales": "陈雨桐", "expect_close_date": "2026-10-15"},
-      {"name": "门店插件补货", "customer_code": "C-002", "stage": "方案", "amount": 42500, "owner_sales": "张伟", "expect_close_date": "2026-09-28"},
-      {"name": "新品打样跟进", "customer_code": "C-003", "stage": "商机", "amount": 18200, "owner_sales": "周婷", "expect_close_date": "2026-10-01"},
-      {"name": "浇注件年度框", "customer_code": "C-004", "stage": "成交", "amount": 120000, "owner_sales": "韩磊", "expect_close_date": "2026-09-20"},
+      {"name": "华东经销商拓渠", "customer_code": "C-002", "stage": "线索", "amount": 68000, "owner_sales": "张伟", "expect_close_date": "2026-11-15"},
+      {"name": "CVS 端架试销", "customer_code": "C-003", "stage": "线索", "amount": 42000, "owner_sales": "周婷", "expect_close_date": "2026-10-30"},
+      {"name": "酒店中秋伴手礼", "customer_code": "C-009", "stage": "线索", "amount": 95000, "owner_sales": "王芷若", "expect_close_date": "2026-09-25"},
+      {"name": "工厂直供模具线", "customer_code": "C-004", "stage": "线索", "amount": 150000, "owner_sales": "韩磊", "expect_close_date": "2026-12-01"},
       {"name": "渠道开拓-华东", "customer_code": "C-002", "stage": "线索", "amount": 50000, "owner_sales": "张伟", "expect_close_date": "2026-11-30"},
-      {"name": "老品升级", "customer_code": "C-001", "stage": "报价", "amount": 32000, "owner_sales": "陈雨桐", "expect_close_date": "2026-09-25"}
+      {"name": "新品打样跟进", "customer_code": "C-003", "stage": "商机", "amount": 18200, "owner_sales": "周婷", "expect_close_date": "2026-10-01", "sample_code": "SP-002"},
+      {"name": "电商 11.11 预售款", "customer_code": "C-010", "stage": "商机", "amount": 56000, "owner_sales": "孙悦", "expect_close_date": "2026-10-20"},
+      {"name": "无锡仓补货框架", "customer_code": "C-006", "stage": "商机", "amount": 78000, "owner_sales": "陈雨桐", "expect_close_date": "2026-10-08"},
+      {"name": "礼品公司年度标", "customer_code": "C-007", "stage": "商机", "amount": 120000, "owner_sales": "张伟", "expect_close_date": "2026-11-05"},
+      {"name": "门店插件补货", "customer_code": "C-002", "stage": "方案", "amount": 42500, "owner_sales": "张伟", "expect_close_date": "2026-09-28"},
+      {"name": "圣诞橱窗主题套装", "customer_code": "C-001", "stage": "方案", "amount": 64000, "owner_sales": "陈雨桐", "expect_close_date": "2026-10-18", "sample_code": "SP-001"},
+      {"name": "浇注件产线升级", "customer_code": "C-004", "stage": "方案", "amount": 88000, "owner_sales": "韩磊", "expect_close_date": "2026-10-05"},
+      {"name": "杭州门店联名", "customer_code": "C-008", "stage": "方案", "amount": 31000, "owner_sales": "周婷", "expect_close_date": "2026-09-30"},
+      {"name": "婚庆场景陈列包", "customer_code": "C-009", "stage": "方案", "amount": 52000, "owner_sales": "王芷若", "expect_close_date": "2026-10-12", "sample_code": "SP-008"},
+      {"name": "老品升级", "customer_code": "C-001", "stage": "报价", "amount": 32000, "owner_sales": "陈雨桐", "expect_close_date": "2026-09-25", "sample_code": "SP-001"},
+      {"name": "淋酱长条 OEM", "customer_code": "C-004", "stage": "报价", "amount": 18500, "owner_sales": "韩磊", "expect_close_date": "2026-09-22", "sample_code": "SP-004"},
+      {"name": "铲花插件加单", "customer_code": "C-006", "stage": "报价", "amount": 24000, "owner_sales": "陈雨桐", "expect_close_date": "2026-09-27"},
+      {"name": "电商爆款复刻", "customer_code": "C-010", "stage": "报价", "amount": 45000, "owner_sales": "孙悦", "expect_close_date": "2026-10-02", "sample_code": "SP-007"},
+      {"name": "中秋礼盒造型", "customer_code": "C-001", "stage": "谈判", "amount": 86000, "owner_sales": "陈雨桐", "expect_close_date": "2026-10-15", "sample_code": "SP-001"},
+      {"name": "模具年度框架续签", "customer_code": "C-007", "stage": "谈判", "amount": 210000, "owner_sales": "张伟", "expect_close_date": "2026-09-28"},
+      {"name": "浇注件年度框", "customer_code": "C-004", "stage": "成交", "amount": 120000, "owner_sales": "韩磊", "expect_close_date": "2026-09-20"},
+      {"name": "元祖 Q4 造型糖花", "customer_code": "C-002", "stage": "成交", "amount": 96000, "owner_sales": "张伟", "expect_close_date": "2026-09-18"},
+      {"name": "蓝岛 P1 常规单", "customer_code": "C-006", "stage": "成交", "amount": 12000, "owner_sales": "陈雨桐", "expect_close_date": "2026-09-23"},
+      {"name": "甜研浇注小批", "customer_code": "C-008", "stage": "成交", "amount": 9000, "owner_sales": "周婷", "expect_close_date": "2026-09-24"}
+    ],
+    "quotes": [
+      {"code": "QT-001", "customer_code": "C-001", "sample_code": "SP-001", "total_amount": 32000, "status": "APPROVED", "owner_sales": "陈雨桐", "lines": [{"item": "圣诞雪花插件", "qty": 1, "price": 32000}]},
+      {"code": "QT-002", "customer_code": "C-002", "sample_code": "SP-004", "total_amount": 18500, "status": "DRAFT", "owner_sales": "韩磊", "lines": [{"item": "淋酱长条", "qty": 1, "price": 18500}]},
+      {"code": "QT-003", "customer_code": "C-006", "sample_code": null, "total_amount": 24000, "status": "SUBMITTED", "owner_sales": "陈雨桐", "lines": [{"item": "P1 铲花插件", "qty": 40, "price": 600}]},
+      {"code": "QT-004", "customer_code": "C-010", "sample_code": "SP-007", "total_amount": 45000, "status": "DRAFT", "owner_sales": "孙悦", "lines": [{"item": "电商爆款模具", "qty": 1, "price": 45000}]},
+      {"code": "QT-005", "customer_code": "C-009", "sample_code": "SP-008", "total_amount": 52000, "status": "APPROVED", "owner_sales": "王芷若", "lines": [{"item": "婚庆陈列组合", "qty": 1, "price": 52000}]}
+    ],
+    "contracts": [
+      {
+        "contract_no": "CT-202609-0001",
+        "customer_code": "C-001",
+        "title": "2026 圣诞与婚庆框架合同",
+        "status": "ACTIVE",
+        "contract_amount": 128000,
+        "signed_date": "2026-08-01",
+        "owner_sales": "陈雨桐",
+        "terms": {"payment_terms": "30% 预付款 · 40% 发货前 · 30% 验收后"},
+        "plans": [
+          {"line_no": 1, "milestone": "签约预付款 30%", "condition_type": "ON_SIGN", "plan_date": "2026-08-05", "plan_amount": 38400, "status": "PAID"},
+          {"line_no": 2, "milestone": "发货前 40%", "condition_type": "BEFORE_SHIP", "plan_date": "2026-09-01", "plan_amount": 51200, "status": "PARTIAL"},
+          {"line_no": 3, "milestone": "验收后 30%", "condition_type": "ON_DELIVERY", "plan_date": "2026-09-10", "plan_amount": 38400, "status": "OVERDUE"}
+        ],
+        "receipts": [
+          {"receipt_date": "2026-08-06", "amount": 38400, "plan_line_no": 1, "ref_no": "RC-202608-001"},
+          {"receipt_date": "2026-09-02", "amount": 30000, "plan_line_no": 2, "ref_no": "RC-202609-001"}
+        ]
+      },
+      {
+        "contract_no": "CT-202609-0002",
+        "customer_code": "C-002",
+        "title": "元祖年度模具供应合同",
+        "status": "ACTIVE",
+        "contract_amount": 96000,
+        "signed_date": "2026-07-15",
+        "owner_sales": "张伟",
+        "plans": [
+          {"line_no": 1, "milestone": "签约款", "condition_type": "ON_SIGN", "plan_date": "2026-07-20", "plan_amount": 96000, "status": "PAID"}
+        ],
+        "receipts": [
+          {"receipt_date": "2026-07-22", "amount": 96000, "plan_line_no": 1, "ref_no": "RC-202607-002"}
+        ]
+      },
+      {
+        "contract_no": "CT-202609-0003",
+        "customer_code": "C-006",
+        "title": "蓝岛烘焙框架单",
+        "status": "ACTIVE",
+        "contract_amount": 180000,
+        "signed_date": "2026-06-01",
+        "owner_sales": "李娜",
+        "plans": [
+          {"line_no": 1, "milestone": "季度预付", "condition_type": "ON_SIGN", "plan_date": "2026-06-05", "plan_amount": 90000, "status": "PAID"},
+          {"line_no": 2, "milestone": "Q3 尾款", "condition_type": "CUSTOM", "plan_date": "2026-09-08", "plan_amount": 90000, "status": "OVERDUE"}
+        ],
+        "receipts": [
+          {"receipt_date": "2026-06-06", "amount": 90000, "plan_line_no": 1}
+        ]
+      },
+      {
+        "contract_no": "CT-202609-0004",
+        "customer_code": "C-003",
+        "title": "味多美浇注小批框架",
+        "status": "ACTIVE",
+        "contract_amount": 50000,
+        "signed_date": "2026-08-10",
+        "owner_sales": "周婷",
+        "plans": [
+          {"line_no": 1, "milestone": "全款", "condition_type": "ON_SIGN", "plan_date": "2026-08-15", "plan_amount": 50000, "status": "PAID"}
+        ],
+        "receipts": [
+          {"receipt_date": "2026-08-16", "amount": 50000, "plan_line_no": 1}
+        ]
+      }
     ],
     "samples": [
-      {"code": "SP-001", "customer_code": "C-001", "item_draft_name": "圣诞雪花插件", "current_stage": "打样", "round_no": 2, "owner_sales": "陈雨桐", "due_date": "2026-09-18", "is_old_product": false},
-      {"code": "SP-002", "customer_code": "C-003", "item_draft_name": "动物卡通片", "current_stage": "客户反馈", "round_no": 3, "owner_sales": "周婷", "due_date": "2026-09-22", "is_old_product": false},
+      {"code": "SP-001", "customer_code": "C-001", "item_draft_name": "圣诞雪花插件", "current_stage": "打样", "round_no": 2, "owner_sales": "陈雨桐", "due_date": "2026-09-10", "is_old_product": false, "result": null, "steps": [
+        {"stage": "申请", "event_date": "2026-09-01", "product_desc": "圣诞雪花插件（草案）", "situation_desc": "客户提供 3 款参考图，确认走 P2 模具路线"},
+        {"stage": "打样", "event_date": "2026-09-08", "product_desc": "圣诞雪花插件 第2轮", "situation_desc": "模具组试模 200 枚，边角需修", "round_no": 2},
+        {"stage": "打样", "event_date": "2026-09-12", "product_desc": "圣诞雪花插件 第2轮·复打", "situation_desc": "调整脱模斜度，待寄样确认", "round_no": 2}
+      ]},
+      {"code": "SP-002", "customer_code": "C-003", "item_draft_name": "动物卡通片", "current_stage": "客户反馈", "round_no": 3, "owner_sales": "周婷", "due_date": "2026-09-22", "is_old_product": false, "steps": [
+        {"stage": "申请", "event_date": "2026-08-20", "product_desc": "动物卡通片", "situation_desc": "CVS 渠道立项"},
+        {"stage": "打样", "event_date": "2026-09-05", "product_desc": "卡通片 手工组试制", "situation_desc": "第3轮，颜色偏深"},
+        {"stage": "寄样", "event_date": "2026-09-15", "product_desc": "卡通片 礼盒装 12 枚", "situation_desc": "顺丰寄出，单号 SF123"},
+        {"stage": "客户反馈", "event_date": "2026-09-18", "product_desc": "卡通片 第3轮", "situation_desc": "客户要求浅色系，待第4轮"}
+      ]},
       {"code": "SP-003", "customer_code": "C-002", "item_draft_name": "经典款复刻", "current_stage": "结案", "round_no": 1, "owner_sales": "张伟", "due_date": "2026-08-30", "is_old_product": true},
       {"code": "SP-004", "customer_code": "C-004", "item_draft_name": "淋酱长条", "current_stage": "寄样", "round_no": 1, "owner_sales": "韩磊", "due_date": "2026-09-20", "is_old_product": false},
-      {"code": "SP-005", "customer_code": "C-001", "item_draft_name": "婚庆组合", "current_stage": "申请", "round_no": 1, "owner_sales": "陈雨桐", "due_date": "2026-09-25", "is_old_product": false}
+      {"code": "SP-005", "customer_code": "C-001", "item_draft_name": "婚庆组合", "current_stage": "申请", "round_no": 1, "owner_sales": "陈雨桐", "due_date": "2026-09-25", "is_old_product": false},
+      {"code": "SP-006", "customer_code": "C-007", "item_draft_name": "企业 LOGO 巧克力币", "current_stage": "打样", "round_no": 2, "owner_sales": "张伟", "due_date": "2026-09-12", "is_old_product": false},
+      {"code": "SP-007", "customer_code": "C-010", "item_draft_name": "电商爆款模具", "current_stage": "客户反馈", "round_no": 1, "owner_sales": "孙悦", "due_date": "2026-09-19", "is_old_product": false},
+      {"code": "SP-008", "customer_code": "C-009", "item_draft_name": "婚庆陈列组合", "current_stage": "寄样", "round_no": 2, "owner_sales": "王芷若", "due_date": "2026-09-21", "is_old_product": false}
+    ]
+  },
+  "order_lines": {
+    "SO-001": [
+      {"line_no": 1, "item_code": "P1", "item_name": "巧克力装饰片", "qty": 60, "unit": "BOX", "unit_price": 72, "line_amount": 4320},
+      {"line_no": 2, "item_code": "P1M", "item_name": "铲花插件", "qty": 40, "unit": "BOX", "unit_price": 96, "line_amount": 3840},
+      {"line_no": 3, "item_code": "P1L", "item_name": "LOGO 牌", "qty": 20, "unit": "BOX", "unit_price": 192, "line_amount": 3840}
+    ],
+    "SO-002": [
+      {"line_no": 1, "item_code": "P2", "item_name": "造型糖花", "qty": 120, "unit": "BOX", "unit_price": 240, "line_amount": 28800},
+      {"line_no": 2, "item_code": "P5", "item_name": "婚庆插件", "qty": 50, "unit": "BOX", "unit_price": 280, "line_amount": 14000},
+      {"line_no": 3, "item_code": "P6", "item_name": "巧克力币", "qty": 30, "unit": "BOX", "unit_price": 173.33, "line_amount": 5200}
+    ],
+    "SO-303": [
+      {"line_no": 1, "item_code": "P9", "item_name": "庆典组合雕塑", "qty": 40, "unit": "BOX", "unit_price": 900, "line_amount": 36000},
+      {"line_no": 2, "item_code": "PKG-P9", "item_name": "礼盒包装", "qty": 40, "unit": "BOX", "unit_price": 450, "line_amount": 18000}
+    ],
+    "SO-005": [
+      {"line_no": 1, "item_code": "P1", "item_name": "巧克力装饰片", "qty": 50, "unit": "BOX", "unit_price": 80, "line_amount": 4000},
+      {"line_no": 2, "item_code": "P2", "item_name": "造型糖花", "qty": 35, "unit": "BOX", "unit_price": 177.14, "line_amount": 6200}
     ]
   },
   "order_enrichment": {
-    "SO-001": {"customer_code": "C-001", "kitting_rate_pct": 95, "order_status": "SCHEDULED"},
-    "SO-002": {"customer_code": "C-002", "kitting_rate_pct": 88, "order_status": "SCHEDULED"},
-    "SO-003": {"customer_code": "C-003", "kitting_rate_pct": 72, "order_status": "CONFIRMED"},
+    "SO-001": {"customer_code": "C-006", "contract_no": "CT-202609-0003", "kitting_rate_pct": 95, "order_status": "SCHEDULED"},
+    "SO-101": {"customer_code": "C-006", "kitting_rate_pct": 91, "order_status": "CONFIRMED"},
+    "SO-102": {"customer_code": "C-009", "kitting_rate_pct": 86, "order_status": "CONFIRMED"},
+    "SO-002": {"customer_code": "C-007", "kitting_rate_pct": 88, "order_status": "SCHEDULED"},
+    "SO-201": {"customer_code": "C-002", "kitting_rate_pct": 82, "order_status": "CONFIRMED"},
+    "SO-202": {"customer_code": "C-002", "kitting_rate_pct": 79, "order_status": "CONFIRMED"},
+    "SO-003": {"customer_code": "C-008", "kitting_rate_pct": 72, "order_status": "SCHEDULED"},
+    "SO-301": {"customer_code": "C-008", "kitting_rate_pct": 68, "order_status": "CONFIRMED"},
+    "SO-302": {"customer_code": "C-010", "kitting_rate_pct": 75, "order_status": "CONFIRMED"},
+    "SO-303": {"customer_code": "C-009", "kitting_rate_pct": 58, "order_status": "CONFIRMED"},
     "SO-004": {"customer_code": "C-004", "kitting_rate_pct": 35, "order_status": "CONFIRMED"},
-    "SO-005": {"customer_code": "C-001", "kitting_rate_pct": 90, "order_status": "CONFIRMED"}
+    "SO-005": {"customer_code": "C-001", "contract_no": "CT-202609-0001", "kitting_rate_pct": 90, "order_status": "CONFIRMED"},
+    "SO-201": {"contract_no": "CT-202609-0002"},
+    "SO-202": {"contract_no": "CT-202609-0002"}
   },
   "sales_role_filter": {
     "SALES": "陈雨桐"
+  },
+  "wecom_messages": [
+    {
+      "scene": "S1",
+      "title": "【演示】订单变更待 PMC 审批",
+      "body": "SO-003 交期变更申请已提交，请查看影响清单。",
+      "deep_link": "/changes",
+      "role_targets": ["PMC", "GM"]
+    },
+    {
+      "scene": "S3",
+      "title": "【演示】排产池待发布提醒",
+      "body": "排程池中有订单已通过齐套检查，建议 PMC 试排并发布。",
+      "deep_link": "/schedule",
+      "role_targets": ["PMC"]
+    },
+    {
+      "scene": "S5",
+      "title": "【演示】打样节点超期",
+      "body": "样品 SP-001、SP-006 已超过计划节点，请销售跟进。",
+      "deep_link": "/crm/samples",
+      "role_targets": ["SALES", "SALES_MGR"]
+    }
+  ],
+  "pending_order_change": {
+    "order_no": "SO-003",
+    "new_due": "2026-09-28",
+    "requested_by": "周婷",
+    "requested_role": "SALES"
   },
   "kingdee_templates": {
     "demo_p2": {
@@ -62,5 +230,50 @@
       "due_date": "2026-09-28",
       "amount": 9600
     }
+  },
+  "hr": {
+    "employees": [
+      {"emp_no": "E1001", "name": "赵敏", "department": "行政人事", "position": "人事主管", "status": "ACTIVE", "hired_date": "2019-03-01", "employee_kind": "STAFF", "contract_start": "2024-03-01", "contract_end": "2026-10-10", "contract_remind_days": 30},
+      {"emp_no": "E1002", "name": "刘洋", "department": "行政人事", "position": "薪酬专员", "status": "ACTIVE", "hired_date": "2021-07-15", "employee_kind": "STAFF", "contract_start": "2023-07-15", "contract_end": "2026-09-01", "contract_remind_days": 30},
+      {"emp_no": "E2001", "name": "王强", "department": "生产一部", "position": "班组长", "status": "ACTIVE", "hired_date": "2018-05-20", "employee_kind": "PRODUCTION", "is_team_leader": true, "schedule_dept": "FINISHED_DEPT", "group_code": "MANUAL", "contract_start": "2025-05-20", "contract_end": "2027-12-31"},
+      {"emp_no": "E2002", "name": "李芳", "department": "生产一部", "position": "操作工", "status": "ACTIVE", "hired_date": "2022-02-10", "employee_kind": "PRODUCTION", "schedule_dept": "FINISHED_DEPT", "group_code": "MANUAL", "contract_start": "2025-02-10", "contract_end": "2027-12-31"},
+      {"emp_no": "E2003", "name": "张磊", "department": "生产一部", "position": "操作工", "status": "ACTIVE", "hired_date": "2023-08-01", "employee_kind": "PRODUCTION", "schedule_dept": "FINISHED_DEPT", "group_code": "MANUAL", "contract_start": "2025-08-01", "contract_end": "2027-12-31"},
+      {"emp_no": "E2011", "name": "赵模具", "department": "生产一部", "position": "班组长", "status": "ACTIVE", "hired_date": "2019-04-01", "employee_kind": "PRODUCTION", "is_team_leader": true, "schedule_dept": "FINISHED_DEPT", "group_code": "MOLD", "contract_start": "2025-04-01", "contract_end": "2027-12-31"},
+      {"emp_no": "E2012", "name": "钱浇注", "department": "生产一部", "position": "班组长", "status": "ACTIVE", "hired_date": "2019-05-01", "employee_kind": "PRODUCTION", "is_team_leader": true, "schedule_dept": "FINISHED_DEPT", "group_code": "POURING", "contract_start": "2025-05-01", "contract_end": "2027-12-31"},
+      {"emp_no": "E2101", "name": "陈静", "department": "生产二部", "position": "班组长", "status": "ACTIVE", "hired_date": "2017-11-08", "employee_kind": "PRODUCTION", "is_team_leader": true, "schedule_dept": "SEMI_DEPT", "group_code": "MANUAL", "contract_start": "2025-11-08", "contract_end": "2027-12-31"},
+      {"emp_no": "E2102", "name": "周杰", "department": "生产二部", "position": "班组长", "status": "ACTIVE", "hired_date": "2020-04-12", "employee_kind": "PRODUCTION", "is_team_leader": true, "schedule_dept": "SEMI_DEPT", "group_code": "POURING", "contract_start": "2025-04-12", "contract_end": "2027-12-31"},
+      {"emp_no": "E2103", "name": "吴刚", "department": "生产二部", "position": "班组长", "status": "ACTIVE", "hired_date": "2016-09-01", "employee_kind": "PRODUCTION", "is_team_leader": true, "schedule_dept": "SEMI_DEPT", "group_code": "MOLD", "contract_start": "2025-09-01", "contract_end": "2027-12-31"},
+      {"emp_no": "E3001", "name": "孙丽", "department": "模具组", "position": "CNC 操作", "status": "ACTIVE", "hired_date": "2024-01-06", "employee_kind": "PRODUCTION", "schedule_dept": "FINISHED_DEPT", "group_code": "MOLD", "contract_start": "2024-01-06", "contract_end": "2027-12-31"},
+      {"emp_no": "E6001", "name": "陈雨桐", "department": "销售中心", "position": "销售代表", "status": "ACTIVE", "hired_date": "2020-06-01", "employee_kind": "STAFF", "contract_start": "2025-06-01", "contract_end": "2027-12-31"},
+      {"emp_no": "E6002", "name": "张伟", "department": "销售中心", "position": "销售代表", "status": "ACTIVE", "hired_date": "2019-01-15", "employee_kind": "STAFF", "contract_start": "2025-01-15", "contract_end": "2027-12-31"}
+    ],
+    "labor_rates": [
+      {"schedule_dept": "FINISHED_DEPT", "group_code": "MANUAL", "rate_per_man_hour": 48, "effective_from": "2026-01-01"},
+      {"schedule_dept": "FINISHED_DEPT", "group_code": "MOLD", "rate_per_man_hour": 62, "effective_from": "2026-01-01"},
+      {"schedule_dept": "FINISHED_DEPT", "group_code": "POURING", "rate_per_man_hour": 55, "effective_from": "2026-01-01"},
+      {"schedule_dept": "SEMI_DEPT", "group_code": "MANUAL", "rate_per_man_hour": 46, "effective_from": "2026-01-01"},
+      {"schedule_dept": "SEMI_DEPT", "group_code": "MOLD", "rate_per_man_hour": 58, "effective_from": "2026-01-01"},
+      {"schedule_dept": "SEMI_DEPT", "group_code": "POURING", "rate_per_man_hour": 52, "effective_from": "2026-01-01"}
+    ],
+    "attendance_punches": [
+      {"emp_no": "E2001", "punch_at": "2026-09-15T07:58:03", "punch_type": "上班", "device_code": "KQ-001", "device_name": "南门考勤机", "synced_at": "2026-09-15T08:00:12"},
+      {"emp_no": "E2001", "punch_at": "2026-09-15T17:32:18", "punch_type": "下班", "device_code": "KQ-001", "device_name": "南门考勤机", "synced_at": "2026-09-15T17:33:01"},
+      {"emp_no": "E2002", "punch_at": "2026-09-15T08:05:44", "punch_type": "上班", "device_code": "KQ-002", "device_name": "车间东门", "synced_at": "2026-09-15T08:06:20"},
+      {"emp_no": "E2002", "punch_at": "2026-09-15T17:28:55", "punch_type": "下班", "device_code": "KQ-002", "device_name": "车间东门", "synced_at": "2026-09-15T17:29:40"},
+      {"emp_no": "E2101", "punch_at": "2026-09-15T07:55:11", "punch_type": "上班", "device_code": "KQ-002", "device_name": "车间东门", "synced_at": "2026-09-15T07:56:00"},
+      {"emp_no": "E3001", "punch_at": "2026-09-15T08:01:27", "punch_type": "上班", "device_code": "KQ-002", "device_name": "车间东门", "synced_at": "2026-09-15T08:02:05"},
+      {"emp_no": "E3001", "punch_at": "2026-09-15T17:45:02", "punch_type": "下班", "device_code": "KQ-002", "device_name": "车间东门", "synced_at": "2026-09-15T17:45:50"},
+      {"emp_no": "E5001", "punch_at": "2026-09-15T08:03:19", "punch_type": "上班", "device_code": "KQ-002", "device_name": "车间东门", "synced_at": "2026-09-15T08:04:00"},
+      {"emp_no": "E1001", "punch_at": "2026-09-15T08:58:42", "punch_type": "上班", "device_code": "KQ-003", "device_name": "行政楼考勤机", "synced_at": "2026-09-15T09:00:15"},
+      {"emp_no": "E1001", "punch_at": "2026-09-15T18:05:33", "punch_type": "下班", "device_code": "KQ-003", "device_name": "行政楼考勤机", "synced_at": "2026-09-15T18:06:10"},
+      {"emp_no": "E6001", "punch_at": "2026-09-15T09:12:08", "punch_type": "上班", "device_code": "KQ-003", "device_name": "行政楼考勤机", "synced_at": "2026-09-15T09:13:22"},
+      {"emp_no": "E2001", "punch_at": "2026-09-14T07:59:50", "punch_type": "上班", "device_code": "KQ-001", "device_name": "南门考勤机", "synced_at": "2026-09-14T08:01:00"},
+      {"emp_no": "E2001", "punch_at": "2026-09-14T17:30:12", "punch_type": "下班", "device_code": "KQ-001", "device_name": "南门考勤机", "synced_at": "2026-09-14T17:31:00"},
+      {"emp_no": "E2102", "punch_at": "2026-09-14T08:08:33", "punch_type": "上班", "device_code": "KQ-002", "device_name": "车间东门", "synced_at": "2026-09-14T08:09:18"},
+      {"emp_no": "E4001", "punch_at": "2026-09-14T07:57:21", "punch_type": "上班", "device_code": "KQ-002", "device_name": "车间东门", "synced_at": "2026-09-14T07:58:05"},
+      {"emp_no": "E4001", "punch_at": "2026-09-14T17:40:44", "punch_type": "下班", "device_code": "KQ-002", "device_name": "车间东门", "synced_at": "2026-09-14T17:41:30"},
+      {"emp_no": "E2003", "punch_at": "2026-09-15T08:12:55", "punch_type": "上班", "device_code": "KQ-001", "device_name": "南门考勤机", "synced_at": "2026-09-15T08:13:40"},
+      {"emp_no": "E6002", "punch_at": "2026-09-15T09:05:17", "punch_type": "上班", "device_code": "KQ-003", "device_name": "行政楼考勤机", "synced_at": "2026-09-15T09:06:00"}
+    ]
   }
 }

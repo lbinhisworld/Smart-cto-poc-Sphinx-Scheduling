@@ -115,6 +115,9 @@ function ExplodeSection({ explode }: { explode: BomExplode }) {
     return <p className="text-xs text-rose-400">{explode.message}</p>;
   }
   if (!explode.computable || !explode.steps) return null;
+  const hasLines = Boolean(explode.line_details?.length);
+  /** 多行 BOM 时 steps 仅保留换算+成品版；行明细用 line_details，避免与 steps 重复 */
+  const headSteps = hasLines ? explode.steps.slice(0, 2) : explode.steps;
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs">
       <p className="font-medium text-slate-200">
@@ -125,13 +128,14 @@ function ExplodeSection({ explode }: { explode: BomExplode }) {
         先按订货单位换算到「版」，再算损耗与半成品（与倒排引擎一致）
       </p>
       <ol className="mt-2 list-decimal space-y-1 pl-4 text-slate-400">
-        {explode.steps.map((s) => (
+        {headSteps.map((s) => (
           <li key={s}>{s}</li>
         ))}
       </ol>
-      {explode.line_details && explode.line_details.length > 0 ? (
-        <ul className="mt-2 space-y-1 text-[11px] text-slate-400">
-          {explode.line_details.map((ln) => (
+      {hasLines ? (
+        <ul className="mt-2 space-y-1 border-t border-slate-800 pt-2 text-[11px] text-slate-400">
+          <li className="text-[10px] text-slate-500">BOM 行展开</li>
+          {explode.line_details!.map((ln) => (
             <li key={ln.line_no}>
               <span className="text-slate-500">行{ln.line_no}</span>{" "}
               {ln.component_item_code}{" "}

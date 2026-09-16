@@ -5,6 +5,8 @@
     { "item_code": "S2", "qty": 130, "uom": "BOARD", "warehouse_code": "SEMI_WH" },
     { "item_code": "S5", "qty": 200, "uom": "BOARD", "warehouse_code": "SEMI_WH" },
     { "item_code": "S6", "qty": 0, "uom": "BOARD", "warehouse_code": "SEMI_WH" },
-    { "item_code": "PKG-P2", "qty": 500, "uom": "BOARD", "warehouse_code": "PKG_WH" }
+    { "item_code": "PKG-P2", "qty": 500, "uom": "BOARD", "warehouse_code": "PKG_WH" },
+    { "item_code": "PKG-P9", "qty": 120, "uom": "BOARD", "warehouse_code": "PKG_WH" },
+    { "item_code": "RAW-COCOA", "qty": 880, "uom": "KG", "warehouse_code": "RAW_WH" }
   ]
 }
