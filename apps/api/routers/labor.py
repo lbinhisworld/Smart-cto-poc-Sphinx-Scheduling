@@ -19,11 +19,13 @@ from db.labor_cost_queries import (
     list_time_reports,
     planned_man_hours_by_cell,
     time_report_grid,
+    time_report_timeline,
     upsert_time_report,
 )
 from db.plan_store import current_plan_version
 from db.product_labor_cost import planned_labor_cost_by_product, product_labor_for_item
-from db.tables import ProdTimeReportRow
+from db.qty_carryover import confirm_wo_qty, list_pending_rolls, resolve_roll, wo_qty_progress
+from db.tables import ProdTimeReportRow, WoRow
 from shared.auth import user_for_role
 
 
@@ -41,6 +43,17 @@ class TimeReportBody(BaseModel):
     headcount_actual: int | None = None
     note: str = ""
     plan_version: int | None = None
+
+
+class QtyConfirmBody(BaseModel):
+    qty_board_done: int = Field(..., ge=0)
+    work_date: date | None = None
+
+
+class QtyResolveBody(BaseModel):
+    action: str
+    target_order_no: str | None = None
+    today: date | None = None
 
 
 def register_labor(app, get_db):
@@ -106,6 +119,29 @@ def register_labor(app, get_db):
             "code": 0,
             "message": "",
             "data": time_report_grid(db, work_date=work_date, plan_version=plan_version),
+        }
+
+    @app.get("/api/labor/time-reports/timeline")
+    def labor_time_report_timeline(
+        today: date | None = None,
+        plan_version: int | None = None,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        if role not in ("GM", "PMC", "TEAM_LEADER"):
+            raise HTTPException(status_code=403, detail="无权查看报工")
+        ensure_hr_seed(db)
+        scope = leader_scope(db, role)
+        return {
+            "code": 0,
+            "message": "",
+            "data": time_report_timeline(
+                db,
+                today=today or date(2026, 9, 15),
+                plan_version=plan_version,
+                scope=scope,
+            ),
         }
 
     @app.get("/api/labor/time-reports")
@@ -177,6 +213,86 @@ def register_labor(app, get_db):
             raise HTTPException(status_code=400, detail=str(exc)) from None
         except KeyError:
             raise HTTPException(status_code=404, detail="报工不存在") from None
+        return {"code": 0, "message": "", "data": data}
+
+    @app.get("/api/labor/wos/{wo_no}/qty-progress")
+    def labor_wo_qty_progress(
+        wo_no: str,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        _role(x_demo_role)
+        try:
+            return {"code": 0, "message": "", "data": wo_qty_progress(db, wo_no)}
+        except KeyError:
+            raise HTTPException(status_code=404, detail="工单不存在") from None
+
+    @app.post("/api/labor/wos/{wo_no}/qty-confirm")
+    def labor_wo_qty_confirm(
+        wo_no: str,
+        body: QtyConfirmBody,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        wo = db.get(WoRow, wo_no)
+        if wo is None:
+            raise HTTPException(status_code=404, detail="工单不存在")
+        scope = leader_scope(db, role)
+        if not can_manage_group(role, scope, wo.dept, wo.group_code):
+            raise HTTPException(status_code=403, detail="仅可报工本组")
+        user = user_for_role(role)
+        reported_by = user.name if user else role
+        try:
+            data = confirm_wo_qty(
+                db,
+                wo_no=wo_no,
+                qty_board_done=body.qty_board_done,
+                reported_by=reported_by,
+                work_date=body.work_date,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        except KeyError:
+            raise HTTPException(status_code=404, detail="工单不存在") from None
+        return {"code": 0, "message": "", "data": data}
+
+    @app.get("/api/labor/qty-rolls")
+    def labor_qty_rolls(
+        status: str | None = "PENDING_CONFIRMATION",
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        if role not in ("GM", "PMC", "TEAM_LEADER"):
+            raise HTTPException(status_code=403, detail="无权查看")
+        return {"code": 0, "message": "", "data": list_pending_rolls(db, status=status)}
+
+    @app.post("/api/labor/qty-rolls/{roll_id}/resolve")
+    def labor_qty_rolls_resolve(
+        roll_id: int,
+        body: QtyResolveBody,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        if role not in ("GM", "PMC"):
+            raise HTTPException(status_code=403, detail="仅 PMC/总经理可确认尾数")
+        user = user_for_role(role)
+        resolved_by = user.name if user else role
+        try:
+            data = resolve_roll(
+                db,
+                roll_id=roll_id,
+                action=body.action,
+                today=body.today or date(2026, 9, 15),
+                resolved_by=resolved_by,
+                target_order_no=body.target_order_no,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        except KeyError:
+            raise HTTPException(status_code=404, detail="尾数不存在") from None
         return {"code": 0, "message": "", "data": data}
 
     @app.get("/api/hr/labor-cost/summary")

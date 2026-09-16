@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { requestWithRole } from "../../api/client";
-import { renderContractStatusTag, renderHrEmpStatusTag, renderPunchTypeTag } from "../../ui/cellRenderers";
+import { renderContractStatusTag, renderHrEmpStatusTag, renderPunchTypeTag, renderRenewalCountdown } from "../../ui/cellRenderers";
 import { useAuth } from "../../shell/auth";
 
 type EmployeeDetail = {
@@ -13,6 +13,8 @@ type EmployeeDetail = {
   contract_start: string | null;
   contract_end: string | null;
   contract_status: string;
+  renewal_status_label?: string;
+  days_until_renewal: number | null;
   recent_punches: {
     id: number;
     punch_at: string;
@@ -91,9 +93,16 @@ export function EmployeeDetailDrawer({ empNo, onClose }: Props) {
                 <div>
                   <dt className="text-xs text-[var(--text-muted)]">劳动合同</dt>
                   <dd>
-                    {data.contract_start ?? "—"} ~ {data.contract_end ?? "—"}{" "}
-                    {renderContractStatusTag(data.contract_status)}
+                    {data.contract_start ?? "—"} ~ {data.contract_end ?? "—"}
                   </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-[var(--text-muted)]">续签状态</dt>
+                  <dd>{renderContractStatusTag(data.contract_status)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-[var(--text-muted)]">下次续签倒计时</dt>
+                  <dd className="text-base">{renderRenewalCountdown(data.days_until_renewal)}</dd>
                 </div>
               </dl>
               <section className="border-t pt-3" style={{ borderColor: "var(--line)" }}>

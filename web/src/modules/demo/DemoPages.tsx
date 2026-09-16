@@ -124,7 +124,7 @@ export function TodoCenterPage() {
   return (
     <div className="px-6 py-4">
       <h2 className="text-lg font-semibold">待办中心</h2>
-      <p className="text-xs text-slate-400">按当前角色聚合：变更审批、超期打样、企微模拟、齐套预警</p>
+      <p className="text-xs text-slate-400">按当前角色聚合：变更审批、未完尾数、超期打样、企微模拟、齐套预警</p>
       <ul className="mt-4 space-y-2">
         {items.length === 0 && (
           <li className="text-sm text-slate-500">暂无待办（可去演示控制台触发 S5）</li>

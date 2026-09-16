@@ -17,6 +17,7 @@ from db.tables import (
     MdItemRow,
     MdSphRow,
     MdUomConvertRow,
+    SoOrderLineRow,
     SoOrderRow,
     StockRow,
     WoRow,
@@ -145,23 +146,7 @@ def load_schedule_input(
     q = select(SoOrderRow)
     if order_nos:
         q = q.where(SoOrderRow.order_no.in_(order_nos))
-    orders = [
-        Order(
-            order_no=r.order_no,
-            customer=r.customer,
-            sales_name=r.sales_name or "",
-            item_code=r.item_code,
-            qty_order=_dec(r.qty_order),
-            unit=Uom(r.unit),
-            due_date=r.due_date,
-            ready_date=r.ready_date,
-            customer_level=r.customer_level,
-            amount=_dec(r.amount),
-            is_urgent=r.is_urgent,
-            schedule_phase=r.schedule_phase or "PENDING",
-        )
-        for r in session.scalars(q).all()
-    ]
+    orders = _orders_for_schedule(session, list(session.scalars(q).all()))
 
     locked_tasks = _locked_tasks_for_fence(session, today, cfg.fence_days)
     return ScheduleInput(
@@ -177,6 +162,58 @@ def load_schedule_input(
         locked_tasks=locked_tasks,
         config=cfg,
     )
+
+
+def _orders_for_schedule(session: Session, headers: list[SoOrderRow]) -> list[Order]:
+    """MIS 多行订单按明细展开；种子单仍走表头，避免拆开演示剧本。"""
+    out: list[Order] = []
+    for r in headers:
+        line_rows = session.scalars(
+            select(SoOrderLineRow)
+            .where(SoOrderLineRow.order_no == r.order_no)
+            .order_by(SoOrderLineRow.line_no)
+        ).all()
+        explode = (r.order_source or "") == "MIS" and len(line_rows) >= 1
+        if explode:
+            for ln in line_rows:
+                out.append(
+                    Order(
+                        order_no=f"{r.order_no}#L{ln.line_no}",
+                        customer=r.customer,
+                        sales_name=r.sales_name or "",
+                        item_code=ln.item_code,
+                        qty_order=_dec(ln.qty),
+                        unit=Uom(ln.unit),
+                        due_date=r.due_date,
+                        ready_date=r.ready_date,
+                        customer_level=r.customer_level,
+                        amount=_dec(ln.line_amount),
+                        is_urgent=r.is_urgent,
+                        schedule_phase=r.schedule_phase or "PENDING",
+                    )
+                )
+        else:
+            out.append(
+                Order(
+                    order_no=r.order_no,
+                    customer=r.customer,
+                    sales_name=r.sales_name or "",
+                    item_code=r.item_code,
+                    qty_order=_dec(r.qty_order),
+                    unit=Uom(r.unit),
+                    due_date=r.due_date,
+                    ready_date=r.ready_date,
+                    customer_level=r.customer_level,
+                    amount=_dec(r.amount),
+                    is_urgent=r.is_urgent,
+                    schedule_phase=r.schedule_phase or "PENDING",
+                )
+            )
+    return out
+
+
+def header_order_no(order_no: str) -> str:
+    return order_no.split("#L")[0]
 
 
 def _locked_tasks_for_fence(session: Session, today: date, fence_days: int) -> list[WoTask]:

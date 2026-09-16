@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, NavLink, useParams } from "react-router-dom";
+import { Link, NavLink, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../shell/auth";
-import { renderContractStatusTag, renderHrEmpStatusTag, renderPunchTypeTag } from "../../ui/cellRenderers";
+import {
+  renderContractStatusTag,
+  renderHrEmpStatusTag,
+  renderPunchTypeTag,
+  renderRenewalCountdown,
+} from "../../ui/cellRenderers";
 import { EmployeeDetailDrawer } from "./EmployeeDetailDrawer";
 
 function useFetch<T>(url: string): { data: T | null; error: string | null } {
@@ -32,6 +37,16 @@ function HrSubNav() {
   );
 }
 
+type RenewalStatus = "OK" | "DUE_SOON" | "EXPIRED";
+
+const RENEWAL_KEYS = new Set<RenewalStatus>(["OK", "DUE_SOON", "EXPIRED"]);
+
+const RENEWAL_METRICS: { key: RenewalStatus; bar: string; ring: string }[] = [
+  { key: "OK", bar: "bg-emerald-500", ring: "ring-emerald-500" },
+  { key: "DUE_SOON", bar: "bg-amber-400", ring: "ring-amber-400" },
+  { key: "EXPIRED", bar: "bg-rose-500", ring: "ring-rose-500" },
+];
+
 type EmployeeRow = {
   emp_no: string;
   name: string;
@@ -41,6 +56,8 @@ type EmployeeRow = {
   hired_date: string | null;
   contract_end: string | null;
   contract_status: string;
+  renewal_status_label?: string;
+  days_until_renewal: number | null;
 };
 
 const DEPT_PALETTE = [
@@ -102,25 +119,120 @@ function RosterDeptMetrics({ rows }: { rows: EmployeeRow[] }) {
   );
 }
 
+function RosterRenewalMetrics({
+  rows,
+  selected,
+  onSelect,
+}: {
+  rows: EmployeeRow[];
+  selected: RenewalStatus | null;
+  onSelect: (key: RenewalStatus | null) => void;
+}) {
+  const counts = useMemo(() => {
+    const c: Record<RenewalStatus, number> = { OK: 0, DUE_SOON: 0, EXPIRED: 0 };
+    for (const r of rows) {
+      if (r.contract_status === "OK" || r.contract_status === "DUE_SOON" || r.contract_status === "EXPIRED") {
+        c[r.contract_status] += 1;
+      }
+    }
+    return c;
+  }, [rows]);
+  const max = Math.max(...Object.values(counts), 1);
+
+  return (
+    <div className="mt-3 rounded-lg border p-4" style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-xs font-medium text-[var(--text-muted)]">续签状态</p>
+        <p className="text-[10px] text-[var(--text-muted)]">点击指标穿透名单，再点一次取消筛选</p>
+      </div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        {RENEWAL_METRICS.map((item) => {
+          const n = counts[item.key];
+          const active = selected === item.key;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => onSelect(active ? null : item.key)}
+              className={`flex flex-col gap-1.5 rounded-lg border px-3 py-2.5 text-left transition ${
+                active ? `ring-2 ${item.ring}` : "hover:bg-[var(--table-row-hover)]"
+              }`}
+              style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                {renderContractStatusTag(item.key)}
+                <span className="text-2xl font-semibold tabular-nums">{n}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-md bg-[var(--line)]">
+                <div
+                  className={`h-full rounded-md ${item.bar}`}
+                  style={{ width: `${Math.round((n / max) * 100)}%`, minWidth: n ? 4 : 0 }}
+                />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function HrRosterPage() {
   const params = useParams<{ empNo?: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const renewalParam = searchParams.get("renewal");
+  const renewalFilter =
+    renewalParam && RENEWAL_KEYS.has(renewalParam as RenewalStatus) ? (renewalParam as RenewalStatus) : null;
   const { data, error } = useFetch<EmployeeRow[]>("/api/hr/employees");
   const rows = useMemo(() => data ?? [], [data]);
+  const visible = useMemo(
+    () => (renewalFilter ? rows.filter((r) => r.contract_status === renewalFilter) : rows),
+    [rows, renewalFilter],
+  );
   const [detailEmp, setDetailEmp] = useState<string | null>(params.empNo ?? null);
 
   useEffect(() => {
     if (params.empNo) setDetailEmp(params.empNo);
   }, [params.empNo]);
 
+  const setRenewalFilter = (key: RenewalStatus | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (key) next.set("renewal", key);
+      else next.delete("renewal");
+      return next;
+    });
+  };
+
+  const filterLabel =
+    renewalFilter === "OK" ? "正常" : renewalFilter === "DUE_SOON" ? "一个月内续签" : renewalFilter === "EXPIRED" ? "续签过期" : null;
+
   return (
     <div className="px-6 py-4">
       <h2 className="text-lg font-semibold">花名册</h2>
-      <p className="text-xs text-[var(--text-muted)]">员工档案 · 点击行或「详情」查看侧滑</p>
+      <p className="text-xs text-[var(--text-muted)]">员工档案 · 点击续签指标穿透名单 · 点击行查看侧滑</p>
       <HrSubNav />
       {error && <p className="mt-2 text-xs text-rose-400">{error}</p>}
       <RosterDeptMetrics rows={rows} />
-      <div className="mt-4 overflow-x-auto rounded-lg border" style={{ borderColor: "var(--line)" }}>
-        <table className="w-full min-w-[720px] border-collapse text-xs">
+      <RosterRenewalMetrics rows={rows} selected={renewalFilter} onSelect={setRenewalFilter} />
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+        <span>
+          {filterLabel ? (
+            <>
+              当前穿透：<span className="text-[var(--text)]">{filterLabel}</span> · {visible.length} 人
+            </>
+          ) : (
+            <>名单 {visible.length} 人</>
+          )}
+        </span>
+        {filterLabel && (
+          <button type="button" className="text-[var(--accent)] hover:underline" onClick={() => setRenewalFilter(null)}>
+            清除筛选
+          </button>
+        )}
+      </div>
+      <div className="mt-2 overflow-x-auto rounded-lg border" style={{ borderColor: "var(--line)" }}>
+        <table className="w-full min-w-[880px] border-collapse text-xs">
           <thead className="bg-[var(--table-head)] text-[var(--text-muted)]">
             <tr>
               <th className="px-3 py-2 text-left">工号</th>
@@ -130,41 +242,50 @@ export function HrRosterPage() {
               <th className="px-3 py-2 text-left">状态</th>
               <th className="px-3 py-2 text-left">入职日期</th>
               <th className="px-3 py-2 text-left">合同到期</th>
+              <th className="px-3 py-2 text-left">续签状态</th>
+              <th className="px-3 py-2 text-left">下次续签倒计时</th>
               <th className="px-3 py-2 text-left">操作</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((e, i) => (
-              <tr
-                key={e.emp_no}
-                className="cursor-pointer border-t hover:bg-[var(--table-row-hover)]"
-                style={{ borderColor: "var(--line)" }}
-                onClick={() => setDetailEmp(e.emp_no)}
-              >
-                <td className="whitespace-nowrap px-3 py-2 font-mono text-[var(--accent)]">{e.emp_no}</td>
-                <td className="whitespace-nowrap px-3 py-2 font-medium">{e.name}</td>
-                <td className="whitespace-nowrap px-3 py-2">{deptTag(e.department, i)}</td>
-                <td className="px-3 py-2">{e.position}</td>
-                <td className="whitespace-nowrap px-3 py-2">{renderHrEmpStatusTag(e.status)}</td>
-                <td className="whitespace-nowrap px-3 py-2 tabular-nums">{e.hired_date ?? "—"}</td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  <span className="mr-2 tabular-nums">{e.contract_end ?? "—"}</span>
-                  {renderContractStatusTag(e.contract_status)}
-                </td>
-                <td className="px-3 py-2">
-                  <button
-                    type="button"
-                    className="text-[var(--accent)] hover:underline"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      setDetailEmp(e.emp_no);
-                    }}
-                  >
-                    详情
-                  </button>
+            {visible.length === 0 ? (
+              <tr>
+                <td colSpan={10} className="px-3 py-8 text-center text-[var(--text-muted)]">
+                  该续签状态下暂无人员
                 </td>
               </tr>
-            ))}
+            ) : (
+              visible.map((e, i) => (
+                <tr
+                  key={e.emp_no}
+                  className="cursor-pointer border-t hover:bg-[var(--table-row-hover)]"
+                  style={{ borderColor: "var(--line)" }}
+                  onClick={() => setDetailEmp(e.emp_no)}
+                >
+                  <td className="whitespace-nowrap px-3 py-2 font-mono text-[var(--accent)]">{e.emp_no}</td>
+                  <td className="whitespace-nowrap px-3 py-2 font-medium">{e.name}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{deptTag(e.department, i)}</td>
+                  <td className="px-3 py-2">{e.position}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{renderHrEmpStatusTag(e.status)}</td>
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums">{e.hired_date ?? "—"}</td>
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums">{e.contract_end ?? "—"}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{renderContractStatusTag(e.contract_status)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{renderRenewalCountdown(e.days_until_renewal)}</td>
+                  <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      className="text-[var(--accent)] hover:underline"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        setDetailEmp(e.emp_no);
+                      }}
+                    >
+                      详情
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -84,6 +84,7 @@ def save_schedule_result(
                 override_reason=wo.override_reason,
                 plan_version=version_no,
                 parent_wo_no=wo.parent_wo_no,
+                qty_board_done=wo.qty_board_done,
             )
         )
     for task in result.tasks:
@@ -152,6 +153,7 @@ def load_schedule_result(session: Session, version_no: int) -> ScheduleResult:
             override_reason=r.override_reason,
             plan_version=r.plan_version,
             parent_wo_no=r.parent_wo_no,
+            qty_board_done=int(getattr(r, "qty_board_done", 0) or 0),
         )
         for r in session.scalars(select(WoRow).where(WoRow.plan_version == version_no)).all()
     ]

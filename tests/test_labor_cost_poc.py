@@ -148,3 +148,37 @@ def test_time_report_rejects_over_attendance_and_missing_punch():
         },
     )
     assert missing.status_code == 400
+
+
+def test_timeline_lists_only_planned_groups_and_splits_open_done():
+    _ensure_plan()
+    r = client.get(
+        "/api/labor/time-reports/timeline?today=2026-09-15",
+        headers={"X-Demo-Role": "PMC"},
+    )
+    assert r.status_code == 200
+    data = r.json()["data"]
+    assert data["plan_version"] >= 1
+    assert data["today"] == "2026-09-15"
+    nodes = data["open"] + data["done"]
+    assert nodes, "发布后应有计划日期"
+    for node in nodes:
+        assert node["rows"]
+        assert node["bucket"] in ("overdue", "today", "upcoming")
+        for row in node["rows"]:
+            assert row["hours_man_planned"] > 0
+            assert row["work_date"] == node["work_date"]
+    for node in data["open"]:
+        assert any(row["status"] != "CONFIRMED" for row in node["rows"])
+    for node in data["done"]:
+        assert all(row["status"] == "CONFIRMED" for row in node["rows"])
+
+    tl = client.get(
+        "/api/labor/time-reports/timeline?today=2026-09-15",
+        headers={"X-Demo-Role": "TEAM_LEADER"},
+    )
+    assert tl.status_code == 200
+    for node in tl.json()["data"]["open"] + tl.json()["data"]["done"]:
+        for row in node["rows"]:
+            assert row["schedule_dept"] == "FINISHED_DEPT"
+            assert row["group_code"] == "MANUAL"

@@ -130,18 +130,29 @@ def list_tasks_for_cell(
         .where(WoTaskRow.group_code == group_code)
         .order_by(WoTaskRow.wo_no, WoTaskRow.seq)
     ).all()
-    return [
-        {
-            "task_id": r.task_id,
-            "wo_no": r.wo_no,
-            "task_date": r.task_date.isoformat(),
-            "qty_board": r.qty_board,
-            "hours_man": float(decimal_hours(r.hours_man)),
-            "hours_wall": float(decimal_hours(r.hours_wall)),
-            "crew_plan": r.crew_plan,
-        }
-        for r in rows
-    ]
+    from db.tables import WoRow
+
+    out: list[dict] = []
+    for r in rows:
+        wo = session.get(WoRow, r.wo_no)
+        done = int(getattr(wo, "qty_board_done", 0) or 0) if wo else 0
+        plan = int(wo.qty_board_plan) if wo else r.qty_board
+        out.append(
+            {
+                "task_id": r.task_id,
+                "wo_no": r.wo_no,
+                "task_date": r.task_date.isoformat(),
+                "qty_board": r.qty_board,
+                "qty_board_plan": plan,
+                "qty_board_done": done,
+                "qty_board_remain": max(0, plan - done),
+                "wo_status": wo.status if wo else None,
+                "hours_man": float(decimal_hours(r.hours_man)),
+                "hours_wall": float(decimal_hours(r.hours_wall)),
+                "crew_plan": r.crew_plan,
+            }
+        )
+    return out
 
 
 def _hours_cap_fields(session: Session, work_date: date, schedule_dept: str, group_code: str) -> dict:
@@ -408,31 +419,131 @@ def time_report_grid(
     grid: list[dict] = []
     for dept, group, lbl in WORK_CENTERS:
         planned = sum_planned_man_hours(session, plan_version=pv, work_date=work_date, schedule_dept=dept, group_code=group) if pv > 0 else Decimal("0")
-        rep = existing.get((dept, group))
-        if rep:
-            grid.append(_report_to_dict(rep, session))
-        else:
-            rate = _rate_for_group(session, dept, group)
-            grid.append(
-                {
-                    "id": None,
-                    "work_date": work_date.isoformat(),
-                    "schedule_dept": dept,
-                    "group_code": group,
-                    "group_label": lbl,
-                    "display_dept": display_dept(dept),
-                    "plan_version": pv,
-                    "hours_man_planned": float(planned),
-                    "hours_man_actual": None,
-                    "headcount_actual": None,
-                    "status": "NONE",
-                    "reported_by": "",
-                    "confirmed_at": None,
-                    "note": "",
-                    "rate_per_man_hour": float(rate),
-                    "cost_planned": float(labor_cost(planned, rate)),
-                    "cost_actual": None,
-                    **_hours_cap_fields(session, work_date, dept, group),
-                }
+        grid.append(
+            _cell_row(
+                session,
+                work_date=work_date,
+                schedule_dept=dept,
+                group_code=group,
+                group_label=lbl,
+                plan_version=pv,
+                planned=planned,
+                report=existing.get((dept, group)),
             )
+        )
     return grid
+
+
+def _cell_row(
+    session: Session,
+    *,
+    work_date: date,
+    schedule_dept: str,
+    group_code: str,
+    group_label: str,
+    plan_version: int,
+    planned: Decimal,
+    report: ProdTimeReportRow | None,
+) -> dict:
+    if report:
+        return _report_to_dict(report, session)
+    rate = _rate_for_group(session, schedule_dept, group_code)
+    return {
+        "id": None,
+        "work_date": work_date.isoformat(),
+        "schedule_dept": schedule_dept,
+        "group_code": group_code,
+        "group_label": group_label,
+        "display_dept": display_dept(schedule_dept),
+        "plan_version": plan_version,
+        "hours_man_planned": float(planned),
+        "hours_man_actual": None,
+        "headcount_actual": None,
+        "status": "NONE",
+        "reported_by": "",
+        "confirmed_at": None,
+        "note": "",
+        "rate_per_man_hour": float(rate),
+        "cost_planned": float(labor_cost(planned, rate)),
+        "cost_actual": None,
+        **_hours_cap_fields(session, work_date, schedule_dept, group_code),
+    }
+
+
+def time_report_timeline(
+    session: Session,
+    *,
+    today: date,
+    plan_version: int | None = None,
+    scope: tuple[str, str] | None = None,
+) -> dict:
+    """有计划的组×日按日期分组；未确认在 open，已确认进 done。"""
+    pv = plan_version or current_plan_version(session)
+    empty = {"plan_version": pv, "today": today.isoformat(), "open": [], "done": []}
+    if pv <= 0:
+        return empty
+
+    bounds = session.execute(
+        select(func.min(WoTaskRow.task_date), func.max(WoTaskRow.task_date)).where(
+            WoTaskRow.plan_version == pv
+        )
+    ).one()
+    date_from, date_to = bounds
+    if date_from is None or date_to is None:
+        return empty
+
+    cells = planned_man_hours_by_cell(
+        session, plan_version=pv, date_from=date_from, date_to=date_to
+    )
+    reports = {
+        (r.work_date, r.schedule_dept, r.group_code): r
+        for r in session.scalars(
+            select(ProdTimeReportRow).where(ProdTimeReportRow.plan_version == pv)
+        ).all()
+    }
+
+    by_date: dict[date, list[dict]] = {}
+    for cell in cells:
+        if cell["hours_man_planned"] <= 0:
+            continue
+        dept, group = cell["schedule_dept"], cell["group_code"]
+        if scope is not None and scope != (dept, group):
+            continue
+        wd = date.fromisoformat(cell["work_date"])
+        lbl = cell["group_label"]
+        planned = decimal_hours(cell["hours_man_planned"])
+        row = _cell_row(
+            session,
+            work_date=wd,
+            schedule_dept=dept,
+            group_code=group,
+            group_label=lbl,
+            plan_version=pv,
+            planned=planned,
+            report=reports.get((wd, dept, group)),
+        )
+        by_date.setdefault(wd, []).append(row)
+
+    open_nodes: list[dict] = []
+    done_nodes: list[dict] = []
+    for wd in sorted(by_date):
+        rows = by_date[wd]
+        if wd < today:
+            bucket = "overdue"
+        elif wd == today:
+            bucket = "today"
+        else:
+            bucket = "upcoming"
+        all_confirmed = all(r["status"] == "CONFIRMED" for r in rows)
+        node = {
+            "work_date": wd.isoformat(),
+            "bucket": bucket,
+            "hours_planned": round(sum(r["hours_man_planned"] for r in rows), 4),
+            "all_confirmed": all_confirmed,
+            "rows": rows,
+        }
+        (done_nodes if all_confirmed else open_nodes).append(node)
+
+    bucket_rank = {"overdue": 0, "today": 1, "upcoming": 2}
+    open_nodes.sort(key=lambda n: (bucket_rank[n["bucket"]], n["work_date"]))
+    return {"plan_version": pv, "today": today.isoformat(), "open": open_nodes, "done": done_nodes}

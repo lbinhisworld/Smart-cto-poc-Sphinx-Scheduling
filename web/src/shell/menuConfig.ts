@@ -66,7 +66,7 @@ export const MENU_SHORT_DESC: Record<string, string> = {
   changes: "影响清单 · PMC 审批",
   orders: "多视图 · 字段权限",
   kingdee: "Mock Push 进单",
-  hr_roster: "员工档案 · 合同到期提醒",
+  hr_roster: "员工档案 · 续签状态提醒",
   hr_attendance: "考勤机同步明细",
   hr_labor_cost: "计划 vs 实际 · 部门-组",
   schedule: "倒排看板 · 插单试排",

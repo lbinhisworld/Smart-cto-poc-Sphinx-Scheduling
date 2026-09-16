@@ -442,6 +442,11 @@ export function CtpPage() {
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const run = () => {
+    const n = Number.parseInt(qty, 10);
+    if (!Number.isInteger(n) || n < 1) {
+      setErr("数量必须为正整数（盒/版/枚均为整数单位）");
+      return;
+    }
     setBusy(true);
     setErr(null);
     fetch("/api/crm/ctp", {
@@ -449,7 +454,7 @@ export function CtpPage() {
       headers: { ...auth.headers(), "Content-Type": "application/json" },
       body: JSON.stringify({
         item_code: itemCode,
-        qty_order: Number(qty),
+        qty_order: n,
         unit,
         due_date: due,
       }),
@@ -503,9 +508,13 @@ export function CtpPage() {
         <label className="grid gap-1 text-xs text-[var(--text-muted)]">
           数量
           <input
+            type="number"
+            min={1}
+            step={1}
+            inputMode="numeric"
             className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm"
             value={qty}
-            onChange={(e) => setQty(e.target.value)}
+            onChange={(e) => setQty(e.target.value.replace(/[^\d]/g, ""))}
           />
         </label>
         <label className="grid gap-1 text-xs text-[var(--text-muted)]">

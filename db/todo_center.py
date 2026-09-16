@@ -12,6 +12,7 @@ from db.contract_queries import list_overdue_payment_todos
 from db.demo_crm_seed import ensure_demo_crm
 from db.hr_queries import list_contract_reminders
 from db.hr_seed import ensure_hr_seed
+from db.qty_carryover import STATUS_PENDING, list_pending_rolls
 from db.tables import CrmSampleRow, OrderChangeRequestRow, SoOrderRow, WecomMessageRow
 
 
@@ -49,6 +50,17 @@ def list_todos(session: Session, *, role: str, today: date) -> list[dict]:
                     "detail": "倒排试算通过后保存发布",
                     "path": "/schedule",
                     "priority": "medium",
+                }
+            )
+        for roll in list_pending_rolls(session, status=STATUS_PENDING):
+            todos.append(
+                {
+                    "id": f"qty-roll-{roll['id']}",
+                    "kind": "QTY_CARRYOVER",
+                    "title": f"未完尾数待确认 · {roll['source_order_no']} 剩 {roll['qty_board_remain']} 版",
+                    "detail": f"{roll['item_code']} · 并入同品项下次或插单（不可取消）",
+                    "path": "/modules/production/time-report",
+                    "priority": "high",
                 }
             )
 
@@ -99,7 +111,7 @@ def list_todos(session: Session, *, role: str, today: date) -> list[dict]:
                     "kind": "HR_CONTRACT",
                     "title": item["title"],
                     "detail": item["detail"],
-                    "path": "/modules/hr/roster",
+                    "path": f"/modules/hr/roster?renewal={item['contract_status']}",
                     "priority": item["priority"],
                 }
             )

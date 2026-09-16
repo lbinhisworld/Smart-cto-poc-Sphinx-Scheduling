@@ -47,11 +47,11 @@ def _parse_earliest_from_suggest(suggest: str | None) -> date | None:
     return date.fromisoformat(m.group(1))
 
 
-def _ctp_finished_wos(result: ScheduleResult) -> list:
+def _ctp_finished_wos(result: ScheduleResult, order_no: str = "CTP-TRY") -> list:
     return [
         w
         for w in result.wos
-        if w.source_order_no == "CTP-TRY" and w.wo_type == WoType.FINISHED
+        if w.source_order_no == order_no and w.wo_type == WoType.FINISHED
     ]
 
 
@@ -166,8 +166,9 @@ def _build_sales_brief(
     plan_end: date | None,
     can_meet: bool,
     pool_size: int,
+    order_no: str = "CTP-TRY",
 ) -> dict:
-    kit_check = next((k for k in result.kit_checks if k.order_no == "CTP-TRY"), None)
+    kit_check = next((k for k in result.kit_checks if k.order_no == order_no), None)
     materials = _material_lines(session, explode, kit_check)
     earliest = _ctp_earliest_delivery(result, finished_wos, plan_end=plan_end)
 
@@ -214,7 +215,7 @@ def _build_sales_brief(
                 if not any(
                     w.wo_no == c.wo_no
                     for w in result.wos
-                    if w.source_order_no == "CTP-TRY"
+                    if w.source_order_no == order_no
                 ):
                     continue
             msg = (c.message or "").strip()
@@ -249,36 +250,19 @@ def _build_sales_brief(
     }
 
 
-def ctp_feasibility(
+def _score_line(
     session: Session,
     *,
+    result: ScheduleResult,
+    order_no: str,
     item_code: str,
     qty_order: Decimal,
     unit: str,
     due_date: date,
     today: date,
-    customer: str = "CTP 试算",
+    pool_size: int,
 ) -> dict:
-    pool = scheduling_pool_order_nos(session)
-    order_nos = sorted(set(pool) | {"__ctp__"})
-    inp = load_schedule_input(session, today=today, order_nos=[n for n in order_nos if n != "__ctp__"])
-    ctp_order = Order(
-        order_no="CTP-TRY",
-        customer=customer,
-        sales_name="CTP",
-        item_code=item_code,
-        qty_order=qty_order,
-        unit=Uom(unit),
-        due_date=due_date,
-        ready_date=today,
-        customer_level=3,
-        amount=Decimal("0"),
-        is_urgent=False,
-        schedule_phase="IN_SCHEDULING",
-    )
-    inp = inp.model_copy(update={"orders": [*inp.orders, ctp_order]})
-    result = schedule(inp)
-    finished = _ctp_finished_wos(result)
+    finished = _ctp_finished_wos(result, order_no)
     plan_end = max((w.plan_end for w in finished if w.plan_end), default=None)
     reds = [
         c
@@ -304,17 +288,147 @@ def ctp_feasibility(
         finished_wos=finished,
         plan_end=plan_end,
         can_meet=can_meet,
-        pool_size=len(pool),
+        pool_size=pool_size,
+        order_no=order_no,
     )
     return {
+        "item_code": item_code,
+        "product_label": _item_label(session, item_code),
+        "qty": int(qty_order),
+        "unit": unit,
         "feasible": can_meet,
-        "requested_due": due_date.isoformat(),
         "plan_end": plan_end.isoformat() if plan_end else None,
         "earliest_delivery": sales.get("earliest_delivery"),
         "red_conflicts": [{"code": c.code, "message": c.message} for c in reds[:5]],
-        "pool_size": len(pool),
-        "note": "试算单 CTP-TRY 不落库；含当前排程池订单",
         "sales": sales,
+    }
+
+
+def ctp_order_feasibility(
+    session: Session,
+    *,
+    lines: list[dict],
+    due_date: date,
+    today: date,
+    customer: str = "CTP 试算",
+) -> dict:
+    """多行明细 + 整单交期一次注入试算，共享产能。不落库。"""
+    if not lines:
+        raise ValueError("至少一行品项才能预检")
+    pool = scheduling_pool_order_nos(session)
+    inp = load_schedule_input(
+        session,
+        today=today,
+        order_nos=list(pool) or ["__ctp_empty_pool__"],
+    )
+    ctp_orders = []
+    parsed: list[tuple[str, str, Decimal, str]] = []
+    for i, ln in enumerate(lines, start=1):
+        item_code = str(ln["item_code"])
+        qty = Decimal(str(ln.get("qty") if ln.get("qty") is not None else ln.get("qty_order")))
+        unit = str(ln.get("unit") or "BOX")
+        if qty <= 0 or qty != qty.to_integral_value():
+            raise ValueError(f"{item_code} 数量必须为正整数")
+        qty = qty.to_integral_value()
+        ono = f"CTP-TRY#L{i}"
+        parsed.append((ono, item_code, qty, unit))
+        ctp_orders.append(
+            Order(
+                order_no=ono,
+                customer=customer,
+                sales_name="CTP",
+                item_code=item_code,
+                qty_order=qty,
+                unit=Uom(unit),
+                due_date=due_date,
+                ready_date=today,
+                customer_level=3,
+                amount=Decimal("0"),
+                is_urgent=False,
+                schedule_phase="IN_SCHEDULING",
+            )
+        )
+    inp = inp.model_copy(update={"orders": [*inp.orders, *ctp_orders]})
+    result = schedule(inp)
+
+    line_rows = [
+        _score_line(
+            session,
+            result=result,
+            order_no=ono,
+            item_code=item_code,
+            qty_order=qty,
+            unit=unit,
+            due_date=due_date,
+            today=today,
+            pool_size=len(pool),
+        )
+        for ono, item_code, qty, unit in parsed
+    ]
+    feasible = all(row["feasible"] for row in line_rows)
+    plan_dates = [date.fromisoformat(row["plan_end"]) for row in line_rows if row["plan_end"]]
+    early_dates = [
+        date.fromisoformat(row["earliest_delivery"]) for row in line_rows if row["earliest_delivery"]
+    ]
+    plan_end = max(plan_dates) if plan_dates else None
+    earliest = max(early_dates) if early_dates else plan_end
+    if feasible:
+        headline = f"整单可以满足 {due_date.isoformat()} 交期（{len(line_rows)} 行同池试算）"
+        status = "ok"
+    else:
+        ef = earliest.isoformat() if earliest else "—"
+        headline = f"整单无法在 {due_date.isoformat()} 前交齐"
+        if earliest:
+            headline += f"，建议不早于 {ef}"
+        status = "late"
+    return {
+        "feasible": feasible,
+        "requested_due": due_date.isoformat(),
+        "plan_end": plan_end.isoformat() if plan_end else None,
+        "earliest_delivery": earliest.isoformat() if earliest else None,
+        "red_conflicts": [c for row in line_rows for c in row["red_conflicts"]][:8],
+        "pool_size": len(pool),
+        "note": "整单多行同池一次倒排；试算单 CTP-TRY 不落库；含当前排程池订单",
+        "lines": line_rows,
+        "sales": {
+            "headline": headline,
+            "status": status,
+            "can_meet_due_date": feasible,
+            "target_due": due_date.isoformat(),
+            "plan_finish": plan_end.isoformat() if plan_end else None,
+            "earliest_delivery": earliest.isoformat() if earliest else None,
+        },
+    }
+
+
+def ctp_feasibility(
+    session: Session,
+    *,
+    item_code: str,
+    qty_order: Decimal,
+    unit: str,
+    due_date: date,
+    today: date,
+    customer: str = "CTP 试算",
+) -> dict:
+    data = ctp_order_feasibility(
+        session,
+        lines=[{"item_code": item_code, "qty": qty_order, "unit": unit}],
+        due_date=due_date,
+        today=today,
+        customer=customer,
+    )
+    line = data["lines"][0]
+    return {
+        "feasible": data["feasible"],
+        "requested_due": data["requested_due"],
+        "plan_end": line["plan_end"],
+        "earliest_delivery": line["earliest_delivery"],
+        "red_conflicts": line["red_conflicts"],
+        "pool_size": data["pool_size"],
+        "note": data["note"],
+        "sales": line["sales"],
+        "lines": data["lines"],
     }
 
 

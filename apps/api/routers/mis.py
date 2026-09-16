@@ -23,7 +23,7 @@ def _role(x_demo_role: str | None) -> str:
 
 class MisOrderLineIn(BaseModel):
     item_code: str
-    qty: float = Field(gt=0)
+    qty: int = Field(gt=0)
     unit: str = "BOX"
     unit_price: float = Field(default=0, ge=0)
 

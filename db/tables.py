@@ -237,6 +237,7 @@ class WoRow(Base):
     override_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     plan_version: Mapped[int] = mapped_column(Integer, index=True)
     parent_wo_no: Mapped[str | None] = mapped_column(String, nullable=True)
+    qty_board_done: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class WoTaskRow(Base):
@@ -439,3 +440,38 @@ class AppSettingRow(Base):
     __tablename__ = "app_setting"
     key: Mapped[str] = mapped_column(String, primary_key=True)
     value: Mapped[str] = mapped_column(Text, default="")
+
+
+class ProdQtyReportRow(Base):
+    """工单完工版数报工（Wave 2）。"""
+
+    __tablename__ = "prod_qty_report"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    wo_no: Mapped[str] = mapped_column(String, index=True)
+    work_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    qty_board_done: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String, default="CONFIRMED")
+    reported_by: Mapped[str] = mapped_column(String, default="")
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    plan_version: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class PendingRollRow(Base):
+    """未完版数待确认池：PMC 并入同品项下次或插单，禁止取消尾数。"""
+
+    __tablename__ = "pending_roll_pool"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    source_wo_no: Mapped[str] = mapped_column(String, index=True)
+    source_order_no: Mapped[str] = mapped_column(String, index=True)
+    item_code: Mapped[str] = mapped_column(String, index=True)
+    group_code: Mapped[str] = mapped_column(String)
+    dept: Mapped[str] = mapped_column(String)
+    qty_board_remain: Mapped[int] = mapped_column(Integer)
+    due_date: Mapped[date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String, default="PENDING_CONFIRMATION", index=True)
+    action: Mapped[str | None] = mapped_column(String, nullable=True)
+    target_order_no: Mapped[str | None] = mapped_column(String, nullable=True)
+    remainder_wo_no: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    resolved_by: Mapped[str | None] = mapped_column(String, nullable=True)

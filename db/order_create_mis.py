@@ -54,8 +54,9 @@ def create_mis_order(
         if item.is_semi:
             raise ValueError(f"半成品不可作为销售行: {code}")
         qty = Decimal(str(ln["qty"]))
-        if qty <= 0:
-            raise ValueError("数量必须大于 0")
+        if qty <= 0 or qty != qty.to_integral_value():
+            raise ValueError("数量必须为正整数")
+        qty = qty.to_integral_value()
         unit = ln.get("unit") or item.unit_sale or "BOX"
         try:
             Uom(unit)

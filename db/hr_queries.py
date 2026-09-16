@@ -13,6 +13,12 @@ DEPARTMENTS_ORDER = ("生产一部", "生产二部", "模具组", "浇注组", "
 DEFAULT_REMIND_DAYS = 30
 ANCHOR_TODAY = date(2026, 9, 15)
 
+RENEWAL_STATUS_LABELS = {
+    "OK": "正常",
+    "DUE_SOON": "一个月内续签",
+    "EXPIRED": "续签过期",
+}
+
 
 def contract_status_for(end: date | None, *, today: date, remind_days: int) -> str:
     if end is None:
@@ -25,8 +31,19 @@ def contract_status_for(end: date | None, *, today: date, remind_days: int) -> s
     return "OK"
 
 
+def days_until_renewal(end: date | None, *, today: date) -> int | None:
+    if end is None:
+        return None
+    return (end - today).days
+
+
+def renewal_status_label(status: str) -> str:
+    return RENEWAL_STATUS_LABELS.get(status, status)
+
+
 def _employee_public(e: HrEmployeeRow, *, today: date) -> dict:
     remind = e.contract_remind_days or DEFAULT_REMIND_DAYS
+    status = contract_status_for(e.contract_end, today=today, remind_days=remind)
     return {
         "emp_no": e.emp_no,
         "name": e.name,
@@ -41,7 +58,9 @@ def _employee_public(e: HrEmployeeRow, *, today: date) -> dict:
         "contract_start": e.contract_start.isoformat() if e.contract_start else None,
         "contract_end": e.contract_end.isoformat() if e.contract_end else None,
         "contract_remind_days": remind,
-        "contract_status": contract_status_for(e.contract_end, today=today, remind_days=remind),
+        "contract_status": status,
+        "renewal_status_label": renewal_status_label(status),
+        "days_until_renewal": days_until_renewal(e.contract_end, today=today),
     }
 
 
@@ -67,15 +86,22 @@ def list_contract_reminders(session: Session, *, today: date) -> list[dict]:
     for row in list_employees(session, today=today):
         if row["contract_status"] not in ("DUE_SOON", "EXPIRED"):
             continue
-        label = "已过期" if row["contract_status"] == "EXPIRED" else "即将到期"
+        label = renewal_status_label(row["contract_status"])
+        days = row["days_until_renewal"]
+        if days is None:
+            countdown = ""
+        elif days >= 0:
+            countdown = f"还有 {days} 天"
+        else:
+            countdown = f"已过期 {abs(days)} 天"
         out.append(
             {
                 "emp_no": row["emp_no"],
                 "name": row["name"],
                 "contract_end": row["contract_end"],
                 "contract_status": row["contract_status"],
-                "title": f"合同{label} · {row['emp_no']} {row['name']}",
-                "detail": f"到期日 {row['contract_end']}",
+                "title": f"{label} · {row['emp_no']} {row['name']}",
+                "detail": f"到期日 {row['contract_end']} · {countdown}".rstrip(" ·"),
                 "priority": "high",
             }
         )

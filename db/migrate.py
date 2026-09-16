@@ -166,6 +166,19 @@ def ensure_schema(engine: Engine) -> None:
         if name not in tables:
             Base.metadata.tables[name].create(engine)
 
+    if "wo" in tables:
+        cols = {c["name"] for c in insp.get_columns("wo")}
+        if "qty_board_done" not in cols:
+            with engine.begin() as conn:
+                conn.execute(
+                    text("ALTER TABLE wo ADD COLUMN qty_board_done INTEGER NOT NULL DEFAULT 0")
+                )
+
+    if "prod_qty_report" not in tables:
+        Base.metadata.tables["prod_qty_report"].create(engine)
+    if "pending_roll_pool" not in tables:
+        Base.metadata.tables["pending_roll_pool"].create(engine)
+
     if "crm_sample_step" in tables:
         cols = {c["name"] for c in insp.get_columns("crm_sample_step")}
         alters_step: list[tuple[str, str]] = []

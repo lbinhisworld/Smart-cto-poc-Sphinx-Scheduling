@@ -9,7 +9,7 @@ from fastapi import Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from db.ctp_service import ctp_feasibility, ctp_from_template_order
+from db.ctp_service import ctp_feasibility, ctp_from_template_order, ctp_order_feasibility
 from db.contract_queries import (
     add_receipt,
     contract_detail,
@@ -44,12 +44,19 @@ def _sales_filter(role: str) -> str | None:
     return None
 
 
+class CtpLineIn(BaseModel):
+    item_code: str
+    qty: int = Field(gt=0)
+    unit: str = "BOX"
+
+
 class CtpBody(BaseModel):
     item_code: str = "P2"
-    qty_order: float = 200
+    qty_order: int = Field(default=200, gt=0)
     unit: str = "BOX"
     due_date: date
     template_order_no: str | None = None
+    lines: list[CtpLineIn] | None = None
 
 
 class PaymentPlanIn(BaseModel):
@@ -422,20 +429,30 @@ def register_crm(app, get_db):
     ):
         _role(x_demo_role)
         anchor = today or date(2026, 9, 15)
-        if body.template_order_no:
-            data = ctp_from_template_order(
-                db,
-                template_order_no=body.template_order_no,
-                new_due=body.due_date,
-                today=anchor,
-            )
-        else:
-            data = ctp_feasibility(
-                db,
-                item_code=body.item_code,
-                qty_order=Decimal(str(body.qty_order)),
-                unit=body.unit,
-                due_date=body.due_date,
-                today=anchor,
-            )
+        try:
+            if body.lines:
+                data = ctp_order_feasibility(
+                    db,
+                    lines=[ln.model_dump() for ln in body.lines],
+                    due_date=body.due_date,
+                    today=anchor,
+                )
+            elif body.template_order_no:
+                data = ctp_from_template_order(
+                    db,
+                    template_order_no=body.template_order_no,
+                    new_due=body.due_date,
+                    today=anchor,
+                )
+            else:
+                data = ctp_feasibility(
+                    db,
+                    item_code=body.item_code,
+                    qty_order=Decimal(str(body.qty_order)),
+                    unit=body.unit,
+                    due_date=body.due_date,
+                    today=anchor,
+                )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
         return {"code": 0, "message": "", "data": data}

@@ -30,6 +30,7 @@ class WoStatus(str, Enum):
     DRAFT = "DRAFT"
     PLANNED = "PLANNED"
     RELEASED = "RELEASED"
+    PARTIAL = "PARTIAL"
     DONE = "DONE"
 
 
@@ -302,6 +303,7 @@ class Wo(_Model):
     priority_score: Decimal = Decimal("0")
     kit_ready_date: date | None = None
     bom_line_no: int | None = None
+    qty_board_done: int = 0
 
 
 class WoTask(_Model):

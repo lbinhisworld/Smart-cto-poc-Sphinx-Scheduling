@@ -72,12 +72,12 @@ export function renderHrEmpStatusTag(status: string) {
   );
 }
 
-/** 劳动合同到期状态 */
+/** 劳动合同续签状态 */
 export function renderContractStatusTag(status: string) {
   const map: Record<string, { cls: string; label: string }> = {
     OK: { cls: "bg-emerald-950 text-emerald-200 ring-1 ring-emerald-700", label: "正常" },
-    DUE_SOON: { cls: "bg-amber-950 text-amber-200 ring-1 ring-amber-700", label: "即将到期" },
-    EXPIRED: { cls: "bg-rose-950 text-rose-200 ring-1 ring-rose-700", label: "已过期" },
+    DUE_SOON: { cls: "bg-amber-950 text-amber-200 ring-1 ring-amber-700", label: "一个月内续签" },
+    EXPIRED: { cls: "bg-rose-950 text-rose-200 ring-1 ring-rose-700", label: "续签过期" },
   };
   const item = map[status] ?? { cls: "bg-slate-800 text-slate-300 ring-1 ring-slate-600", label: status };
   return (
@@ -85,6 +85,19 @@ export function renderContractStatusTag(status: string) {
       {item.label}
     </span>
   );
+}
+
+export function formatRenewalCountdown(days: number | null | undefined): string {
+  if (days == null) return "—";
+  if (days > 0) return `还有 ${days} 天`;
+  if (days === 0) return "今天到期";
+  return `已过期 ${Math.abs(days)} 天`;
+}
+
+export function renderRenewalCountdown(days: number | null | undefined) {
+  if (days == null) return <span className="text-[var(--text-muted)]">—</span>;
+  const cls = days < 0 ? "text-rose-400" : days <= 30 ? "text-amber-300" : "text-emerald-300";
+  return <span className={`tabular-nums font-medium ${cls}`}>{formatRenewalCountdown(days)}</span>;
 }
 
 /** 考勤打卡类型 */

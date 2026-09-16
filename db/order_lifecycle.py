@@ -5,10 +5,11 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
 from db.repositories import run_schedule
+from db.snapshot import header_order_no
 from db.tables import SoOrderRow, WoRow
 from engine.models import ConflictLv, ScheduleResult, WoType
 
@@ -58,8 +59,9 @@ def commitments_for_orders(result: ScheduleResult, order_nos: list[str]) -> list
     wanted = set(order_nos)
     wo_by_order: dict[str, list] = {}
     for wo in result.wos:
-        if wo.source_order_no in wanted:
-            wo_by_order.setdefault(wo.source_order_no, []).append(wo)
+        key = header_order_no(wo.source_order_no)
+        if key in wanted:
+            wo_by_order.setdefault(key, []).append(wo)
 
     blocking_wo = {
         c.wo_no
@@ -108,10 +110,10 @@ def pool_has_blocking_reds(result: ScheduleResult, order_nos: list[str]) -> list
         if not c.wo_no:
             continue
         wo = wos.get(c.wo_no)
-        if wo and wo.source_order_no in wanted:
+        if wo and header_order_no(wo.source_order_no) in wanted:
             hits.append(
                 {
-                    "order_no": wo.source_order_no,
+                    "order_no": header_order_no(wo.source_order_no),
                     "code": c.code,
                     "message": c.message,
                 }
@@ -154,9 +156,10 @@ def publish_scheduling_pool(
         persist=True,
         trigger="保存发布",
     )
+    like_conds = [WoRow.source_order_no.like(f"{no}#L%") for no in order_nos]
     session.execute(
         update(WoRow)
-        .where(WoRow.source_order_no.in_(order_nos))
+        .where(or_(WoRow.source_order_no.in_(order_nos), *like_conds))
         .values(status="RELEASED")
     )
     for no in order_nos:

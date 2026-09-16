@@ -18,6 +18,28 @@ type DraftLine = {
   unit: string;
 };
 
+type CtpLineResult = {
+  item_code: string;
+  product_label: string;
+  qty: number;
+  unit: string;
+  feasible: boolean;
+  plan_end: string | null;
+  earliest_delivery: string | null;
+  red_conflicts: { code: string; message: string }[];
+  sales?: { headline?: string };
+};
+
+type CtpOrderResult = {
+  feasible: boolean;
+  requested_due: string;
+  plan_end: string | null;
+  earliest_delivery: string | null;
+  note?: string;
+  lines: CtpLineResult[];
+  sales?: { headline?: string; status?: string; can_meet_due_date?: boolean };
+};
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -38,6 +60,9 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
+  const [ctpBusy, setCtpBusy] = useState(false);
+  const [ctp, setCtp] = useState<CtpOrderResult | null>(null);
+  const [ctpStamp, setCtpStamp] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !role) return;
@@ -46,6 +71,8 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
     setLines([]);
     setContractNo("");
     setContracts([]);
+    setCtp(null);
+    setCtpStamp(null);
     requestWithRole<Customer[]>("/api/crm/customers", role).then(setCustomers);
     fetch("/api/bom")
       .then((r) => r.json())
@@ -102,6 +129,44 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
     setLines((prev) => prev.filter((l) => l.item_code !== code));
   };
 
+  const draftStamp = useMemo(
+    () => JSON.stringify({ dueDate, lines: lines.map((l) => ({ item_code: l.item_code, qty: l.qty, unit: l.unit })) }),
+    [dueDate, lines],
+  );
+  const ctpStale = Boolean(ctp && ctpStamp && ctpStamp !== draftStamp);
+
+  const runCtp = async () => {
+    if (!role) return;
+    if (lines.length === 0) {
+      setErr("请先加入明细再预检");
+      return;
+    }
+    if (lines.some((l) => !Number.isInteger(l.qty) || l.qty < 1)) {
+      setErr("数量必须为正整数（盒/版/枚均为整数单位）");
+      return;
+    }
+    setCtpBusy(true);
+    setErr(null);
+    try {
+      const r = await fetch("/api/crm/ctp?today=2026-09-15", {
+        method: "POST",
+        headers: { ...auth.headers(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          due_date: dueDate,
+          lines: lines.map((l) => ({ item_code: l.item_code, qty: l.qty, unit: l.unit })),
+        }),
+      });
+      const j = await r.json();
+      if (!r.ok || j.code !== 0) throw new Error(j.detail || j.message || "预检失败");
+      setCtp(j.data as CtpOrderResult);
+      setCtpStamp(draftStamp);
+    } catch (e) {
+      setErr(String(e));
+    } finally {
+      setCtpBusy(false);
+    }
+  };
+
   const save = async () => {
     if (!role) return;
     if (!customerCode) {
@@ -114,6 +179,10 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
     }
     if (lines.length === 0) {
       setErr("请添加至少一行产品");
+      return;
+    }
+    if (lines.some((l) => !Number.isInteger(l.qty) || l.qty < 1)) {
+      setErr("数量必须为正整数（盒/版/枚均为整数单位）");
       return;
     }
     setBusy(true);
@@ -289,14 +358,18 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
                     <td className="py-1 text-right">
                       <input
                         type="number"
-                        min={0.01}
+                        min={1}
                         step={1}
+                        inputMode="numeric"
                         className="w-20 rounded border px-1 py-0.5 text-right"
                         style={{ borderColor: "var(--line)", background: "var(--bg-body)" }}
-                        value={l.qty}
-                        onChange={(e) =>
-                          updateLine(l.item_code, { qty: Number(e.target.value) || 0 })
-                        }
+                        value={l.qty || ""}
+                        onChange={(e) => {
+                          const n = Number.parseInt(e.target.value, 10);
+                          updateLine(l.item_code, {
+                            qty: Number.isFinite(n) && n > 0 ? n : 0,
+                          });
+                        }}
                       />
                     </td>
                     <td className="py-1">
@@ -335,8 +408,66 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
             </table>
           </div>
           <p className="mt-2 text-[10px] text-[var(--text-muted)]">
-            保存后订单为「已确认 / 待排产」(schedule_phase=PENDING)，可在列表「待排产」视图查看。
+            保存后订单为「已确认 / 待排产」(schedule_phase=PENDING)，可在列表「待排产」视图查看。预检不落库、不拦截保存。
           </p>
+
+          <div className="mt-4 rounded border px-3 py-2" style={{ borderColor: "var(--line)" }}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-medium">CTP 预检测</p>
+              <button
+                type="button"
+                disabled={ctpBusy || lines.length === 0}
+                className="rounded border px-3 py-1 text-xs disabled:opacity-40"
+                style={{ borderColor: "var(--line)" }}
+                onClick={() => void runCtp()}
+              >
+                {ctpBusy ? "试算中…" : "CTP 预检测"}
+              </button>
+            </div>
+            <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+              全部明细 + 整单交期一次倒排（同行组共享产能），可反复改量后再检。
+            </p>
+            {ctp && (
+              <div className="mt-2 text-xs">
+                {ctpStale && (
+                  <p className="mb-1 text-amber-300">明细或交期已改，上次结果已过期，请再预检。</p>
+                )}
+                <p className={ctp.feasible ? "text-emerald-300" : "text-rose-300"}>
+                  {ctp.sales?.headline || (ctp.feasible ? "整单可行" : "整单交期有风险")}
+                </p>
+                <p className="mt-1 text-[var(--text-muted)]">
+                  目标 {ctp.requested_due}
+                  {ctp.plan_end ? ` · 最晚计划完工 ${ctp.plan_end}` : ""}
+                  {ctp.earliest_delivery ? ` · 建议不早于 ${ctp.earliest_delivery}` : ""}
+                </p>
+                <table className="mt-2 w-full text-[11px]">
+                  <thead className="text-[var(--text-muted)]">
+                    <tr>
+                      <th className="py-1 text-left">品项</th>
+                      <th className="text-right">数量</th>
+                      <th className="text-left">结论</th>
+                      <th className="text-left">计划完工</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ctp.lines.map((ln) => (
+                      <tr key={ln.item_code} className="border-t" style={{ borderColor: "var(--line)" }}>
+                        <td className="py-1">{ln.product_label || ln.item_code}</td>
+                        <td className="text-right tabular-nums">
+                          {ln.qty}
+                          {formatUnit(ln.unit)}
+                        </td>
+                        <td className={ln.feasible ? "text-emerald-300" : "text-rose-300"}>
+                          {ln.feasible ? "可满足" : ln.sales?.headline || "交期不足"}
+                        </td>
+                        <td>{ln.plan_end ?? ln.earliest_delivery ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t px-4 py-3" style={{ borderColor: "var(--line)" }}>
