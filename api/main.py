@@ -609,5 +609,8 @@ def create_app(session_factory: sessionmaker) -> FastAPI:
     register_hr(app, get_db)
     register_labor(app, get_db)
     register_demo(app, get_db)
+    from apps.api.routers.qc import register_qc
+
+    register_qc(app, get_db)
 
     return app

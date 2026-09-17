@@ -1,0 +1,34 @@
+{
+  "suppliers": [
+    {
+      "supplier_code": "SUP-001",
+      "name": "苏州可可原料有限公司",
+      "name_alias": "可可原料",
+      "kingdee_id": "KD-S-001"
+    },
+    {
+      "supplier_code": "SUP-002",
+      "name": "泗洪包装材料厂",
+      "name_alias": "泗洪包材",
+      "kingdee_id": "KD-S-002"
+    }
+  ],
+  "raw_materials": [
+    {
+      "material_code": "RM-COCOA-70",
+      "name": "可可液块",
+      "spec": "70%",
+      "default_uom": "KG",
+      "attr_default": "原料",
+      "kingdee_id": "KD-M-001"
+    },
+    {
+      "material_code": "RM-SUGAR-FINE",
+      "name": "细白砂糖",
+      "spec": "食品级",
+      "default_uom": "KG",
+      "attr_default": "辅料",
+      "kingdee_id": "KD-M-002"
+    }
+  ]
+}

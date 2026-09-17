@@ -141,6 +141,9 @@ def register_crm(app, get_db):
     ):
         _role(x_demo_role)
         ensure_demo_crm(db)
+        from db.qc_seed import ensure_qc_seed
+
+        ensure_qc_seed(db)
         data = customer_detail(db, code)
         if data is None:
             raise HTTPException(status_code=404, detail="客户不存在")

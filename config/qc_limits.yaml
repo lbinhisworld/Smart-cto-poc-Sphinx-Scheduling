@@ -1,0 +1,28 @@
+# M9 品控：检测合格线与异常 SLA（BR-QC-05 / BR-QC-08）
+period_anchor: sampling_date  # sampling_date | experiment_date
+
+swab_test:
+  logic: any
+  total_plate_count_cfu_ml:
+    max: "100"
+  coliform_cfu_ml:
+    max: "10"
+
+product_test:
+  logic: any
+  moisture_pct:
+    max: "8.5"
+  coliform_cfu_g:
+    max: "10"
+  total_plate_count_cfu_g:
+    max: "10000"
+
+qualitative:
+  pass_tokens:
+    - "<10"
+    - "未检出"
+    - "ND"
+  fail_tokens: []
+
+exception_sla_days: 7
+complaint_action_sla_days: 14

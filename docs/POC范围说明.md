@@ -22,6 +22,17 @@
 | 8 | M8 插单 | `/schedule` | 四策略试排与应用 |
 | 9 | M0 验收 | `/cockpit` · `/demo` | G1–G5、BR-27 交期锚、范围说明 |
 | — | M1b 生产成本 | `/modules/production/time-report` · `/modules/hr/labor-cost` | 班组长组×日报工、标准人时单价、部门-组计划 vs 实际（**非薪酬发薪**） |
+| 10 | M9 品控台账 | `/qc/*` | 8 类 Excel 对齐台账、来料/异常闭环、金蝶原辅料主数据 Mock、检测合格线配置、多图附件 |
+
+## M9 品控台账（POC）
+
+- **来料 / 异常**：分表；异常必须关联来料单；状态 `OPEN`→`IN_PROGRESS`→`PENDING_VERIFY`→`CLOSED`（**BR-QC-01**）
+- **主数据**：`md_supplier`、`md_raw_material` 与金蝶编码 1:1（Mock：`seed/kingdee_master_mock.json`）
+- **检测**：涂抹/产品检测按 `config/qc_limits.yaml` 自动判定（**BR-QC-05**），不合格不阻断排程
+- **附件**：`qc_attachment` 多图（**BR-QC-07**）
+- **待办**：异常 SLA、客诉整改超期（**BR-QC-08**）
+- **不做**：金蝶真实 HTTP、检测阻断排产、写回 `so_order.due_date`
+- 详见 [`docs/M9-品控台账设计.md`](M9-品控台账设计.md)
 
 ## M1b 生产成本（POC）
 

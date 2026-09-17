@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from db.contract_queries import customer_payment_summary, list_contracts
+from db.qc_ledgers import list_complaints_for_customer
 from db.sample_workflow import sample_detail
 from db.tables import CrmCustomerRow, CrmOpportunityRow, CrmQuoteRow, CrmSampleRow, SoOrderRow
 
@@ -108,6 +109,7 @@ def customer_detail(session: Session, code: str) -> dict | None:
         ],
         "contracts": list_contracts(session, customer_code=code),
         "payment_summary": customer_payment_summary(session, code),
+        "complaints": list_complaints_for_customer(session, code),
     }
 
 

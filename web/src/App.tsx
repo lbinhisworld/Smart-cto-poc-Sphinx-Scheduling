@@ -15,6 +15,17 @@ import { DemoConsolePage, TodoCenterPage } from "./modules/demo/DemoPages";
 import { HrAttendancePage, HrRosterPage } from "./modules/hr/HrPages";
 import { HrLaborCostPage, ProductionTimeReportPage } from "./modules/labor/LaborPages";
 import { OrderChangesPage } from "./modules/flow/OrderChangesPage";
+import {
+  QcAuditsPage,
+  QcComplaintsPage,
+  QcDailyDefectsPage,
+  QcExceptionsPage,
+  QcLabExternalPage,
+  QcMasterPage,
+  QcProductTestsPage,
+  QcReceiptsPage,
+  QcSwabTestsPage,
+} from "./modules/qc/QcPages";
 import { PortalPage } from "./pages/PortalPage";
 import { StockCenterPage } from "./pages/StockCenterPage";
 import { AuthProvider, RequireAuth } from "./shell/auth";
@@ -61,6 +72,16 @@ export default function App() {
             <Route path="/schedule" element={<ScheduleWorkspace />} />
             <Route path="/stock" element={<StockCenterPage planAllocations={[]} />} />
             <Route path="/bom" element={<BomExplorerPage />} />
+            <Route path="/qc/receipts" element={<QcReceiptsPage />} />
+            <Route path="/qc/exceptions" element={<QcExceptionsPage />} />
+            <Route path="/qc/daily-defects" element={<QcDailyDefectsPage />} />
+            <Route path="/qc/complaints" element={<QcComplaintsPage />} />
+            <Route path="/qc/audits" element={<QcAuditsPage />} />
+            <Route path="/qc/lab-external" element={<QcLabExternalPage />} />
+            <Route path="/qc/swab-tests" element={<QcSwabTestsPage />} />
+            <Route path="/qc/product-tests" element={<QcProductTestsPage />} />
+            <Route path="/qc/master" element={<QcMasterPage />} />
+            <Route path="/qc" element={<Navigate to="/qc/receipts" replace />} />
             <Route path="/" element={<Navigate to="/portal" replace />} />
           </Route>
         </Routes>

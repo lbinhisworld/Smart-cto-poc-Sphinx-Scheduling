@@ -1,2 +1,7 @@
 # 外部系统集成（POC 占位）
 stock_provider: local  # local | erp_mock | erp_http
+
+kingdee:
+  mode: mock
+  sync_suppliers: true
+  sync_raw_materials: true

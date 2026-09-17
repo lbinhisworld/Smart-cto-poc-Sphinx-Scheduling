@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-RoleCode = Literal["GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR", "TEAM_LEADER"]
+RoleCode = Literal["GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR", "TEAM_LEADER", "QC"]
 
 
 @dataclass(frozen=True)
@@ -25,7 +25,10 @@ DEMO_USERS: tuple[DemoUser, ...] = (
     DemoUser("FIN", "财务总监", "李财务", "/portal"),
     DemoUser("HR", "人事", "周人事", "/portal"),
     DemoUser("TEAM_LEADER", "班组长", "王强", "/modules/production/time-report"),
+    DemoUser("QC", "品控专员", "赵品控", "/qc/receipts"),
 )
+
+_ALL_PORTAL = frozenset({"GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR", "QC"})
 
 
 @dataclass(frozen=True)
@@ -38,8 +41,8 @@ class MenuItem:
 
 
 MENU: tuple[MenuItem, ...] = (
-    MenuItem("portal", "首页", "/portal", frozenset({"GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR"}), "M0"),
-    MenuItem("todos", "待办中心", "/todos", frozenset({"GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR"}), "M0"),
+    MenuItem("portal", "首页", "/portal", _ALL_PORTAL, "M0"),
+    MenuItem("todos", "待办中心", "/todos", _ALL_PORTAL, "M0"),
     MenuItem("demo", "演示控制台", "/demo", frozenset({"GM", "SALES_MGR", "PMC"}), "M0"),
     MenuItem("cockpit", "管理驾驶舱", "/cockpit", frozenset({"GM", "FIN"}), "M0"),
     MenuItem("crm_customers", "客户档案", "/crm/customers", frozenset({"GM", "SALES_MGR", "SALES"}), "M2"),
@@ -60,6 +63,15 @@ MENU: tuple[MenuItem, ...] = (
     MenuItem("production", "生产运营", "/modules/production", frozenset({"GM", "PMC"}), "M5"),
     MenuItem("finance", "财务摘要", "/modules/finance", frozenset({"GM", "FIN"}), "M6"),
     MenuItem("project", "项目交付", "/modules/project", frozenset({"GM"}), "M7"),
+    MenuItem("qc_receipts", "原辅料来料", "/qc/receipts", frozenset({"GM", "QC", "WH"}), "M9"),
+    MenuItem("qc_exceptions", "原辅料异常", "/qc/exceptions", frozenset({"GM", "QC", "WH"}), "M9"),
+    MenuItem("qc_daily_defects", "每日异常", "/qc/daily-defects", frozenset({"GM", "QC", "PMC"}), "M9"),
+    MenuItem("qc_complaints", "客诉登记", "/qc/complaints", frozenset({"GM", "QC", "SALES", "SALES_MGR"}), "M9"),
+    MenuItem("qc_audits", "二方三方审核", "/qc/audits", frozenset({"GM", "QC"}), "M9"),
+    MenuItem("qc_lab_external", "外来测试", "/qc/lab-external", frozenset({"GM", "QC"}), "M9"),
+    MenuItem("qc_swab_tests", "涂抹检测", "/qc/swab-tests", frozenset({"GM", "QC"}), "M9"),
+    MenuItem("qc_product_tests", "产品检测", "/qc/product-tests", frozenset({"GM", "QC"}), "M9"),
+    MenuItem("qc_master", "品控主数据", "/qc/master", frozenset({"GM", "QC", "WH"}), "M9"),
 )
 
 

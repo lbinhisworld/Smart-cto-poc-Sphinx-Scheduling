@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { requestWithRole } from "../../api/client";
 import { useAuth } from "../../shell/auth";
 import { ContractDetailPanel, CreateContractPanel } from "./ContractPanels";
@@ -46,6 +47,7 @@ function stackTitle(top: Crm360StackEntry | undefined): string {
 export function Customer360Drawer({ customerCode, onClose }: Props) {
   const auth = useAuth();
   const role = auth.role;
+  const navigate = useNavigate();
   const [stack, setStack] = useState<Crm360StackEntry[]>([]);
   const [customerData, setCustomerData] = useState<Customer360Data | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -106,6 +108,10 @@ export function Customer360Drawer({ customerCode, onClose }: Props) {
               onNewContract={() =>
                 setStack((s) => [...s, { kind: "contract-new", customerCode: customerCode! }])
               }
+              onOpenComplaint={(id) => {
+                onClose();
+                navigate(`/qc/complaints?customer_code=${encodeURIComponent(customerCode!)}&id=${id}`);
+              }}
             />
           )}
           {top?.kind === "customer" && !customerData && !err && (

@@ -19,6 +19,14 @@ def test_customer_360_has_histories():
     assert isinstance(data["samples"], list)
     assert isinstance(data["opportunities"], list)
     assert isinstance(data["orders"], list)
+    assert isinstance(data.get("complaints"), list)
+
+
+def test_customer_360_complaints_linked_to_c001():
+    client.post("/api/demo/ensure-crm-seed")
+    r = client.get("/api/crm/customers/C-001", headers=HDR)
+    complaints = r.json()["data"].get("complaints") or []
+    assert any(c.get("customer_code") == "C-001" for c in complaints)
 
 
 def test_opportunity_detail():

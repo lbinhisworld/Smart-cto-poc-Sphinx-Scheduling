@@ -19,6 +19,13 @@ type CockpitSnapshot = {
     top_products?: { item_code: string; cost_planned: number; hours_man_planned: number }[];
     note?: string;
   };
+  qc?: {
+    receipts_mtd?: number;
+    exceptions_open?: number;
+    complaints_open?: number;
+    swab_fail_mtd?: number;
+    product_fail_mtd?: number;
+  };
   legacy_excel_sheets?: number;
   note?: string;
 };
@@ -105,6 +112,7 @@ export function CockpitPage() {
   const crm = snap?.crm ?? {};
   const prod = snap?.production ?? {};
   const labor = snap?.labor_cost ?? {};
+  const qc = snap?.qc ?? {};
 
   return (
     <div className="px-6 py-4">
@@ -166,6 +174,21 @@ export function CockpitPage() {
               hint={prod.plan_version === 0 ? "尚未发布倒排计划" : undefined}
             />
             <StatCard label="已发布工单" value={prod.wo_count ?? "—"} />
+            <StatCard
+              label="当月来料批次数"
+              value={qc.receipts_mtd ?? "—"}
+              to="/qc/receipts"
+            />
+            <StatCard
+              label="开放来料异常"
+              value={qc.exceptions_open ?? "—"}
+              to="/qc/exceptions"
+            />
+            <StatCard
+              label="开放客诉"
+              value={qc.complaints_open ?? "—"}
+              to="/qc/complaints"
+            />
             <StatCard
               label="计划人工成本"
               value={

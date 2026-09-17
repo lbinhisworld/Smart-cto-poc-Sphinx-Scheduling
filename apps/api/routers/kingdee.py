@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from db.demo_crm_seed import ensure_demo_crm
+from db.master_data_kingdee import sync_raw_materials_from_mock, sync_suppliers_from_mock
 from db.tables import KingdeeSyncLogRow
 from integrations.kingdee_adapter import MockKingdeeAdapter, PushOrderPayload
 from shared.auth import user_for_role
@@ -121,4 +122,32 @@ def register_kingdee(app, get_db):
                 "order_no": log.doc_no,
                 "status": log.status,
             },
+        }
+
+    @app.post("/api/kingdee/sync-suppliers")
+    def sync_suppliers(
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        _role(x_demo_role)
+        log = sync_suppliers_from_mock(db)
+        db.flush()
+        return {
+            "code": 0 if log.status == "SUCCESS" else 409,
+            "message": log.message,
+            "data": {"log_id": log.id, "status": log.status},
+        }
+
+    @app.post("/api/kingdee/sync-raw-materials")
+    def sync_raw_materials(
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        _role(x_demo_role)
+        log = sync_raw_materials_from_mock(db)
+        db.flush()
+        return {
+            "code": 0 if log.status == "SUCCESS" else 409,
+            "message": log.message,
+            "data": {"log_id": log.id, "status": log.status},
         }

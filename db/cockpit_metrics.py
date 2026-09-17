@@ -5,8 +5,12 @@ from __future__ import annotations
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from datetime import date
+
 from db.plan_store import current_plan_version
 from db.product_labor_cost import planned_labor_cost_by_product
+from db.qc_metrics import qc_summary
+from db.qc_seed import ensure_qc_seed
 from db.tables import CrmOpportunityRow, CrmSampleRow, SoOrderRow, WoRow
 
 
@@ -46,10 +50,14 @@ def cockpit_snapshot(session: Session, *, today_iso: str = "2026-09-15") -> dict
         labor_totals = lp.get("totals") or labor_totals
         labor_products = (lp.get("products") or [])[:5]
 
+    ensure_qc_seed(session)
+    qc = qc_summary(session, today=date.fromisoformat(today_iso))
+
     return {
         "today": today_iso,
         "orders": {"total": order_total, "pending": pending, "in_scheduling": in_sched, "near_due_7d": near_due},
         "crm": {"opportunities": opp_total, "active_samples": sample_active},
+        "qc": qc,
         "production": {"plan_version": ver, "wo_count": wo_released},
         "labor_cost": {
             "plan_version": ver,

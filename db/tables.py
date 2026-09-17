@@ -492,3 +492,235 @@ class PendingRollRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     resolved_by: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
+# --- M9 品控台账 ---
+
+
+class MdSupplierRow(Base):
+    __tablename__ = "md_supplier"
+    supplier_code: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String)
+    name_alias: Mapped[str] = mapped_column(String, default="")
+    status: Mapped[str] = mapped_column(String, default="ACTIVE")
+    kingdee_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    source: Mapped[str] = mapped_column(String, default="KINGDEE")
+
+
+class MdRawMaterialRow(Base):
+    __tablename__ = "md_raw_material"
+    material_code: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String)
+    spec: Mapped[str] = mapped_column(String, default="")
+    default_uom: Mapped[str] = mapped_column(String, default="KG")
+    attr_default: Mapped[str] = mapped_column(String, default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    kingdee_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    source: Mapped[str] = mapped_column(String, default="KINGDEE")
+
+
+class QcAttachmentRow(Base):
+    __tablename__ = "qc_attachment"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    entity_type: Mapped[str] = mapped_column(String, index=True)
+    entity_id: Mapped[int] = mapped_column(Integer, index=True)
+    sort_no: Mapped[int] = mapped_column(Integer, default=0)
+    file_name: Mapped[str] = mapped_column(String, default="")
+    mime_type: Mapped[str] = mapped_column(String, default="image/png")
+    storage_kind: Mapped[str] = mapped_column(String, default="INLINE_B64")
+    storage_ref: Mapped[str] = mapped_column(Text, default="")
+    caption: Mapped[str] = mapped_column(String, default="")
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime)
+    uploaded_by: Mapped[str] = mapped_column(String, default="")
+
+
+class QcMaterialReceiptRow(Base):
+    __tablename__ = "qc_material_receipt"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    receipt_no: Mapped[str] = mapped_column(String, unique=True, index=True)
+    incoming_date: Mapped[date] = mapped_column(Date, index=True)
+    month_key: Mapped[str] = mapped_column(String, index=True)
+    material_code: Mapped[str] = mapped_column(String, index=True)
+    material_name: Mapped[str] = mapped_column(String)
+    spec: Mapped[str] = mapped_column(String, default="")
+    attr: Mapped[str] = mapped_column(String, default="")
+    batch_no: Mapped[str] = mapped_column(String, default="")
+    shelf_life_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    shelf_life_text: Mapped[str] = mapped_column(String, default="")
+    supplier_code: Mapped[str] = mapped_column(String, index=True)
+    supplier_name: Mapped[str] = mapped_column(String)
+    qty: Mapped[str] = mapped_column(Numeric(18, 4))
+    uom: Mapped[str] = mapped_column(String)
+    remark: Mapped[str] = mapped_column(Text, default="")
+    kingdee_doc_no: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class QcMaterialExceptionRow(Base):
+    __tablename__ = "qc_material_exception"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    exception_no: Mapped[str] = mapped_column(String, unique=True, index=True)
+    receipt_id: Mapped[int] = mapped_column(Integer, index=True)
+    discovered_at: Mapped[date] = mapped_column(Date, index=True)
+    month_key: Mapped[str] = mapped_column(String, index=True)
+    phenomenon: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String, default="OPEN", index=True)
+    handler: Mapped[str] = mapped_column(String, default="")
+    handler_dept: Mapped[str] = mapped_column(String, default="")
+    disposition: Mapped[str] = mapped_column(String, default="")
+    disposition_detail: Mapped[str] = mapped_column(Text, default="")
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closed_by: Mapped[str] = mapped_column(String, default="")
+    close_result: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class QcExceptionEventRow(Base):
+    __tablename__ = "qc_exception_event"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    exception_id: Mapped[int] = mapped_column(Integer, index=True)
+    from_status: Mapped[str] = mapped_column(String)
+    to_status: Mapped[str] = mapped_column(String)
+    action: Mapped[str] = mapped_column(String)
+    actor: Mapped[str] = mapped_column(String, default="")
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class QcDailyDefectRow(Base):
+    __tablename__ = "qc_daily_defect"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    month_key: Mapped[str] = mapped_column(String, index=True)
+    record_date: Mapped[date] = mapped_column(Date, index=True)
+    week_no: Mapped[int] = mapped_column(Integer)
+    dept_found: Mapped[str] = mapped_column(String)
+    shift: Mapped[str] = mapped_column(String, default="")
+    item_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    model_no: Mapped[str] = mapped_column(String, default="")
+    product_name: Mapped[str] = mapped_column(String)
+    production_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    defect_qty: Mapped[int] = mapped_column(Integer, default=0)
+    defect_category: Mapped[str] = mapped_column(String, default="")
+    defect_specific: Mapped[str] = mapped_column(String, default="")
+    defect_detail: Mapped[str] = mapped_column(Text, default="")
+    handling_result: Mapped[str] = mapped_column(Text, default="")
+    dept_responsible: Mapped[str] = mapped_column(String, default="")
+    case_no: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class QcCustomerComplaintRow(Base):
+    __tablename__ = "qc_customer_complaint"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    month_key: Mapped[str] = mapped_column(String, index=True)
+    record_date: Mapped[date] = mapped_column(Date, index=True)
+    customer_code: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    customer_name: Mapped[str] = mapped_column(String)
+    customer_project: Mapped[str] = mapped_column(String, default="")
+    item_code: Mapped[str] = mapped_column(String, index=True)
+    product_name: Mapped[str] = mapped_column(String)
+    production_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    content: Mapped[str] = mapped_column(Text)
+    category: Mapped[str] = mapped_column(String, default="")
+    category_detail: Mapped[str] = mapped_column(String, default="")
+    sample_sent_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    sample_result: Mapped[str] = mapped_column(Text, default="")
+    root_cause: Mapped[str] = mapped_column(Text, default="")
+    corrective_action: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String, default="OPEN", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class QcExternalAuditRow(Base):
+    __tablename__ = "qc_external_audit"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    audit_date: Mapped[date] = mapped_column(Date, index=True)
+    category: Mapped[str] = mapped_column(String)
+    audit_type: Mapped[str] = mapped_column(String)
+    nc_count: Mapped[int] = mapped_column(Integer, default=0)
+    audit_result: Mapped[str] = mapped_column(String)
+    auditors: Mapped[str] = mapped_column(String)
+    rectify_reply_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    remark: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class QcLabExternalRequestRow(Base):
+    __tablename__ = "qc_lab_external_request"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    month_key: Mapped[str] = mapped_column(String, index=True)
+    accepted_date: Mapped[date] = mapped_column(Date, index=True)
+    customer_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    customer_name: Mapped[str] = mapped_column(String)
+    product_name: Mapped[str] = mapped_column(String)
+    test_purpose: Mapped[str] = mapped_column(String, default="")
+    test_items: Mapped[str] = mapped_column(Text, default="")
+    request_dept: Mapped[str] = mapped_column(String, default="")
+    report_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    remark: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class QcSwabPointRow(Base):
+    __tablename__ = "qc_swab_point"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    point_code: Mapped[str] = mapped_column(String, index=True)
+    point_name: Mapped[str] = mapped_column(String)
+    detail_name: Mapped[str] = mapped_column(String)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class QcSwabTestRow(Base):
+    __tablename__ = "qc_swab_test"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    point_id: Mapped[int] = mapped_column(Integer, index=True)
+    month_key: Mapped[str] = mapped_column(String, index=True)
+    experiment_date: Mapped[date] = mapped_column(Date, index=True)
+    weekday: Mapped[str] = mapped_column(String, default="")
+    week_no: Mapped[int] = mapped_column(Integer)
+    sampling_date: Mapped[date] = mapped_column(Date, index=True)
+    tpc_cfu_ml: Mapped[str] = mapped_column(String, default="")
+    tpc_cfu_ml_raw: Mapped[str] = mapped_column(String, default="")
+    coliform_cfu_ml: Mapped[str] = mapped_column(String, default="")
+    coliform_cfu_ml_raw: Mapped[str] = mapped_column(String, default="")
+    verdict_computed: Mapped[str] = mapped_column(String, default="MANUAL")
+    verdict_final: Mapped[str | None] = mapped_column(String, nullable=True)
+    override_reason: Mapped[str] = mapped_column(Text, default="")
+    fail_reason: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class QcProductTestRow(Base):
+    __tablename__ = "qc_product_test"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    month_key: Mapped[str] = mapped_column(String, index=True)
+    experiment_date: Mapped[date] = mapped_column(Date, index=True)
+    weekday: Mapped[str] = mapped_column(String, default="")
+    week_no: Mapped[int] = mapped_column(Integer)
+    customer_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    customer_name: Mapped[str] = mapped_column(String, default="")
+    product_name: Mapped[str] = mapped_column(String)
+    item_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    sampling_date: Mapped[date] = mapped_column(Date, index=True)
+    moisture_pct: Mapped[str] = mapped_column(String, default="")
+    moisture_pct_raw: Mapped[str] = mapped_column(String, default="")
+    coliform_cfu_g: Mapped[str] = mapped_column(String, default="")
+    coliform_cfu_g_raw: Mapped[str] = mapped_column(String, default="")
+    tpc_cfu_g: Mapped[str] = mapped_column(String, default="")
+    tpc_cfu_g_raw: Mapped[str] = mapped_column(String, default="")
+    verdict_computed: Mapped[str] = mapped_column(String, default="MANUAL")
+    verdict_final: Mapped[str | None] = mapped_column(String, nullable=True)
+    override_reason: Mapped[str] = mapped_column(Text, default="")
+    fail_reason: Mapped[str] = mapped_column(Text, default="")
+    remark: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String, default="")

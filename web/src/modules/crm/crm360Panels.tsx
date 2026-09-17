@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { requestWithRole } from "../../api/client";
 import {
   renderDate,
@@ -54,6 +55,16 @@ export type Customer360Data = {
     pending_total: number;
   }[];
   payment_summary: { received: number; pending: number; contract_total: number };
+  complaints?: {
+    id: number;
+    record_date: string;
+    item_code: string;
+    product_name: string;
+    category: string;
+    status: string;
+    content: string;
+    corrective_action: string;
+  }[];
 };
 
 export function Customer360Panel({
@@ -63,6 +74,7 @@ export function Customer360Panel({
   onOpenOrder,
   onOpenContract,
   onNewContract,
+  onOpenComplaint,
 }: {
   data: Customer360Data;
   onOpenSample: (code: string) => void;
@@ -70,6 +82,7 @@ export function Customer360Panel({
   onOpenOrder: (orderNo: string) => void;
   onOpenContract: (contractNo: string) => void;
   onNewContract: () => void;
+  onOpenComplaint?: (id: number) => void;
 }) {
   const c = data.customer;
   const pay = data.payment_summary;
@@ -114,6 +127,38 @@ export function Customer360Panel({
           新建合同
         </button>
       </div>
+      <SubTable
+        title="客诉登记"
+        empty="暂无客诉"
+        headers={["日期", "产品编码", "分类", "状态", "内容"]}
+        hasData={(data.complaints ?? []).length > 0}
+        action={
+          <Link
+            to={`/qc/complaints?customer_code=${encodeURIComponent(c.code)}`}
+            className="text-[10px] text-[var(--accent)] hover:underline"
+          >
+            品控台账 →
+          </Link>
+        }
+      >
+        {(data.complaints ?? []).map((cp) => (
+          <tr
+            key={cp.id}
+            className="cursor-pointer border-t hover:bg-[var(--table-hover)]"
+            style={{ borderColor: "var(--line)" }}
+            onClick={() => onOpenComplaint?.(cp.id)}
+          >
+            <td className="px-2 py-1.5 tabular-nums">{renderDate(cp.record_date)}</td>
+            <td className="py-1.5 font-mono">{cp.item_code}</td>
+            <td className="py-1.5">{cp.category || "—"}</td>
+            <td className="py-1.5">{renderStatusTag(cp.status)}</td>
+            <td className="max-w-[12rem] truncate py-1.5" title={cp.content}>
+              {cp.content}
+            </td>
+          </tr>
+        ))}
+      </SubTable>
+
       <SubTable
         title="历史合同"
         empty="暂无合同"
@@ -210,16 +255,21 @@ function SubTable({
   headers,
   children,
   hasData,
+  action,
 }: {
   title: string;
   empty: string;
   headers: string[];
   children: ReactNode;
   hasData: boolean;
+  action?: ReactNode;
 }) {
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{title}</h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{title}</h3>
+        {action}
+      </div>
       <div className="mt-1 overflow-x-auto rounded border" style={{ borderColor: "var(--line)" }}>
         <table className="w-full text-xs">
           <thead className="bg-[var(--table-head)] text-[var(--text-muted)]">

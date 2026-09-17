@@ -5,7 +5,7 @@ export type MenuItem = { key: string; label: string; path: string; module: strin
 /** 首页 / 侧栏：待办、演示控制台为一级直达（不进五类） */
 export const NAV_TOP_LEVEL_KEYS = ["todos", "demo"] as const;
 
-/** 五类业务域 → 菜单 key（与 MENU 对齐） */
+/** 业务域 → 菜单 key（与 MENU 对齐） */
 export const NAV_CATEGORY_DEFS: { id: string; label: string; itemKeys: string[] }[] = [
   { id: "mgmt", label: "管理", itemKeys: ["cockpit", "project"] },
   {
@@ -29,6 +29,21 @@ export const NAV_CATEGORY_DEFS: { id: string; label: string; itemKeys: string[] 
     itemKeys: ["schedule", "stock", "bom", "production", "labor_time_report"],
   },
   { id: "finance", label: "财务", itemKeys: ["finance"] },
+  {
+    id: "qc",
+    label: "品控",
+    itemKeys: [
+      "qc_receipts",
+      "qc_exceptions",
+      "qc_daily_defects",
+      "qc_complaints",
+      "qc_audits",
+      "qc_lab_external",
+      "qc_swab_tests",
+      "qc_product_tests",
+      "qc_master",
+    ],
+  },
 ];
 
 export type GroupedNav = {
@@ -65,7 +80,7 @@ export const MENU_SHORT_DESC: Record<string, string> = {
   ctp: "交期试算 · 品项数量产能池",
   changes: "影响清单 · PMC 审批",
   orders: "多视图 · 字段权限",
-  kingdee: "Mock Push 进单",
+  kingdee: "Mock Push 进单 · 主数据同步",
   hr_roster: "员工档案 · 续签状态提醒",
   hr_attendance: "考勤机同步明细",
   hr_labor_cost: "计划 vs 实际 · 部门-组",
@@ -77,6 +92,15 @@ export const MENU_SHORT_DESC: Record<string, string> = {
   finance: "毛利预警 · 成本锁定",
   todos: "变更 · 排程池 · 打样/企微",
   demo: "九幕剧本 · 验收口径",
+  qc_receipts: "原辅料来料 · 编码主数据",
+  qc_exceptions: "来料异常闭环",
+  qc_daily_defects: "生产每日异常",
+  qc_complaints: "客诉登记 · 整改跟踪",
+  qc_audits: "二方/三方审核",
+  qc_lab_external: "实验室外来测试",
+  qc_swab_tests: "涂抹检测 · 合格线",
+  qc_product_tests: "产品检测 · 合格线",
+  qc_master: "供应商/原辅料 · 金蝶同步",
 };
 
 /** 与 packages/shared/auth.py MENU 对齐；API 失败时兜底 */
@@ -103,6 +127,29 @@ const MENU: MenuItem[] = [
   { key: "labor_time_report", label: "组×日报工", path: "/modules/production/time-report", module: "M5" },
   { key: "finance", label: "财务摘要", path: "/modules/finance", module: "M6" },
   { key: "project", label: "项目交付", path: "/modules/project", module: "M7" },
+  { key: "qc_receipts", label: "原辅料来料", path: "/qc/receipts", module: "M9" },
+  { key: "qc_exceptions", label: "原辅料异常", path: "/qc/exceptions", module: "M9" },
+  { key: "qc_daily_defects", label: "每日异常", path: "/qc/daily-defects", module: "M9" },
+  { key: "qc_complaints", label: "客诉登记", path: "/qc/complaints", module: "M9" },
+  { key: "qc_audits", label: "二方三方审核", path: "/qc/audits", module: "M9" },
+  { key: "qc_lab_external", label: "外来测试", path: "/qc/lab-external", module: "M9" },
+  { key: "qc_swab_tests", label: "涂抹检测", path: "/qc/swab-tests", module: "M9" },
+  { key: "qc_product_tests", label: "产品检测", path: "/qc/product-tests", module: "M9" },
+  { key: "qc_master", label: "品控主数据", path: "/qc/master", module: "M9" },
+];
+
+const QC_KEYS = [
+  "portal",
+  "todos",
+  "qc_receipts",
+  "qc_exceptions",
+  "qc_daily_defects",
+  "qc_complaints",
+  "qc_audits",
+  "qc_lab_external",
+  "qc_swab_tests",
+  "qc_product_tests",
+  "qc_master",
 ];
 
 const ROLE_MENU_KEYS: Record<RoleCode, string[]> = {
@@ -118,6 +165,7 @@ const ROLE_MENU_KEYS: Record<RoleCode, string[]> = {
     "ctp",
     "changes",
     "orders",
+    "qc_complaints",
   ],
   SALES: [
     "portal",
@@ -128,6 +176,7 @@ const ROLE_MENU_KEYS: Record<RoleCode, string[]> = {
     "ctp",
     "changes",
     "orders",
+    "qc_complaints",
   ],
   PMC: [
     "portal",
@@ -142,11 +191,13 @@ const ROLE_MENU_KEYS: Record<RoleCode, string[]> = {
     "production",
     "labor_time_report",
     "hr_labor_cost",
+    "qc_daily_defects",
   ],
-  WH: ["portal", "todos", "orders", "kingdee", "stock"],
+  WH: ["portal", "todos", "orders", "kingdee", "stock", "qc_receipts", "qc_exceptions", "qc_master"],
   FIN: ["portal", "todos", "cockpit", "orders", "finance", "hr_labor_cost"],
   HR: ["portal", "todos", "hr_roster", "hr_attendance", "hr_labor_cost"],
   TEAM_LEADER: ["portal", "todos", "labor_time_report", "schedule"],
+  QC: QC_KEYS,
 };
 
 export function fallbackMenuForRole(role: RoleCode): MenuItem[] {

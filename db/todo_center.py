@@ -13,6 +13,10 @@ from db.demo_crm_seed import ensure_demo_crm
 from db.hr_queries import list_contract_reminders
 from db.hr_seed import ensure_hr_seed
 from db.due_negotiate import pending_pmc_apply, pending_sales_todos
+from db.qc_limits_loader import load_qc_limits
+from db.qc_material import list_open_exceptions_past_sla
+from db.qc_ledgers import list_complaints_need_action
+from db.qc_seed import ensure_qc_seed
 from db.qty_carryover import STATUS_PENDING, list_pending_rolls
 from db.tables import CrmSampleRow, OrderChangeRequestRow, SoOrderRow, WecomMessageRow
 
@@ -151,6 +155,38 @@ def list_todos(session: Session, *, role: str, today: date) -> list[dict]:
                     "detail": item["detail"],
                     "path": f"/crm/customers/{item['customer_code']}",
                     "priority": "high",
+                }
+            )
+
+    if role in ("QC", "GM", "WH"):
+        ensure_qc_seed(session)
+        limits = load_qc_limits()
+        sla = int(limits.get("exception_sla_days") or 7)
+        for ex in list_open_exceptions_past_sla(session, today=today, sla_days=sla):
+            todos.append(
+                {
+                    "id": f"qc-exc-{ex['id']}",
+                    "kind": "QC_EXCEPTION_SLA",
+                    "title": f"来料异常待闭环 · {ex['exception_no']}",
+                    "detail": (ex.get("phenomenon") or "")[:80],
+                    "path": "/qc/exceptions",
+                    "priority": "high",
+                }
+            )
+
+    if role in ("QC", "GM", "SALES", "SALES_MGR"):
+        ensure_qc_seed(session)
+        limits = load_qc_limits()
+        csla = int(limits.get("complaint_action_sla_days") or 14)
+        for c in list_complaints_need_action(session, today=today, sla_days=csla):
+            todos.append(
+                {
+                    "id": f"qc-complaint-{c['id']}",
+                    "kind": "QC_COMPLAINT",
+                    "title": f"客诉待整改 · {c['customer_name']}",
+                    "detail": (c.get("content") or "")[:80],
+                    "path": "/qc/complaints",
+                    "priority": "medium",
                 }
             )
 
