@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { requestWithRole } from "../../api/client";
 import { formatQtyUnit, formatUnit } from "../../utils/uomDisplay";
-import { renderMoney, renderDate, renderProgress, renderStatusTag } from "../../ui/cellRenderers";
+import { renderMoney, renderDate, renderProgress, renderSchedulePhaseTag, renderStatusTag } from "../../ui/cellRenderers";
 import { useAuth } from "../../shell/auth";
 
 type OrderLine = {
@@ -38,21 +38,29 @@ type Props = {
   orderNo: string | null;
   onClose: () => void;
   onChanged?: () => void;
+  initialTab?: "detail" | "breakdown" | "due";
 };
 
-export function OrderDetailDrawer({ orderNo, onClose, onChanged }: Props) {
+export function OrderDetailDrawer({ orderNo, onClose, onChanged, initialTab = "detail" }: Props) {
   const auth = useAuth();
   const navigate = useNavigate();
   const role = auth.role;
   const [data, setData] = useState<Breakdown | null>(null);
-  const [tab, setTab] = useState<"detail" | "breakdown">("detail");
+  const [tab, setTab] = useState<"detail" | "breakdown" | "due">("detail");
+  const [dueEvents, setDueEvents] = useState<
+    { id: number; event_type: string; actor_role: string; payload: Record<string, string>; created_at: string | null }[]
+  >([]);
+  const [openNeg, setOpenNeg] = useState<
+    { id: number; status: string; suggested_due: string | null; sales_proposed_due: string | null; brief_text: string }[]
+  >([]);
+  const [proposedDue, setProposedDue] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     if (!orderNo || !role) return;
     setData(null);
-    setTab("detail");
+    setTab(initialTab);
     setErr(null);
     requestWithRole<Breakdown>(
       `/api/mis/orders/${encodeURIComponent(orderNo)}/breakdown`,
@@ -60,7 +68,20 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged }: Props) {
     )
       .then(setData)
       .catch((e) => setErr(String(e)));
-  }, [orderNo, role]);
+    fetch(`/api/orders/${encodeURIComponent(orderNo)}/due-events`, { headers: auth.headers() })
+      .then((r) => r.json())
+      .then((j) => {
+        setDueEvents(j.data?.events ?? []);
+        const open = j.data?.open ?? [];
+        setOpenNeg(open);
+        const first = open[0];
+        if (first?.suggested_due) setProposedDue(first.suggested_due);
+      })
+      .catch(() => {
+        setDueEvents([]);
+        setOpenNeg([]);
+      });
+  }, [orderNo, role, auth]);
 
   if (!orderNo) return null;
 
@@ -133,6 +154,13 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged }: Props) {
           >
             算料 / 工单
           </button>
+          <button
+            type="button"
+            className={`rounded px-2 py-1 ${tab === "due" ? "bg-[var(--nav-active-bg)] text-[var(--accent)]" : ""}`}
+            onClick={() => setTab("due")}
+          >
+            交期动态
+          </button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 text-sm">
@@ -146,7 +174,9 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged }: Props) {
                   <dd>{renderDate(o.due_date)}</dd>
                   <dt className="text-[var(--text-muted)]">金额</dt>
                   <dd>{renderMoney(o.amount ?? null)}</dd>
-                  <dt className="text-[var(--text-muted)]">状态</dt>
+                  <dt className="text-[var(--text-muted)]">排程阶段</dt>
+                  <dd>{renderSchedulePhaseTag(o.schedule_phase)}</dd>
+                  <dt className="text-[var(--text-muted)]">订单状态</dt>
                   <dd>{o.order_status ? renderStatusTag(o.order_status) : "—"}</dd>
                   <dt className="text-[var(--text-muted)]">销售</dt>
                   <dd>{o.sales_name ?? "—"}</dd>
@@ -199,6 +229,30 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged }: Props) {
                 排程仍以订单头品项 {o?.item_code ?? "—"} 为锚；多行明细用于 MIS 采购视图演示。
               </p>
             </>
+          )}
+
+          {tab === "due" && (
+            <DueTimeline
+              events={dueEvents}
+              open={openNeg}
+              proposedDue={proposedDue}
+              setProposedDue={setProposedDue}
+              role={role}
+              orderNo={orderNo}
+              headers={auth.headers()}
+              onRefresh={() => {
+                fetch(`/api/orders/${encodeURIComponent(orderNo)}/due-events`, {
+                  headers: auth.headers(),
+                })
+                  .then((r) => r.json())
+                  .then((j) => {
+                    setDueEvents(j.data?.events ?? []);
+                    setOpenNeg(j.data?.open ?? []);
+                  });
+                onChanged?.();
+              }}
+              setErr={setErr}
+            />
           )}
 
           {tab === "breakdown" && data && (
@@ -262,6 +316,98 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged }: Props) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+const EVENT_LABEL: Record<string, string> = {
+  CONFLICT_FOUND: "发现冲突",
+  SALES_BRIEF_SENT: "已发销售口径",
+  SALES_REPLIED: "销售已回确认日",
+  DUE_APPLIED: "PMC 已改锚",
+  RESCHEDULED: "已再倒排",
+};
+
+function DueTimeline({
+  events,
+  open,
+  proposedDue,
+  setProposedDue,
+  role,
+  orderNo,
+  headers,
+  onRefresh,
+  setErr,
+}: {
+  events: { id: number; event_type: string; actor_role: string; payload: Record<string, string>; created_at: string | null }[];
+  open: { id: number; status: string; suggested_due: string | null; sales_proposed_due: string | null; brief_text: string }[];
+  proposedDue: string;
+  setProposedDue: (v: string) => void;
+  role: string | null;
+  orderNo: string;
+  headers: Record<string, string>;
+  onRefresh: () => void;
+  setErr: (v: string | null) => void;
+}) {
+  const pending = open.find((x) => x.status === "PENDING_SALES");
+  const canReply = role === "SALES" || role === "SALES_MGR" || role === "GM";
+  const send = async () => {
+    if (!pending) return;
+    setErr(null);
+    const r = await fetch(`/api/orders/${encodeURIComponent(orderNo)}/due-negotiate/reply`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ request_id: pending.id, proposed_due: proposedDue }),
+    });
+    const j = await r.json();
+    if (!r.ok || j.code !== 0) {
+      setErr(j.detail || j.message || "发送失败");
+      return;
+    }
+    onRefresh();
+  };
+  return (
+    <div className="space-y-3 text-xs">
+      <p className="text-[var(--text-muted)]">交期沟通账本（与企微模拟同一事件，销售发送不改交期）</p>
+      <ol className="space-y-2 border-l border-slate-700 pl-3">
+        {events.length === 0 && <li className="text-slate-500">尚无协商记录</li>}
+        {events.map((e) => (
+          <li key={e.id}>
+            <p className="font-medium text-slate-100">{EVENT_LABEL[e.event_type] ?? e.event_type}</p>
+            <p className="text-slate-400">
+              {e.actor_role}
+              {e.payload.suggested_due ? ` · 建议 ${e.payload.suggested_due}` : ""}
+              {e.payload.proposed_due ? ` · 确认 ${e.payload.proposed_due}` : ""}
+              {e.payload.new_due ? ` · ${e.payload.old_due} → ${e.payload.new_due}` : ""}
+            </p>
+            {e.payload.brief_text && (
+              <pre className="mt-1 whitespace-pre-wrap text-[10px] text-slate-500">{e.payload.brief_text}</pre>
+            )}
+          </li>
+        ))}
+      </ol>
+      {pending && canReply && (
+        <div className="rounded border border-amber-800/60 bg-amber-950/30 p-2">
+          <p className="font-medium text-amber-100">请回客户确认日</p>
+          <p className="mt-1 whitespace-pre-wrap text-[10px] text-slate-400">{pending.brief_text}</p>
+          <label className="mt-2 block text-[10px] text-slate-500">
+            客户确认日
+            <input
+              type="date"
+              className="mt-0.5 block rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs"
+              value={proposedDue}
+              onChange={(e) => setProposedDue(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="mt-2 rounded bg-amber-800 px-2 py-1 text-amber-50"
+            onClick={() => void send()}
+          >
+            发送给 PMC（不改交期）
+          </button>
+        </div>
+      )}
     </div>
   );
 }

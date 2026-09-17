@@ -59,6 +59,29 @@ def test_add_remove_scheduling_pool(api_client: TestClient):
     assert _phases(api_client)["SO-004"] == "PENDING"
 
 
+def _mis_rows(client: TestClient, view: str) -> list[dict]:
+    r = client.get(f"/api/mis/orders?view={view}", headers={"X-Demo-Role": "GM"})
+    assert r.status_code == 200, r.text
+    return r.json()["data"]["rows"]
+
+
+def test_add_to_pool_syncs_sales_order_list(api_client: TestClient):
+    """排程池与销售列表共用 schedule_phase；进池后不应再出现在待排程。"""
+    api_client.post(
+        "/api/orders/scheduling-pool",
+        json={"action": "add", "order_nos": ["SO-004"]},
+    )
+    all_rows = {r["order_no"]: r for r in _mis_rows(api_client, "all")}
+    assert all_rows["SO-004"]["schedule_phase"] == "IN_SCHEDULING"
+    assert all_rows["SO-004"]["order_status"] == "SCHEDULED"
+    assert "SO-004" not in {r["order_no"] for r in _mis_rows(api_client, "pending")}
+    assert "SO-004" in {r["order_no"] for r in _mis_rows(api_client, "in_scheduling")}
+    assert "SO-004" not in {r["order_no"] for r in _mis_rows(api_client, "pending_schedule")}
+    stats = api_client.get("/api/mis/orders?view=all", headers={"X-Demo-Role": "GM"}).json()["data"]["stats"]
+    assert stats["in_scheduling"] >= 1
+    assert stats["pending"] == stats["pending_schedule"]
+
+
 def test_publish_moves_pool_to_production(api_client: TestClient):
     pool = [
         no

@@ -344,6 +344,23 @@ class OrderChangeRequestRow(Base):
     impact_json: Mapped[str] = mapped_column(Text, default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    source: Mapped[str] = mapped_column(String, default="SALES_CHANGE")
+    suggested_due: Mapped[date | None] = mapped_column(Date, nullable=True)
+    sales_proposed_due: Mapped[date | None] = mapped_column(Date, nullable=True)
+    brief_text: Mapped[str] = mapped_column(Text, default="")
+    run_id: Mapped[str] = mapped_column(String, default="")
+
+
+class SoOrderDueEventRow(Base):
+    __tablename__ = "so_order_due_event"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    order_no: Mapped[str] = mapped_column(String, index=True)
+    event_type: Mapped[str] = mapped_column(String, index=True)
+    actor_role: Mapped[str] = mapped_column(String, default="")
+    payload_json: Mapped[str] = mapped_column(Text, default="{}")
+    run_id: Mapped[str] = mapped_column(String, default="")
+    change_request_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
 
 
 class WecomMessageRow(Base):

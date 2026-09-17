@@ -42,16 +42,11 @@ def list_mis_orders(
         rows = [r for r in rows if (r.schedule_phase or "PENDING") == "PENDING"]
     elif view == "in_scheduling":
         rows = [r for r in rows if (r.schedule_phase or "") == "IN_SCHEDULING"]
+    elif view == "in_production":
+        rows = [r for r in rows if (r.schedule_phase or "") == "IN_PRODUCTION"]
     elif view == "pending_schedule":
-        rows = [
-            r
-            for r in rows
-            if (r.schedule_phase or "PENDING") == "IN_SCHEDULING"
-            or (
-                r.order_status == "CONFIRMED"
-                and (r.schedule_phase or "PENDING") == "PENDING"
-            )
-        ]
+        # 与「待排程」同口径：尚未加入排程池。进池后只出现在排程中。
+        rows = [r for r in rows if (r.schedule_phase or "PENDING") == "PENDING"]
     elif view == "near_due":
         rows = [
             r
@@ -87,17 +82,15 @@ def list_mis_orders(
         for r in session.scalars(select(SoOrderRow)).all()
         if (r.order_status or "") != "CANCELLED"
     ]
+    pending_n = sum(1 for r in all_rows if (r.schedule_phase or "PENDING") == "PENDING")
+    in_sched_n = sum(1 for r in all_rows if (r.schedule_phase or "") == "IN_SCHEDULING")
+    in_prod_n = sum(1 for r in all_rows if (r.schedule_phase or "") == "IN_PRODUCTION")
     stats = {
         "total": len(all_rows),
-        "pending_schedule": sum(
-            1
-            for r in all_rows
-            if (r.schedule_phase or "") == "IN_SCHEDULING"
-            or (
-                r.order_status == "CONFIRMED"
-                and (r.schedule_phase or "PENDING") == "PENDING"
-            )
-        ),
+        "pending": pending_n,
+        "in_scheduling": in_sched_n,
+        "in_production": in_prod_n,
+        "pending_schedule": pending_n,
         "avg_kitting": (
             round(sum(r.kitting_rate_pct or 0 for r in all_rows) / len(all_rows))
             if all_rows

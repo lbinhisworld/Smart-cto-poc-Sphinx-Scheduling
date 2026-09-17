@@ -97,6 +97,70 @@ def on_order_change_approved(session: Session, *, order_no: str, new_due: str) -
     )
 
 
+def on_due_negotiate_ask(
+    session: Session,
+    *,
+    order_no: str,
+    request_id: int,
+    old_due: str,
+    suggested_due: str,
+    brief_text: str,
+) -> None:
+    emit_wecom_message(
+        session,
+        scene="S6",
+        title=f"请协商交期 · {order_no}",
+        body=f"原交期 {old_due}，系统最快 {suggested_due}。{brief_text}",
+        deep_link=f"/orders?dueNegotiate={order_no}",
+        role_targets=["SALES", "SALES_MGR", "GM"],
+    )
+
+
+def on_due_negotiate_reply(
+    session: Session,
+    *,
+    order_no: str,
+    request_id: int,
+    proposed_due: str,
+) -> None:
+    emit_wecom_message(
+        session,
+        scene="S7",
+        title=f"销售已回客户确认日 · {order_no}",
+        body=f"{order_no} 客户确认日 {proposed_due}，请 PMC 查看影响后改锚（不会自动重排）。",
+        deep_link=f"/schedule?negotiate={order_no}&request={request_id}",
+        role_targets=["PMC", "GM"],
+    )
+
+
+def on_due_negotiate_applied(
+    session: Session,
+    *,
+    order_no: str,
+    request_id: int,
+    old_due: str,
+    new_due: str,
+) -> None:
+    emit_wecom_message(
+        session,
+        scene="S8",
+        title=f"交期已改锚 · {order_no}",
+        body=f"{order_no} 交期已由 {old_due} 改为 {new_due}，请 PMC 再点倒排（系统未自动重排）。",
+        deep_link="/schedule",
+        role_targets=["SALES", "SALES_MGR", "PMC", "GM"],
+    )
+    start = datetime.now(UTC) + timedelta(hours=1)
+    emit_schedule_event(
+        session,
+        scene="S2",
+        title=f"再倒排 · {order_no}",
+        start_at=start,
+        end_at=start + timedelta(hours=1),
+        deep_link="/schedule",
+        idempotency_key=f"S8-{order_no}-{new_due}-{request_id}",
+    )
+
+
 def on_sample_overdue(session: Session, *, sample_code: str) -> None:
     emit_wecom_message(
         session,

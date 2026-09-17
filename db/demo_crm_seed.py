@@ -217,7 +217,12 @@ def _patch_orders(session: Session, enrich: dict) -> int:
         if patch.get("kitting_rate_pct") is not None and row.kitting_rate_pct != patch["kitting_rate_pct"]:
             row.kitting_rate_pct = int(patch["kitting_rate_pct"])
             changed = True
-        if patch.get("order_status") and row.order_status != patch["order_status"]:
+        phase = row.schedule_phase or "PENDING"
+        if (
+            phase == "PENDING"
+            and patch.get("order_status")
+            and row.order_status != patch["order_status"]
+        ):
             row.order_status = patch["order_status"]
             changed = True
         if patch.get("contract_no") and row.contract_no != patch["contract_no"]:
@@ -258,6 +263,8 @@ def _seed_pending_change(session: Session, spec: dict | None) -> int:
     if not spec:
         return 0
     order_no = spec["order_no"]
+    if session.get(SoOrderRow, order_no) is None:
+        return 0
     pending = session.scalar(
         select(func.count())
         .select_from(OrderChangeRequestRow)

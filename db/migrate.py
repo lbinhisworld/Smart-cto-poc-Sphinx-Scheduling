@@ -179,6 +179,29 @@ def ensure_schema(engine: Engine) -> None:
     if "pending_roll_pool" not in tables:
         Base.metadata.tables["pending_roll_pool"].create(engine)
 
+    if "order_change_request" in tables:
+        cols = {c["name"] for c in insp.get_columns("order_change_request")}
+        alters_ocr: list[tuple[str, str]] = []
+        if "source" not in cols:
+            alters_ocr.append(("source", "TEXT NOT NULL DEFAULT 'SALES_CHANGE'"))
+        if "suggested_due" not in cols:
+            alters_ocr.append(("suggested_due", "DATE"))
+        if "sales_proposed_due" not in cols:
+            alters_ocr.append(("sales_proposed_due", "DATE"))
+        if "brief_text" not in cols:
+            alters_ocr.append(("brief_text", "TEXT NOT NULL DEFAULT ''"))
+        if "run_id" not in cols:
+            alters_ocr.append(("run_id", "TEXT NOT NULL DEFAULT ''"))
+        if alters_ocr:
+            with engine.begin() as conn:
+                for name, ddl in alters_ocr:
+                    conn.execute(
+                        text(f"ALTER TABLE order_change_request ADD COLUMN {name} {ddl}")
+                    )
+
+    if "so_order_due_event" not in tables:
+        Base.metadata.tables["so_order_due_event"].create(engine)
+
     if "crm_sample_step" in tables:
         cols = {c["name"] for c in insp.get_columns("crm_sample_step")}
         alters_step: list[tuple[str, str]] = []

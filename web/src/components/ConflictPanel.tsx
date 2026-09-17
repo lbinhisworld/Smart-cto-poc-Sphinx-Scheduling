@@ -1,7 +1,9 @@
+import { useState } from "react";
 import type {
   Conflict,
   ConflictLevel,
   OrderRow,
+  ScheduleTrace,
   Wo,
   WoTask,
 } from "../types/schedule";
@@ -15,6 +17,7 @@ import {
 } from "../utils/conflictLabels";
 import { groupConflictsByOrder } from "../utils/conflictGroups";
 import { shortLabel } from "../utils/dates";
+import { ScheduleProcessTab } from "./ScheduleProcessTab";
 
 const LEVEL_ORDER: ConflictLevel[] = ["RED", "YELLOW", "GREY", "BLUE"];
 
@@ -81,6 +84,8 @@ type Props = {
   tasks: WoTask[];
   selectedKey: string | null;
   onPick: (c: Conflict, key: string) => void;
+  trace?: ScheduleTrace | null;
+  onReplay?: () => void;
 };
 
 export function ConflictPanel({
@@ -90,7 +95,10 @@ export function ConflictPanel({
   tasks,
   selectedKey,
   onPick,
+  trace,
+  onReplay,
 }: Props) {
+  const [tab, setTab] = useState<"list" | "process">("list");
   const counts = LEVEL_ORDER.map((lv) => ({
     lv,
     n: conflicts.filter((c) => c.level === lv).length,
@@ -100,7 +108,25 @@ export function ConflictPanel({
   return (
     <aside className="flex h-full min-h-[280px] flex-col rounded-lg border border-slate-800 bg-slate-900">
       <div className="border-b border-slate-800 px-3 py-2">
-        <h2 className="text-sm font-semibold text-slate-200">冲突面板</h2>
+        <div className="flex gap-1 text-[11px]">
+          <button
+            type="button"
+            className={`rounded px-2 py-0.5 ${tab === "list" ? "bg-slate-800 text-slate-100" : "text-slate-500"}`}
+            onClick={() => setTab("list")}
+          >
+            清单
+          </button>
+          <button
+            type="button"
+            className={`rounded px-2 py-0.5 ${tab === "process" ? "bg-slate-800 text-violet-200" : "text-slate-500"}`}
+            onClick={() => setTab("process")}
+          >
+            过程
+          </button>
+        </div>
+        <h2 className="mt-1.5 text-sm font-semibold text-slate-200">
+          {tab === "list" ? "冲突面板" : "排产过程"}
+        </h2>
         <p className="mt-1 text-xs text-slate-400">
           {counts.map(({ lv, n }) => (
             <span key={lv} className="mr-2">
@@ -109,8 +135,9 @@ export function ConflictPanel({
           ))}
         </p>
         <p className="mt-1 text-[10px] text-slate-500">
-          按订单分组 · 找对应销售协商
+          {tab === "list" ? "按订单分组 · 找对应销售协商" : "回放倒排记录 · 策略卡需人确认"}
         </p>
+        {tab === "list" && (
         <details className="mt-2 text-[10px] text-slate-400">
           <summary className="cursor-pointer select-none text-slate-500 hover:text-slate-300">
             各级别说明
@@ -129,7 +156,16 @@ export function ConflictPanel({
             ))}
           </ul>
         </details>
+        )}
       </div>
+      {tab === "process" ? (
+        <ScheduleProcessTab
+          trace={trace}
+          conflicts={conflicts}
+          orders={orders}
+          onReplay={onReplay}
+        />
+      ) : (
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
         {groups.length === 0 && (
           <p className="text-xs text-slate-500 px-1">暂无冲突</p>
@@ -221,6 +257,7 @@ export function ConflictPanel({
           );
         })}
       </div>
+      )}
     </aside>
   );
 }

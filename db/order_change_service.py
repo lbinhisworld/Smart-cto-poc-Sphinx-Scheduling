@@ -12,7 +12,7 @@ from db.interactive_preview import _order_impacts
 from db.order_lifecycle import scheduling_pool_order_nos
 from db.repositories import get_order, update_order_due_date_by_user
 from db.snapshot import load_schedule_input
-from db.tables import OrderChangeRequestRow
+from db.tables import OrderChangeRequestRow, SoOrderRow
 from engine.diff import diff
 from engine.schedule import schedule
 
@@ -20,7 +20,9 @@ from engine.schedule import schedule
 def _schedule_pool(session: Session, today: date, due_overrides: dict[str, date] | None = None):
     pool = scheduling_pool_order_nos(session)
     if not pool:
-        pool = ["SO-001", "SO-002", "SO-003"]
+        existing = {r.order_no for r in session.scalars(select(SoOrderRow)).all()}
+        fallback = [n for n in ("SO-001", "SO-002", "SO-003") if n in existing]
+        pool = fallback or sorted(existing)
     inp = load_schedule_input(session, today=today, order_nos=sorted(pool))
     if due_overrides:
         orders = []

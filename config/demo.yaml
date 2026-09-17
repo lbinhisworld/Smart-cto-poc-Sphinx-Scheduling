@@ -1,0 +1,24 @@
+# 演示场景台默认参数（today 与 seed / 前端 DEMO_TODAY 对齐，禁止改用机器日期）
+today: "2026-09-15"
+rng_seed: 20260915
+default_headcount: 5
+attendance_horizon_days: 30
+groups:
+  - dept: FINISHED_DEPT
+    group_code: MANUAL
+    headcount: 5
+  - dept: FINISHED_DEPT
+    group_code: MOLD
+    headcount: 5
+  - dept: FINISHED_DEPT
+    group_code: POURING
+    headcount: 5
+  - dept: SEMI_DEPT
+    group_code: MANUAL
+    headcount: 5
+  - dept: SEMI_DEPT
+    group_code: MOLD
+    headcount: 5
+  - dept: SEMI_DEPT
+    group_code: POURING
+    headcount: 5

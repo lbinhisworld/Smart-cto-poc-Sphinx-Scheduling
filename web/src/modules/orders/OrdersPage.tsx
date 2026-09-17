@@ -6,7 +6,7 @@ import {
   renderDate,
   renderMoney,
   renderProgress,
-  renderStatusTag,
+  renderSchedulePhaseTag,
   renderTrafficLight,
   type OrderRow,
 } from "../../ui/cellRenderers";
@@ -16,7 +16,15 @@ import { OrderDetailDrawer } from "./OrderDetailDrawer";
 
 type ApiData = {
   view: string;
-  stats: { total: number; pending_schedule: number; avg_kitting: number; near_due: number };
+  stats: {
+    total: number;
+    pending?: number;
+    in_scheduling?: number;
+    in_production?: number;
+    pending_schedule: number;
+    avg_kitting: number;
+    near_due: number;
+  };
   rows: OrderRow[];
   field_perm: { amount_hidden: boolean };
 };
@@ -26,6 +34,7 @@ const ORDER_VIEWS = new Set([
   "pending",
   "in_scheduling",
   "pending_schedule",
+  "in_production",
   "near_due",
   "low_kitting",
 ]);
@@ -67,6 +76,11 @@ export function OrdersPage() {
     const v = searchParams.get("view");
     if (v && ORDER_VIEWS.has(v) && v !== view) setView(v);
   }, [searchParams, view]);
+
+  useEffect(() => {
+    const n = searchParams.get("dueNegotiate") || searchParams.get("order");
+    if (n) setDetailNo(n);
+  }, [searchParams]);
 
   const onViewChange = (id: string) => {
     setView(id);
@@ -111,7 +125,7 @@ export function OrdersPage() {
       const j = await r.json();
       if (j.code !== 0) throw new Error(j.message || "加入失败");
       setSelected(new Set());
-      setView("pending_schedule");
+      setView("in_scheduling");
       load();
     } catch (e) {
       setError(String(e));
@@ -220,8 +234,8 @@ export function OrdersPage() {
       },
       {
         key: "status",
-        label: "状态",
-        render: (r: OrderRow) => renderStatusTag(r.order_status),
+        label: "排程阶段",
+        render: (r: OrderRow) => renderSchedulePhaseTag(r.schedule_phase),
       },
       { key: "sales", label: "销售", render: (r: OrderRow) => r.sales_name },
       {
@@ -292,9 +306,9 @@ export function OrdersPage() {
         title="销售订单"
         views={[
           { id: "all", label: "全部", count: stats?.total },
-          { id: "pending", label: "待排产", count: undefined },
-          { id: "in_scheduling", label: "排程池", count: undefined },
-          { id: "pending_schedule", label: "待排产池", count: stats?.pending_schedule },
+          { id: "pending", label: "待排程", count: stats?.pending ?? stats?.pending_schedule },
+          { id: "in_scheduling", label: "排程中", count: stats?.in_scheduling },
+          { id: "in_production", label: "生产中", count: stats?.in_production },
           { id: "near_due", label: "临期7天", count: stats?.near_due },
           { id: "low_kitting", label: "齐套不足" },
         ]}
@@ -302,7 +316,8 @@ export function OrdersPage() {
         onViewChange={onViewChange}
         stats={[
           { label: "订单总数", value: stats?.total ?? "—" },
-          { label: "待排产", value: stats?.pending_schedule ?? "—" },
+          { label: "待排程", value: stats?.pending ?? stats?.pending_schedule ?? "—" },
+          { label: "排程中", value: stats?.in_scheduling ?? "—" },
           { label: "平均齐套率", value: stats ? `${stats.avg_kitting}%` : "—" },
           { label: "临期7天", value: stats?.near_due ?? "—" },
         ]}
@@ -368,6 +383,7 @@ export function OrdersPage() {
         orderNo={detailNo}
         onClose={() => setDetailNo(null)}
         onChanged={() => load()}
+        initialTab={searchParams.get("dueNegotiate") ? "due" : "detail"}
       />
     </div>
   );

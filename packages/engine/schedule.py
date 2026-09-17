@@ -269,8 +269,9 @@ def schedule(inp: ScheduleInput) -> ScheduleResult:
                     act=TraceAct.SEMI,
                     kind="expand_semi",
                     message=(
-                        f"{order.order_no} 半成品 {semi.item_code} 净需求 {semi.qty_board_plan} 版 · "
-                        f"应交 {semi.due_date.isoformat()}（成品开工 − 提前期）"
+                        f"{order.order_no} 半成品 {semi.item_code} 库存不够："
+                        f"毛需求 {lr.gross_board} 版，占库 {lr.from_stock} 版，缺口 {semi.qty_board_plan} 版，"
+                        f"必须开半成品工单补齐。应交 {semi.due_date.isoformat()}（成品开工 − 提前期）"
                     ),
                     order_no=order.order_no,
                     wo_no=semi.wo_no,

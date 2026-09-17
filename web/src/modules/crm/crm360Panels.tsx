@@ -7,6 +7,7 @@ import {
   renderProgress,
   renderSampleProductDesc,
   renderSampleStageTag,
+  renderSchedulePhaseTag,
   renderStatusTag,
 } from "../../ui/cellRenderers";
 import { useAuth } from "../../shell/auth";
@@ -195,7 +196,7 @@ export function Customer360Panel({
             <td className="px-2 py-1.5 font-mono text-[var(--accent)]">{o.order_no}</td>
             <td className="py-1.5">{o.item_code}</td>
             <td className="py-1.5">{renderDate(o.due_date)}</td>
-            <td className="py-1.5">{renderStatusTag(o.order_status)}</td>
+            <td className="py-1.5">{renderSchedulePhaseTag(o.schedule_phase)}</td>
           </tr>
         ))}
       </SubTable>
@@ -640,7 +641,7 @@ export function OrderDetailPanel({ orderNo }: { orderNo: string }) {
       <p className="font-mono text-base font-semibold">{orderNo}</p>
       <p>{String(o.customer ?? "")}</p>
       <p>
-        交期 {renderDate(String(o.due_date ?? ""))} · {renderStatusTag(String(o.order_status ?? ""))}
+        交期 {renderDate(String(o.due_date ?? ""))} · {renderSchedulePhaseTag(o.schedule_phase)}
       </p>
       <p>齐套 {renderProgress(data.kitting.kitting_rate_pct ?? null)}</p>
       <table className="w-full rounded border" style={{ borderColor: "var(--line)" }}>

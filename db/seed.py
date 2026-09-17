@@ -64,6 +64,10 @@ def reload_seed_json(session: Session, seed_path: Path) -> dict:
 
 
 def needs_seed_reload(session: Session, seed_path: Path) -> bool:
+    from db.demo_scenario import is_scenario_locked
+
+    if is_scenario_locked(session):
+        return False
     manifest = seed_manifest(seed_path)
     order_count = session.scalar(select(func.count()).select_from(SoOrderRow)) or 0
     item_count = session.scalar(select(func.count()).select_from(MdItemRow)) or 0

@@ -65,6 +65,8 @@ def earliest_finish_from_result(result: ScheduleResult) -> date | None:
         if u.earliest_finish is not None:
             return u.earliest_finish
     for c in result.conflicts:
-        if c.code in ("E1", "E2") and c.suggest and c.suggest.startswith("EARLIEST:"):
+        if c.code in ("E1", "E2") and c.suggest and (
+            c.suggest.startswith("EARLIEST:") or c.suggest.startswith("FEASIBLE:")
+        ):
             return date.fromisoformat(c.suggest.split(":", 1)[1])
     return None

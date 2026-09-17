@@ -25,13 +25,18 @@ export function suggestLabel(suggest: string | null | undefined): string | null 
   if (!suggest) return null;
   if (suggest.startsWith("EARLIEST:")) {
     const d = suggest.slice("EARLIEST:".length);
-    return `最快可完成日 ${d}，建议与销售协商交期`;
+    return `最快可完成日 ${d}，晚于客户交期，建议与销售协商`;
+  }
+  if (suggest.startsWith("FEASIBLE:")) {
+    const d = suggest.slice("FEASIBLE:".length);
+    return `物理最快 ${d}，不晚于客户交期，交期本身够，不要改交期`;
   }
   const map: Record<string, string> = {
     DELAY_1D: "顺延 1 个工作日",
     ADD_CREW: "加班或增加人手",
     SPLIT: "拆单塞入空档",
     NOTIFY_SALES: "联系销售与客户协商交期",
+    REVIEW_WINDOW: "交期本身够，红灯是倒排窗口/半成品卡点，不要改交期",
   };
   return map[suggest] ?? suggest;
 }
@@ -66,7 +71,7 @@ export const CONFLICT_LEVEL_GUIDE: Record<
   RED: {
     title: "红色 · 必须处理",
     codes: "E1、E2",
-    meaning: "排不下或半成品来不及，需改交期、加产能或协商客户。",
+    meaning: "倒排窗口放不下或半成品赶不上。仅当最快日晚于客户交期才找销售改交期。",
   },
   YELLOW: {
     title: "黄色 · 可排但有风险",

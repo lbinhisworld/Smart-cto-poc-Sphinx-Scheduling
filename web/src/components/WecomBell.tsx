@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../shell/auth";
 
-type Msg = { id: number; title: string; body: string; deep_link: string; is_read: boolean };
+type Msg = {
+  id: number;
+  scene?: string;
+  title: string;
+  body: string;
+  deep_link: string;
+  is_read: boolean;
+};
 
 export function WecomBell() {
   const auth = useAuth();
@@ -21,7 +28,11 @@ export function WecomBell() {
     <div className="relative">
       <button
         type="button"
-        className="rounded border px-2 py-1 text-[11px]"
+        className={`rounded border px-2 py-1 text-[11px] ${
+          unread > 0 && msgs.some((m) => !m.is_read && ["S6", "S7", "S8"].includes(m.scene || ""))
+            ? "animate-pulse border-amber-500 text-amber-200"
+            : ""
+        }`}
         style={{ borderColor: "var(--line)" }}
         onClick={() => setOpen((o) => !o)}
       >

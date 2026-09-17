@@ -576,6 +576,7 @@ def create_app(session_factory: sessionmaker) -> FastAPI:
         return ok(design)
 
     from apps.api.routers.changes import register_changes
+    from apps.api.routers.due_negotiate import register_due_negotiate
     from apps.api.routers.cockpit import register_cockpit
     from apps.api.routers.hr import register_hr
     from apps.api.routers.labor import register_labor
@@ -602,6 +603,7 @@ def create_app(session_factory: sessionmaker) -> FastAPI:
     register_kingdee(app, get_db)
     register_crm(app, get_db)
     register_changes(app, get_db)
+    register_due_negotiate(app, get_db)
     register_wecom(app, get_db)
     register_cockpit(app, get_db)
     register_hr(app, get_db)

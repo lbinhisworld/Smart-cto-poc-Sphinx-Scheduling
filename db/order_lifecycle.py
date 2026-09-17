@@ -42,6 +42,8 @@ def add_to_scheduling_pool(session: Session, order_nos: list[str]) -> None:
         if row.schedule_phase == PHASE_COMPLETED:
             raise ValueError(f"{no} 已完结")
         row.schedule_phase = PHASE_IN_SCHEDULING
+        if (row.order_status or "") not in ("CANCELLED", "CLOSED"):
+            row.order_status = "SCHEDULED"
     session.flush()
 
 
@@ -52,6 +54,8 @@ def remove_from_scheduling_pool(session: Session, order_nos: list[str]) -> None:
             continue
         if row.schedule_phase == PHASE_IN_SCHEDULING:
             row.schedule_phase = PHASE_PENDING
+            if (row.order_status or "") == "SCHEDULED":
+                row.order_status = "CONFIRMED"
     session.flush()
 
 

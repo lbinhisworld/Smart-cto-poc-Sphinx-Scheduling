@@ -180,15 +180,34 @@ export function renderOppStageTag(stage: string) {
   );
 }
 
-export function renderStatusTag(status: string) {
-  const map: Record<string, string> = {
-    CONFIRMED: "bg-sky-950 text-sky-300 ring-1 ring-sky-800",
-    SCHEDULED: "bg-emerald-950 text-emerald-300 ring-1 ring-emerald-800",
-    CLOSED: "bg-slate-800 text-slate-400 ring-1 ring-slate-700",
+const SCHEDULE_PHASE_LABEL: Record<string, { cls: string; label: string }> = {
+  PENDING: { cls: "bg-sky-950 text-sky-300 ring-1 ring-sky-800", label: "待排程" },
+  IN_SCHEDULING: { cls: "bg-amber-950 text-amber-200 ring-1 ring-amber-700", label: "排程中" },
+  IN_PRODUCTION: { cls: "bg-emerald-950 text-emerald-300 ring-1 ring-emerald-800", label: "生产中" },
+  COMPLETED: { cls: "bg-slate-800 text-slate-400 ring-1 ring-slate-700", label: "已完结" },
+};
+
+export function renderSchedulePhaseTag(phase: string | undefined) {
+  const key = phase || "PENDING";
+  const item = SCHEDULE_PHASE_LABEL[key] ?? {
+    cls: "bg-slate-800 text-slate-400 ring-1 ring-slate-700",
+    label: key,
   };
-  const cls = map[status] ?? "bg-slate-800 text-slate-400 ring-1 ring-slate-700";
   return (
-    <span className={`rounded px-2 py-0.5 text-[11px] ${cls}`}>{status}</span>
+    <span className={`rounded px-2 py-0.5 text-[11px] ${item.cls}`}>{item.label}</span>
+  );
+}
+
+export function renderStatusTag(status: string) {
+  const map: Record<string, { cls: string; label: string }> = {
+    CONFIRMED: { cls: "bg-sky-950 text-sky-300 ring-1 ring-sky-800", label: "已确认" },
+    SCHEDULED: { cls: "bg-amber-950 text-amber-200 ring-1 ring-amber-700", label: "已进排程" },
+    CLOSED: { cls: "bg-slate-800 text-slate-400 ring-1 ring-slate-700", label: "已关闭" },
+    CANCELLED: { cls: "bg-rose-950 text-rose-300 ring-1 ring-rose-800", label: "已作废" },
+  };
+  const item = map[status] ?? { cls: "bg-slate-800 text-slate-400 ring-1 ring-slate-700", label: status };
+  return (
+    <span className={`rounded px-2 py-0.5 text-[11px] ${item.cls}`}>{item.label}</span>
   );
 }
 

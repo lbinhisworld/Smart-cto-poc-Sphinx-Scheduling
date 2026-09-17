@@ -1006,7 +1006,7 @@ export function ScheduleWorkspace() {
             )}
           </main>
 
-          <div className="lg:w-80 shrink-0 min-h-[200px] lg:min-h-0">
+          <div className="flex h-full min-h-[280px] lg:h-auto lg:min-h-0 lg:w-96 shrink-0 flex-col">
             <ConflictPanel
               conflicts={displayConflicts}
               orders={orders}
@@ -1014,6 +1014,8 @@ export function ScheduleWorkspace() {
               tasks={tasks}
               selectedKey={selectedConflictKey}
               onPick={onConflictPick}
+              trace={lastTrace ?? result?.trace}
+              onReplay={() => startReplay(lastTrace ?? result?.trace)}
             />
           </div>
         </div>

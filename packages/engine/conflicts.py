@@ -24,6 +24,64 @@ def detect_e6_e7(*_args, **_kwargs):
     raise NotImplementedError("E6/E7: SHOULD — Phase 6+ stub")
 
 
+def due_conflict_suggest(ef: date | None, order_due: date | None) -> str:
+    """最快日不晚于客户交期时不要建议改交期。"""
+    if ef is None:
+        return "REVIEW_WINDOW"
+    if order_due is not None and ef <= order_due:
+        return f"FEASIBLE:{ef.isoformat()}"
+    return f"EARLIEST:{ef.isoformat()}"
+
+
+def _md(d: date) -> str:
+    return d.strftime("%m/%d").lstrip("0").replace("/0", "/")
+
+
+def kit_semi_gap(result: ScheduleResult, wo: Wo) -> tuple[int, int, int] | None:
+    for kit in result.kit_checks:
+        if kit.order_no != wo.source_order_no:
+            continue
+        if wo.parent_wo_no and kit.finished_wo_no != wo.parent_wo_no:
+            continue
+        for line in kit.lines:
+            if line.component_item_code == wo.item_code:
+                return line.gross_board, line.from_stock, line.net_wo_board
+    return None
+
+
+def e2_conflict_message(
+    order_no: str,
+    due: date,
+    ef: date | None,
+    *,
+    item_code: str = "",
+    gross: int | None = None,
+    from_stock: int | None = None,
+    net: int | None = None,
+) -> str:
+    due_s = _md(due)
+    sku = f" {item_code}" if item_code else ""
+    gap = ""
+    if gross is not None and from_stock is not None and net is not None:
+        gap = (
+            f"半成品{sku}库存不够：毛需求 {gross} 版，占库 {from_stock} 版，缺口 {net} 版，"
+            f"必须开半成品工单补齐。"
+        )
+    if ef is None:
+        return gap + "半成品来不及，无法满足成品开工"
+    ef_s = _md(ef)
+    if ef <= due:
+        return (
+            f"{gap}订单 {order_no} 客户要 {due_s}。"
+            f"补产后按倒排试排，整单物理最快 {ef_s}，不晚于客户交期，交期本身够。"
+            f"红灯是贴着交期往回填时半成品窗口不够，不是客户要得太早。"
+        )
+    return (
+        f"{gap}订单 {order_no} 客户要 {due_s}。"
+        f"补产后按倒排试排，仍无法满足 {due_s} 交付，建议交付不早于 {ef_s}。"
+    )
+
+
 def earliest_finish_finished(inp: ScheduleInput, finished_wo: Wo) -> date:
     """成品工单物理最快完工日（BR-47，不写回订单交期）。"""
     route = inp.routes.get(finished_wo.item_code)
@@ -83,29 +141,47 @@ def detect_conflicts(inp: ScheduleInput, result: ScheduleResult) -> list[Conflic
     for miss in result.unplaced:
         wo = wo_by_no.get(miss.wo_no)
         ef = None
+        order = orders_by_no.get(wo.source_order_no) if wo else None
         if wo and wo.wo_type == WoType.FINISHED:
             ef = earliest_finish_finished(inp, wo)
             miss.earliest_finish = ef
+        elif wo and wo.wo_type == WoType.SEMI:
+            parent = wo_by_no.get(wo.parent_wo_no or "")
+            if parent and parent.wo_type == WoType.FINISHED:
+                ef = earliest_finish_finished(inp, parent)
         conflicts.append(
             Conflict(
                 code=miss.code,
                 level=ConflictLv.RED,
                 wo_no=miss.wo_no,
                 message=miss.reason,
-                suggest=f"EARLIEST:{ef.isoformat()}" if ef else "NOTIFY_SALES",
+                suggest=due_conflict_suggest(ef, order.due_date if order else None),
             )
         )
 
     for wo in result.wos:
         if wo.plan_start is not None and wo.plan_start < wo.earliest_start:
-            ef = earliest_finish_finished(inp, wo) if wo.wo_type == WoType.FINISHED else None
+            order = orders_by_no.get(wo.source_order_no)
+            if wo.wo_type == WoType.FINISHED:
+                ef = earliest_finish_finished(inp, wo)
+            elif wo.wo_type == WoType.SEMI:
+                parent = wo_by_no.get(wo.parent_wo_no or "")
+                ef = (
+                    earliest_finish_finished(inp, parent)
+                    if parent and parent.wo_type == WoType.FINISHED
+                    else None
+                )
+            else:
+                ef = None
             conflicts.append(
                 Conflict(
                     code="E1",
                     level=ConflictLv.RED,
                     wo_no=wo.wo_no,
                     message="计划开工早于最早可排日",
-                    suggest=f"EARLIEST:{ef.isoformat()}" if ef else "DELAY_1D",
+                    suggest=due_conflict_suggest(ef, order.due_date if order else None)
+                    if ef or order
+                    else "DELAY_1D",
                 )
             )
 
@@ -119,10 +195,18 @@ def detect_conflicts(inp: ScheduleInput, result: ScheduleResult) -> list[Conflic
                 ef = earliest_finish_finished(inp, finished) if finished else None
                 order = orders_by_no.get(wo.source_order_no)
                 due = order.due_date if order else wo.due_date
+                gap = kit_semi_gap(result, wo)
                 msg = (
-                    f"订单 {wo.source_order_no} 要求 {due.strftime('%m/%d')}，"
-                    f"系统最快可完成 {ef.strftime('%m/%d') if ef else '—'}"
-                    if ef and order
+                    e2_conflict_message(
+                        wo.source_order_no,
+                        due,
+                        ef,
+                        item_code=wo.item_code,
+                        gross=gap[0] if gap else None,
+                        from_stock=gap[1] if gap else None,
+                        net=gap[2] if gap else wo.qty_board_plan,
+                    )
+                    if order
                     else "半成品来不及，无法满足成品开工"
                 )
                 conflicts.append(
@@ -131,7 +215,7 @@ def detect_conflicts(inp: ScheduleInput, result: ScheduleResult) -> list[Conflic
                         level=ConflictLv.RED,
                         wo_no=wo.wo_no,
                         message=msg,
-                        suggest=f"EARLIEST:{ef.isoformat()}" if ef else "NOTIFY_SALES",
+                        suggest=due_conflict_suggest(ef, due if order else None),
                     )
                 )
             elif wo.plan_start is not None and wo.plan_start < fence_end:

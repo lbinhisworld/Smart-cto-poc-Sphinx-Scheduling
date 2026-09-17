@@ -12,6 +12,7 @@ from db.contract_queries import list_overdue_payment_todos
 from db.demo_crm_seed import ensure_demo_crm
 from db.hr_queries import list_contract_reminders
 from db.hr_seed import ensure_hr_seed
+from db.due_negotiate import pending_pmc_apply, pending_sales_todos
 from db.qty_carryover import STATUS_PENDING, list_pending_rolls
 from db.tables import CrmSampleRow, OrderChangeRequestRow, SoOrderRow, WecomMessageRow
 
@@ -52,6 +53,18 @@ def list_todos(session: Session, *, role: str, today: date) -> list[dict]:
                     "priority": "medium",
                 }
             )
+        for row in pending_pmc_apply(session):
+            todos.append(
+                {
+                    "id": f"due-apply-{row.id}",
+                    "kind": "DUE_NEGOTIATE",
+                    "title": f"销售已回确认日 · {row.order_no}",
+                    "detail": f"客户确认 {row.sales_proposed_due.isoformat() if row.sales_proposed_due else '—'} · 改锚后请再倒排",
+                    "path": f"/schedule?negotiate={row.order_no}",
+                    "priority": "high",
+                    "pulse": True,
+                }
+            )
         for roll in list_pending_rolls(session, status=STATUS_PENDING):
             todos.append(
                 {
@@ -65,6 +78,18 @@ def list_todos(session: Session, *, role: str, today: date) -> list[dict]:
             )
 
     if role in ("SALES", "SALES_MGR", "GM"):
+        for row in pending_sales_todos(session):
+            todos.append(
+                {
+                    "id": f"due-neg-{row.id}",
+                    "kind": "DUE_NEGOTIATE",
+                    "title": f"请协商交期 · {row.order_no}",
+                    "detail": (row.brief_text or "系统最快可完成日待与客户确认")[:120],
+                    "path": f"/orders?dueNegotiate={row.order_no}",
+                    "priority": "high",
+                    "pulse": True,
+                }
+            )
         samples = session.scalars(select(CrmSampleRow)).all()
         for s in samples:
             if s.current_stage == "结案":

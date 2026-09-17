@@ -8,7 +8,7 @@ from decimal import Decimal
 from engine.capacity import day_capacity, hours_man, hours_wall, is_workday
 from engine.errors import SchedulingLoopError, SphMissingError
 from engine.models import ScheduleInput, TraceAct, TraceEvent, Unplaced, Wo, WoTask
-from engine.trace import append_event, place_message
+from engine.trace import append_event, place_message, unplaced_audit_message
 from engine.work_center import wc_key
 
 GUARD_LIMIT = 365
@@ -44,6 +44,7 @@ def backward_place(
     remaining = wo.qty_board_plan
     cursor = wo.due_date
     tasks: list[WoTask] = []
+    attempts: list[dict] = []
     guard = 0
 
     while remaining > 0:
@@ -62,17 +63,27 @@ def backward_place(
                 trace,
                 act=trace_act,
                 kind="unplaced",
-                message=f"{wo.source_order_no} {wo.item_code} 未在最早可排日前安置完，余 {remaining} 版",
+                message=unplaced_audit_message(
+                    order_no=wo.source_order_no,
+                    item_code=wo.item_code,
+                    due_date=wo.due_date,
+                    earliest_start=wo.earliest_start,
+                    remaining=remaining,
+                    attempts=attempts,
+                ),
                 order_no=wo.source_order_no,
                 wo_no=wo.wo_no,
                 wo_type=wo.wo_type.value,
                 item_code=wo.item_code,
                 qty_board=remaining,
+                due_date=wo.due_date,
+                task_date=wo.earliest_start,
                 skip_reason="BEFORE_EARLIEST",
             )
             return tasks, unplaced, next_task_id
 
         if not is_workday(inp.calendar, wo.dept, wo.group_code, cursor):
+            attempts.append({"date": cursor, "kind": "skip", "reason": "REST"})
             append_event(
                 trace,
                 act=trace_act,
@@ -105,6 +116,7 @@ def backward_place(
         occupied_before = occupied.get(key, 0)
         free = cap - occupied_before
         if free <= 0:
+            attempts.append({"date": cursor, "kind": "skip", "reason": "FULL", "cap": cap})
             append_event(
                 trace,
                 act=trace_act,
@@ -143,6 +155,9 @@ def backward_place(
         tasks.append(task)
         occupied[key] = occupied.get(key, 0) + qty
         remaining -= qty
+        attempts.append(
+            {"date": cursor, "kind": "place", "qty": qty, "cap": cap, "occupied": occupied_before}
+        )
         append_event(
             trace,
             act=trace_act,
