@@ -8,6 +8,13 @@ from decimal import Decimal
 from engine.backward import apply_plan_dates, backward_place, seed_occupied
 from engine.conflicts import detect_conflicts, enrich_unplaced_earliest
 from engine.deadband import apply_deadband
+from engine.coline import (
+    append_coline_trace,
+    coline_conflicts,
+    detect_coline,
+    empty_lot_summary,
+    emit_sku_intersect_events,
+)
 from engine.component_expand import consume_purchased_line, expand_semi_from_line
 from engine.expand import expand_order
 from engine.kit_pool import KitSnapshot
@@ -164,6 +171,7 @@ def schedule(inp: ScheduleInput) -> ScheduleResult:
                 due_date=order.due_date,
             )
 
+    emit_sku_intersect_events(events, finished)
     ordered_finished = sort_work_orders(finished, inp.config.sort_mode, inp.config.pinned_wo_nos)
     for i, wo in enumerate(ordered_finished, start=1):
         append_event(
@@ -324,6 +332,12 @@ def schedule(inp: ScheduleInput) -> ScheduleResult:
     result.kit_checks = build_kit_checks(inp, result, lines_by_finished)
     result.conflicts = detect_conflicts(inp, result)
     result.conflicts.extend(detect_kit_conflicts(inp, result))
+    groups, summary = detect_coline(result)
+    result.coline_groups = groups
+    result.coline_summary = summary
+    result.lot_summary = empty_lot_summary()
+    result.conflicts.extend(coline_conflicts(groups))
+    append_coline_trace(events, groups, summary)
     if result.ripple_limit_exceeded:
         from engine.models import Conflict, ConflictLv
 

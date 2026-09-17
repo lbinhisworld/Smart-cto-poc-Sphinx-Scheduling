@@ -137,6 +137,11 @@ export function ConflictPanel({
         <p className="mt-1 text-[10px] text-slate-500">
           {tab === "list" ? "按订单分组 · 找对应销售协商" : "回放倒排记录 · 策略卡需人确认"}
         </p>
+        {trace?.events.some((e) => e.kind === "coline_summary") ? (
+          <p className="mt-1 text-[10px] text-teal-300/90">
+            {trace.events.find((e) => e.kind === "coline_summary")?.message}
+          </p>
+        ) : null}
         {tab === "list" && (
         <details className="mt-2 text-[10px] text-slate-400">
           <summary className="cursor-pointer select-none text-slate-500 hover:text-slate-300">

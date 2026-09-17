@@ -371,6 +371,33 @@ class Unplaced(_Model):
     earliest_finish: date | None = None
 
 
+class ColineGroup(_Model):
+    """一个并线点：组 × 日 × 品项，至少两张销售单。"""
+
+    dept: Dept
+    group_code: GroupCode
+    task_date: date
+    item_code: str
+    wo_type: WoType
+    order_nos: list[str] = Field(default_factory=list)
+    qty_board: int = 0
+    wo_nos: list[str] = Field(default_factory=list)
+
+
+class ColineSummary(_Model):
+    point_count: int = 0
+    qty_board_total: int = 0
+    order_count: int = 0
+    sku_count: int = 0
+
+
+class LotSummary(_Model):
+    """人确认合批后才计数；未确认保持 0。"""
+
+    point_count: int = 0
+    qty_board_total: int = 0
+
+
 class PriorityWeights(_Model):
     urgency: Decimal = Decimal("0.5")
     customer_level: Decimal = Decimal("0.2")
@@ -460,6 +487,9 @@ class ScheduleResult(_Model):
     ripple_limit_exceeded: bool = False
     kit_checks: list[KitCheckResult] = Field(default_factory=list)
     kit_allocations: list[KitAllocation] = Field(default_factory=list)
+    coline_groups: list[ColineGroup] = Field(default_factory=list)
+    coline_summary: ColineSummary = Field(default_factory=ColineSummary)
+    lot_summary: LotSummary = Field(default_factory=LotSummary)
     trace: ScheduleTrace | None = None
 
 

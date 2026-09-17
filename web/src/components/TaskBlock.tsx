@@ -18,6 +18,8 @@ type Props = {
   /** 该任务所属工作中心×日的组日利用率（订单视图） */
   capacityUtilization?: number;
   capacityWarnings?: string[];
+  coline?: boolean;
+  colineLabel?: string | null;
 };
 
 export function TaskBlock({
@@ -33,6 +35,8 @@ export function TaskBlock({
   workCenterLabel: wcLabel,
   capacityUtilization,
   capacityWarnings,
+  coline = false,
+  colineLabel,
 }: Props) {
   const id = `task-${task.task_id}`;
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -57,9 +61,11 @@ export function TaskBlock({
           ? "border-sky-400 bg-sky-950/80"
           : hasConflict || overHeadcount
             ? "border-rose-500/80 bg-rose-950/40"
-            : semi
-              ? "border-violet-500/60 bg-violet-950/50"
-              : "border-slate-600 bg-slate-800/90"
+            : coline
+              ? "border-teal-400 bg-teal-950/70 ring-1 ring-teal-500/50"
+              : semi
+                ? "border-violet-500/60 bg-violet-950/50"
+                : "border-slate-600 bg-slate-800/90"
       }`}
       onClick={(e) => {
         e.stopPropagation();
@@ -74,6 +80,9 @@ export function TaskBlock({
         {wo?.item_code ?? task.wo_no}{" "}
         <span className="text-slate-400">{task.qty_board}版</span>
       </div>
+      {coline && colineLabel ? (
+        <div className="text-[9px] font-medium text-teal-200">{colineLabel}</div>
+      ) : null}
       <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400">
         <span>{hoursOf(task).toFixed(1)} 小时</span>
         <label className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>

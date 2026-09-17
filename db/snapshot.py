@@ -173,7 +173,8 @@ def _orders_for_schedule(session: Session, headers: list[SoOrderRow]) -> list[Or
             .where(SoOrderLineRow.order_no == r.order_no)
             .order_by(SoOrderLineRow.line_no)
         ).all()
-        explode = (r.order_source or "") == "MIS" and len(line_rows) >= 1
+        src = (r.order_source or "").upper()
+        explode = src in {"MIS", "DEMO_SCENARIO"} and len(line_rows) >= 1
         if explode:
             for ln in line_rows:
                 out.append(

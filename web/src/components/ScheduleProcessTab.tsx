@@ -171,9 +171,11 @@ export function ScheduleProcessTab({ trace, conflicts, orders, onReplay }: Props
             className={`whitespace-pre-wrap rounded-lg px-2.5 py-1.5 text-[11px] leading-snug ${
               b.tone === "alert"
                 ? "border border-rose-800/70 bg-rose-950/40 text-rose-100"
-                : b.tone === "place"
-                  ? "border border-sky-900/60 bg-sky-950/30 text-slate-200"
-                  : "border border-slate-800 bg-slate-950/50 text-slate-300"
+                : b.tone === "coline"
+                  ? "border border-teal-700/70 bg-teal-950/40 text-teal-100"
+                  : b.tone === "place"
+                    ? "border border-sky-900/60 bg-sky-950/30 text-slate-200"
+                    : "border border-slate-800 bg-slate-950/50 text-slate-300"
             }`}
           >
             {b.text}

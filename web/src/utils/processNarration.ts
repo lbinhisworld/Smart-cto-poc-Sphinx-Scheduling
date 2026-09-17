@@ -3,7 +3,7 @@ import { SORT_MODE_LABEL } from "./scheduleTrace";
 
 export type ProcessBubble = {
   id: string;
-  tone: "info" | "place" | "alert";
+  tone: "info" | "place" | "alert" | "coline";
   text: string;
   orderNo?: string;
 };
@@ -156,6 +156,14 @@ export function projectProcessBubbles(
         text: `正在倒排 ${e.order_no}${e.item_code ? `（${e.item_code}）` : ""}……从交期往回填。`,
       });
     }
+    if (e.kind === "expand_lines" || e.kind === "sku_intersect") {
+      bubbles.push({
+        id: `x-${i}`,
+        tone: "info",
+        orderNo: e.order_no,
+        text: e.message,
+      });
+    }
     if ((e.kind === "expand_semi" || e.kind === "semi_from_stock") && e.order_no) {
       bubbles.push({
         id: `s-${i}`,
@@ -170,6 +178,20 @@ export function projectProcessBubbles(
         tone: "alert",
         orderNo: e.order_no,
         text: formatUnplacedAudit(trace.events, e),
+      });
+    }
+    if (e.kind === "coline_decision") {
+      bubbles.push({
+        id: `cl-${i}`,
+        tone: "coline",
+        text: e.message,
+      });
+    }
+    if (e.kind === "coline_summary") {
+      bubbles.push({
+        id: `cs-${i}`,
+        tone: "coline",
+        text: e.message,
       });
     }
   }

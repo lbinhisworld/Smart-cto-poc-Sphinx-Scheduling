@@ -103,6 +103,29 @@ export type ScheduleTrace = {
   events: TraceEvent[];
 };
 
+export type ColineGroup = {
+  dept: string;
+  group_code: string;
+  task_date: string;
+  item_code: string;
+  wo_type: string;
+  order_nos: string[];
+  qty_board: number;
+  wo_nos: string[];
+};
+
+export type ColineSummary = {
+  point_count: number;
+  qty_board_total: number;
+  order_count: number;
+  sku_count: number;
+};
+
+export type LotSummary = {
+  point_count: number;
+  qty_board_total: number;
+};
+
 export type ScheduleResult = {
   wos: Wo[];
   tasks: WoTask[];
@@ -110,6 +133,9 @@ export type ScheduleResult = {
   conflicts: Conflict[];
   kit_checks?: import("./kit").KitCheck[];
   kit_allocations?: import("./kit").KitAllocation[];
+  coline_groups?: ColineGroup[];
+  coline_summary?: ColineSummary;
+  lot_summary?: LotSummary;
   trace?: ScheduleTrace | null;
 };
 

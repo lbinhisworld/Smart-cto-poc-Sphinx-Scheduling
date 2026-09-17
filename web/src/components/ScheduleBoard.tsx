@@ -17,6 +17,7 @@ import { addDays, dateRange, isWeekend, shortLabel } from "../utils/dates";
 import { cellUtilization } from "../utils/capacity";
 import { taskOverHeadcount, warningsByCell } from "../utils/cellValidation";
 import { boardDateColumns } from "../utils/conflictFocus";
+import { colineGroupAt, colinePointKey, colinePointSet } from "../utils/coline";
 import { CapacityBar } from "./CapacityBar";
 import { TaskBlock } from "./TaskBlock";
 
@@ -125,6 +126,7 @@ export const ScheduleBoard = forwardRef<ScheduleBoardHandle, Props>(function Sch
   }));
   const dates = boardDateColumns(today, tasks, conflicts, dateRange);
   const woMap = new Map(result?.wos.map((w) => [w.wo_no, w]) ?? []);
+  const colineKeys = colinePointSet(result);
   const conflictWos = new Set(
     conflicts.filter((c) => c.wo_no).map((c) => c.wo_no as string),
   );
@@ -193,21 +195,40 @@ export const ScheduleBoard = forwardRef<ScheduleBoardHandle, Props>(function Sch
                         onOpenCellDetail(wc.dept, wc.code, d)
                       }
                     >
-                      {cellTasks.map((task) => (
+                      {cellTasks.map((task) => {
+                        const wo = woMap.get(task.wo_no);
+                        const item = wo?.item_code ?? "";
+                        const coline = Boolean(
+                          item &&
+                            colineKeys.has(
+                              colinePointKey(wc.dept, wc.code, d, item),
+                            ),
+                        );
+                        const grp = coline
+                          ? colineGroupAt(result, wc.dept, wc.code, d, item)
+                          : undefined;
+                        return (
                         <TaskBlock
                           key={task.task_id}
                           task={task}
-                          wo={woMap.get(task.wo_no)}
+                          wo={wo}
                           conflictCodes={conflictWos}
                           selected={selectedTaskId === task.task_id}
                           overHeadcount={taskOverHeadcount(task)}
+                          coline={coline}
+                          colineLabel={
+                            grp
+                              ? `${grp.item_code} · ${grp.order_nos.length}单 · 共 ${grp.qty_board} 版`
+                              : null
+                          }
                           onSelect={() => {
                             onSelectTask(task.task_id);
                             onOpenCellDetail(wc.dept, wc.code, d, task.task_id);
                           }}
                           onCrewChange={(crew) => onCrewChange(task.task_id, crew)}
                         />
-                      ))}
+                        );
+                      })}
                     </DroppableCell>
                   );
                 })}

@@ -129,6 +129,7 @@ export function CellDetailDrawer({
       focus_task_id: focus.focusTaskId ?? undefined,
       plan_version: planVersion > 0 ? planVersion : undefined,
       tasks: liveTasks,
+      result: result ?? undefined,
     })
       .then((d) => {
         if (!cancelled) setDetail(d);
@@ -184,38 +185,66 @@ export function CellDetailDrawer({
           {detail && (
             <>
               <section>
-                <h4 className="mb-2 text-xs font-semibold text-slate-300">关联订单</h4>
+                <h4 className="mb-2 text-xs font-semibold text-slate-300">关联订单（按品项）</h4>
                 {detail.orders.length === 0 ? (
                   <p className="text-xs text-slate-500">本格暂无任务</p>
                 ) : (
                   <ul className="space-y-2">
-                    {detail.orders.map((o) => {
-                      const sales =
-                        o.sales_name?.trim() ||
-                        orderSalesByNo?.get(o.order_no)?.trim() ||
-                        "";
-                      return (
-                        <li
-                          key={o.order_no}
-                          className="rounded border border-slate-800 px-2 py-1.5 text-xs"
-                        >
-                          <div className="font-medium text-slate-100">
-                            {o.order_no}
-                          </div>
-                          {sales ? (
-                            <div className="text-[10px] text-sky-400/90">
-                              销售 {sales}
-                            </div>
-                          ) : null}
-                          <div className="text-[10px] text-slate-500">
-                            {o.customer || "—"}
-                          </div>
-                          <div className="text-[10px] text-slate-500">
-                            {o.item_code} · 本格 {o.qty_board_in_cell} 版
-                          </div>
-                        </li>
-                      );
-                    })}
+                    {(() => {
+                      const byItem = new Map<string, typeof detail.orders>();
+                      for (const o of detail.orders) {
+                        const k = o.item_code || "?";
+                        if (!byItem.has(k)) byItem.set(k, []);
+                        byItem.get(k)!.push(o);
+                      }
+                      return [...byItem.entries()].map(([item, rows]) => {
+                        const coline = rows.length > 1;
+                        return (
+                          <li key={item}>
+                            <p
+                              className={`mb-1 text-[10px] font-medium ${
+                                coline ? "text-teal-200" : "text-slate-400"
+                              }`}
+                            >
+                              {item}
+                              {coline
+                                ? ` · 共线 ${rows.length} 单 · 仍分属各单 WO`
+                                : ""}
+                            </p>
+                            <ul className="space-y-1">
+                              {rows.map((o) => {
+                                const sales =
+                                  o.sales_name?.trim() ||
+                                  orderSalesByNo?.get(o.order_no)?.trim() ||
+                                  "";
+                                return (
+                                  <li
+                                    key={o.order_no}
+                                    className={`rounded border px-2 py-1.5 text-xs ${
+                                      coline
+                                        ? "border-teal-800/80 bg-teal-950/30"
+                                        : "border-slate-800"
+                                    }`}
+                                  >
+                                    <div className="font-medium text-slate-100">
+                                      {o.order_no}
+                                    </div>
+                                    {sales ? (
+                                      <div className="text-[10px] text-sky-400/90">
+                                        销售 {sales}
+                                      </div>
+                                    ) : null}
+                                    <div className="text-[10px] text-slate-500">
+                                      {o.customer || "—"} · 本格 {o.qty_board_in_cell} 版
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        );
+                      });
+                    })()}
                   </ul>
                 )}
               </section>

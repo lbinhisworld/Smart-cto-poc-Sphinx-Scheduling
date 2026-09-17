@@ -26,6 +26,7 @@ from db.tables import (
     WoRow,
 )
 from shared.demo_scenario import (
+    CORE_SHARE_4,
     DEMO_TODAY,
     SELLABLE_FINISHED,
     SELLABLE_ROUTES,
@@ -292,6 +293,39 @@ def test_apply_roster_five_per_group(iso_db):
             select(HrEmployeeRow).where(HrEmployeeRow.employee_kind == "STAFF")
         ).all()}
         assert staff_nos <= staff_after
+    finally:
+        session.close()
+
+
+def test_share_20_4_explodes_core_skus_into_finished_wos(iso_db):
+    from db.demo_scenario import generate_orders
+    from db.order_lifecycle import add_to_scheduling_pool
+    from db.snapshot import load_schedule_input
+    from engine.models import WoType
+    from engine.schedule import schedule
+
+    session = iso_db()
+    try:
+        generate_orders(
+            session,
+            order_count=5,
+            due_mode="FOCUS_FAR",
+            item_share="SHARE_20_4",
+        )
+        add_to_scheduling_pool(session, [f"SO-S00{i}" for i in range(1, 6)])
+        session.commit()
+        inp = load_schedule_input(session, today=DEMO_TODAY)
+        exploded = [o.order_no for o in inp.orders if "#L" in o.order_no]
+        assert exploded, "场景单必须按行展开"
+        result = schedule(inp)
+        finished = [w for w in result.wos if w.wo_type == WoType.FINISHED]
+        items = {w.item_code for w in finished}
+        assert set(CORE_SHARE_4) <= items
+        s001 = [w for w in finished if w.source_order_no.startswith("SO-S001")]
+        assert len(s001) >= 4
+        kinds = [e.kind for e in (result.trace.events if result.trace else [])]
+        assert "expand_lines" in kinds
+        assert "sku_intersect" in kinds
     finally:
         session.close()
 

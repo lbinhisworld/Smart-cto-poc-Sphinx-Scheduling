@@ -16,6 +16,7 @@ import { addDays, dateRange, isWeekend, shortLabel } from "../utils/dates";
 import { cellUtilization } from "../utils/capacity";
 import { taskOverHeadcount, warningsByCell } from "../utils/cellValidation";
 import { boardDateColumns } from "../utils/conflictFocus";
+import { colineGroupAt, colinePointKey, colinePointSet } from "../utils/coline";
 import { buildOrderBoardRows } from "../utils/orderBoardRows";
 import { DueFlag } from "./DueFlag";
 import { TaskBlock } from "./TaskBlock";
@@ -107,6 +108,7 @@ export const OrderScheduleBoard = forwardRef<OrderScheduleBoardHandle, Props>(
       () => new Map(result?.wos.map((w) => [w.wo_no, w]) ?? []),
       [result],
     );
+    const colineKeys = useMemo(() => colinePointSet(result), [result]);
 
     const conflictWos = useMemo(
       () =>
@@ -260,6 +262,25 @@ export const OrderScheduleBoard = forwardRef<OrderScheduleBoardHandle, Props>(
                                     capacityUtilization={wcUtil}
                                     capacityWarnings={wcWarns}
                                     overHeadcount={taskOverHeadcount(task)}
+                                    coline={Boolean(
+                                      woMap.get(task.wo_no)?.item_code &&
+                                        colineKeys.has(
+                                          colinePointKey(
+                                            dept,
+                                            group,
+                                            d,
+                                            woMap.get(task.wo_no)!.item_code,
+                                          ),
+                                        ),
+                                    )}
+                                    colineLabel={(() => {
+                                      const item = woMap.get(task.wo_no)?.item_code;
+                                      if (!item) return null;
+                                      const g = colineGroupAt(result, dept, group, d, item);
+                                      return g
+                                        ? `${g.item_code} · ${g.order_nos.length}单 · 共 ${g.qty_board} 版`
+                                        : null;
+                                    })()}
                                     onSelect={() => {
                                       onSelectTask(task.task_id);
                                       onOpenCellDetail(

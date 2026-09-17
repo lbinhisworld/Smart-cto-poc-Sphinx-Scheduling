@@ -50,6 +50,9 @@ async function request<T>(
       );
     }
     if (res.status === 404 && path.includes("/api/plan/cell-detail")) {
+      if (detail.includes("尚无计划版本")) {
+        throw new Error("尚无已发布计划。试排结果请等接口带回内存计划；或先点「保存发布」再点格子。");
+      }
       throw new Error(
         `格子/任务详情接口不可用（后端需重启以加载新路由）。请在本项目根目录执行：${backendHint}`,
       );
@@ -298,6 +301,7 @@ export async function fetchCellDetail(body: {
   focus_task_id?: number;
   plan_version?: number;
   tasks?: ScheduleResult["tasks"];
+  result?: ScheduleResult;
 }): Promise<{
   group_code: string;
   task_date: string;

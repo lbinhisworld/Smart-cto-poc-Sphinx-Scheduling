@@ -12,7 +12,7 @@ const CONFLICT_CODE_LABEL: Record<string, string> = {
   E4: "E4 · 组日产能超限",
   E5: "E5 · SPH 未校准",
   E6: "E6 · 换线过多",
-  E7: "E7 · 预留产能",
+  E7: "E7 · 同品项共线",
   E8: "E8 · 人力与 SPH 不符",
   E9: "E9 · 齐套未就绪",
   E10: "E10 · 库存被前序占用",
@@ -37,6 +37,7 @@ export function suggestLabel(suggest: string | null | undefined): string | null 
     SPLIT: "拆单塞入空档",
     NOTIFY_SALES: "联系销售与客户协商交期",
     REVIEW_WINDOW: "交期本身够，红灯是倒排窗口/半成品卡点，不要改交期",
+    REVIEW_COLINE: "同组同日同品项共线（未并 WO），点开格子看各单版数",
   };
   return map[suggest] ?? suggest;
 }
@@ -86,7 +87,7 @@ export const CONFLICT_LEVEL_GUIDE: Record<
   BLUE: {
     title: "蓝色 · 优化建议",
     codes: "E7",
-    meaning: "可合并订单、利用预留产能等，非必须处理。",
+    meaning: "同组同日同品项共线（未并单）。青绿块是并线点，过程有决策与点数/版数。",
   },
 };
 
