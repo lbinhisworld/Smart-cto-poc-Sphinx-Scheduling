@@ -11,11 +11,13 @@ from sqlalchemy.orm import Session
 from db.plan_store import current_plan_version, load_schedule_result, save_schedule_result
 from db.snapshot import load_schedule_input
 from db.tables import (
+    MdItemRow,
     MdUomConvertRow,
     PendingRollRow,
     ProdQtyReportRow,
     SoOrderRow,
     WoRow,
+    WoTaskRow,
 )
 from engine.models import Dept, GroupCode, SortMode, Uom, UomConvert, Wo, WoStatus, WoType
 from engine.schedule import schedule
@@ -112,9 +114,25 @@ def confirm_wo_qty(
         raise KeyError(wo.source_order_no)
     due_before = order.due_date
 
+    prev_done = int(getattr(wo, "qty_board_done", 0) or 0)
+    increment = done - prev_done
     remain = plan - done
     wo.qty_board_done = done
     wo.status = "DONE" if remain == 0 else "PARTIAL"
+    if work_date is not None:
+        item = session.get(MdItemRow, wo.item_code)
+        kg = getattr(item, "kg_per_board", None) if item is not None else None
+        tasks = session.scalars(
+            select(WoTaskRow)
+            .where(WoTaskRow.wo_no == wo_no)
+            .where(WoTaskRow.task_date == work_date)
+            .order_by(WoTaskRow.seq, WoTaskRow.task_id)
+        ).all()
+        if tasks:
+            first = tasks[0]
+            first.qty_actual = max(0, int(first.qty_actual or 0) + increment)
+            if kg is not None:
+                first.kg_per_board_snap = str(kg)
 
     report = ProdQtyReportRow(
         wo_no=wo_no,

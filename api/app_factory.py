@@ -47,6 +47,9 @@ try:
     from db.hr_seed import ensure_hr_seed
 
     ensure_hr_seed(session)
+    from db.prod_stats_seed import ensure_dept1_stats_seed
+
+    ensure_dept1_stats_seed(session)
     session.commit()
 except Exception:
     session.rollback()

@@ -166,6 +166,9 @@ export function ProductionTimeReportPage() {
         <Link to="/schedule" className="text-[var(--accent)] underline">
           去排程发布
         </Link>
+        <Link to="/modules/production/stats/dept1" className="text-[var(--text-muted)] hover:text-[var(--accent)]">
+          一部产能统计
+        </Link>
       </div>
       {err && <p className="mt-2 text-xs text-rose-400">{err}</p>}
       {rollMsg && <p className="mt-2 text-xs text-sky-300">{rollMsg}</p>}

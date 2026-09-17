@@ -23,6 +23,9 @@ class MdItemRow(Base):
     color: Mapped[str] = mapped_column(String)
     is_semi: Mapped[bool] = mapped_column(Boolean)
     computable: Mapped[bool] = mapped_column(Boolean)
+    prod_category: Mapped[str] = mapped_column(String, default="")
+    kg_per_board: Mapped[str | None] = mapped_column(Numeric(18, 6), nullable=True)
+    display_uom: Mapped[str] = mapped_column(String, default="BOARD")
 
 
 class MdUomConvertRow(Base):
@@ -254,6 +257,8 @@ class WoTaskRow(Base):
     seq: Mapped[int] = mapped_column(Integer)
     changeover_min: Mapped[int] = mapped_column(Integer, default=0)
     plan_version: Mapped[int] = mapped_column(Integer, index=True)
+    qty_actual: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    kg_per_board_snap: Mapped[str | None] = mapped_column(Numeric(18, 6), nullable=True)
 
 
 class WoDependencyRow(Base):
@@ -427,6 +432,11 @@ class ProdTimeReportRow(Base):
     reported_by: Mapped[str] = mapped_column(String, default="")
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     note: Mapped[str] = mapped_column(Text, default="")
+    hours_normal: Mapped[str | None] = mapped_column(Numeric(18, 4), nullable=True)
+    hours_ot: Mapped[str | None] = mapped_column(Numeric(18, 4), nullable=True)
+    headcount_indirect: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    hours_indirect_normal: Mapped[str | None] = mapped_column(Numeric(18, 4), nullable=True)
+    hours_indirect_ot: Mapped[str | None] = mapped_column(Numeric(18, 4), nullable=True)
 
 
 class HrGroupAttendanceRow(Base):
@@ -723,4 +733,36 @@ class QcProductTestRow(Base):
     fail_reason: Mapped[str] = mapped_column(Text, default="")
     remark: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class InvInboundDailyRow(Base):
+    """仓库确认入库（成品/半成品），统计只读。"""
+
+    __tablename__ = "inv_inbound_daily"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    work_date: Mapped[date] = mapped_column(Date, index=True)
+    schedule_dept: Mapped[str] = mapped_column(String, index=True)
+    group_code: Mapped[str] = mapped_column(String, default="")
+    item_code: Mapped[str] = mapped_column(String, index=True)
+    qty_board: Mapped[int] = mapped_column(Integer)
+    kg_per_board_snap: Mapped[str | None] = mapped_column(Numeric(18, 6), nullable=True)
+    source: Mapped[str] = mapped_column(String, default="MOCK")
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class InvIssueRow(Base):
+    """内部领用：INTERNAL / RD / SALES / QC。"""
+
+    __tablename__ = "inv_issue"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    work_date: Mapped[date] = mapped_column(Date, index=True)
+    schedule_dept: Mapped[str] = mapped_column(String, default="FINISHED_DEPT")
+    dest: Mapped[str] = mapped_column(String)
+    item_code: Mapped[str] = mapped_column(String, index=True)
+    qty_board: Mapped[int] = mapped_column(Integer)
+    kg_per_board_snap: Mapped[str | None] = mapped_column(Numeric(18, 6), nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
     created_by: Mapped[str] = mapped_column(String, default="")

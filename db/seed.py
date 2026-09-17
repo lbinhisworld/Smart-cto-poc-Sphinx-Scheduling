@@ -21,6 +21,54 @@ from db.tables import (
     StockRow,
 )
 
+_CATEGORY_BY_CODE = {
+    "P1": "手工模具",
+    "P1M": "手工模具",
+    "P1L": "其他",
+    "P2": "切片",
+    "P5": "糖花",
+    "P6": "切片",
+    "P4": "logo",
+    "P7": "logo",
+    "P8": "logo",
+    "P9": "抹面",
+}
+_KG_BY_CODE = {
+    "P1": "0.25",
+    "P1M": "0.20",
+    "P1L": "0.15",
+    "P2": "0.30",
+    "P5": "0.08",
+    "P6": "0.22",
+    "P4": "0.18",
+    "P7": "0.16",
+    "P8": "0.14",
+    "P9": "0.40",
+}
+_CATEGORY_BY_GROUP = {"MANUAL": "手工模具", "MOLD": "切片", "POURING": "logo"}
+
+
+def _opt_num(explicit, fallback: str | None) -> str | None:
+    if explicit is not None and explicit != "":
+        return str(explicit)
+    return fallback
+
+
+def _default_prod_category(row: dict) -> str:
+    code = str(row.get("item_code") or "")
+    if code in _CATEGORY_BY_CODE:
+        return _CATEGORY_BY_CODE[code]
+    if row.get("is_semi") or str(code).startswith("PKG"):
+        return ""
+    return _CATEGORY_BY_GROUP.get(str(row.get("group_code") or ""), "")
+
+
+def _default_kg_per_board(row: dict) -> str | None:
+    code = str(row.get("item_code") or "")
+    if code in _KG_BY_CODE:
+        return _KG_BY_CODE[code]
+    return None
+
 
 def seed_manifest(seed_path: Path) -> dict:
     with seed_path.open(encoding="utf-8") as fh:
@@ -124,6 +172,9 @@ def import_seed_json(session: Session, seed_path: Path) -> None:
                 color=row["color"],
                 is_semi=row["is_semi"],
                 computable=row["computable"],
+                prod_category=row.get("prod_category") or _default_prod_category(row),
+                kg_per_board=_opt_num(row.get("kg_per_board"), _default_kg_per_board(row)),
+                display_uom=row.get("display_uom") or row.get("unit_sale") or "BOARD",
             )
         )
     for row in seed["uom_converts"]:

@@ -14,6 +14,7 @@ import {
 import { DemoConsolePage, TodoCenterPage } from "./modules/demo/DemoPages";
 import { HrAttendancePage, HrRosterPage } from "./modules/hr/HrPages";
 import { HrLaborCostPage, ProductionTimeReportPage } from "./modules/labor/LaborPages";
+import { Dept1StatsPage } from "./modules/production/ProdStatsPages";
 import { OrderChangesPage } from "./modules/flow/OrderChangesPage";
 import {
   QcAuditsPage,
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/modules/hr/labor-cost" element={<HrLaborCostPage />} />
             <Route path="/modules/production" element={<ModuleSummaryPage module="production" />} />
             <Route path="/modules/production/time-report" element={<ProductionTimeReportPage />} />
+            <Route path="/modules/production/stats/dept1" element={<Dept1StatsPage />} />
             <Route path="/modules/finance" element={<ModuleSummaryPage module="finance" />} />
             <Route path="/modules/project" element={<ModuleSummaryPage module="project" />} />
             <Route path="/orders" element={<OrdersPage />} />

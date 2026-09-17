@@ -26,7 +26,7 @@ export const NAV_CATEGORY_DEFS: { id: string; label: string; itemKeys: string[] 
   {
     id: "production",
     label: "生产",
-    itemKeys: ["schedule", "stock", "bom", "production", "labor_time_report"],
+    itemKeys: ["schedule", "stock", "bom", "production", "labor_time_report", "dept1_stats"],
   },
   { id: "finance", label: "财务", itemKeys: ["finance"] },
   {
@@ -125,6 +125,7 @@ const MENU: MenuItem[] = [
   { key: "hr_labor_cost", label: "生产成本", path: "/modules/hr/labor-cost", module: "M1" },
   { key: "production", label: "生产运营", path: "/modules/production", module: "M5" },
   { key: "labor_time_report", label: "组×日报工", path: "/modules/production/time-report", module: "M5" },
+  { key: "dept1_stats", label: "一部产能统计", path: "/modules/production/stats/dept1", module: "M5" },
   { key: "finance", label: "财务摘要", path: "/modules/finance", module: "M6" },
   { key: "project", label: "项目交付", path: "/modules/project", module: "M7" },
   { key: "qc_receipts", label: "原辅料来料", path: "/qc/receipts", module: "M9" },
@@ -190,13 +191,14 @@ const ROLE_MENU_KEYS: Record<RoleCode, string[]> = {
     "bom",
     "production",
     "labor_time_report",
+    "dept1_stats",
     "hr_labor_cost",
     "qc_daily_defects",
   ],
-  WH: ["portal", "todos", "orders", "kingdee", "stock", "qc_receipts", "qc_exceptions", "qc_master"],
-  FIN: ["portal", "todos", "cockpit", "orders", "finance", "hr_labor_cost"],
-  HR: ["portal", "todos", "hr_roster", "hr_attendance", "hr_labor_cost"],
-  TEAM_LEADER: ["portal", "todos", "labor_time_report", "schedule"],
+  WH: ["portal", "todos", "orders", "kingdee", "stock", "dept1_stats", "qc_receipts", "qc_exceptions", "qc_master"],
+  FIN: ["portal", "todos", "cockpit", "orders", "finance", "hr_labor_cost", "dept1_stats"],
+  HR: ["portal", "todos", "hr_roster", "hr_attendance", "hr_labor_cost", "dept1_stats"],
+  TEAM_LEADER: ["portal", "todos", "labor_time_report", "dept1_stats", "schedule"],
   QC: QC_KEYS,
 };
 

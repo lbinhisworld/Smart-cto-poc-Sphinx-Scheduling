@@ -42,7 +42,11 @@ def _set_hr_version(session: Session, version: str) -> None:
 
 
 def _reload_hr(session: Session, hr: dict) -> dict:
-    session.execute(delete(ProdTimeReportRow))
+    from db.prod_stats_seed import DEMO_PLAN_VERSION
+
+    session.execute(
+        delete(ProdTimeReportRow).where(ProdTimeReportRow.plan_version != DEMO_PLAN_VERSION)
+    )
     session.execute(delete(HrLaborRateRow))
     session.execute(delete(HrAttendancePunchRow))
     session.execute(delete(HrEmployeeRow))

@@ -60,6 +60,7 @@ MENU: tuple[MenuItem, ...] = (
     MenuItem("hr_attendance", "考勤管理", "/modules/hr/attendance", frozenset({"GM", "HR"}), "M1"),
     MenuItem("hr_labor_cost", "生产成本", "/modules/hr/labor-cost", frozenset({"GM", "HR", "FIN", "PMC"}), "M1"),
     MenuItem("labor_time_report", "组×日报工", "/modules/production/time-report", frozenset({"GM", "PMC", "TEAM_LEADER"}), "M5"),
+    MenuItem("dept1_stats", "一部产能统计", "/modules/production/stats/dept1", frozenset({"GM", "PMC", "TEAM_LEADER", "FIN", "HR", "WH"}), "M5"),
     MenuItem("production", "生产运营", "/modules/production", frozenset({"GM", "PMC"}), "M5"),
     MenuItem("finance", "财务摘要", "/modules/finance", frozenset({"GM", "FIN"}), "M6"),
     MenuItem("project", "项目交付", "/modules/project", frozenset({"GM"}), "M7"),

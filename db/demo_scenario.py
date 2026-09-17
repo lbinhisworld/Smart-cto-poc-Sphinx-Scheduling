@@ -420,6 +420,13 @@ def restore_official_seed(session: Session) -> dict:
     ensure_hr_seed(session)
     ensure_demo_crm(session)
     ensure_order_lines(session)
+    from db.prod_stats_seed import STATS_VERSION_KEY, ensure_dept1_stats_seed
+
+    row = session.get(AppSettingRow, STATS_VERSION_KEY)
+    if row is not None:
+        session.delete(row)
+        session.flush()
+    ensure_dept1_stats_seed(session)
     session.flush()
     return {
         "locked": False,

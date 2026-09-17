@@ -217,3 +217,97 @@ def ensure_schema(engine: Engine) -> None:
             with engine.begin() as conn:
                 for name, ddl in alters_step:
                     conn.execute(text(f"ALTER TABLE crm_sample_step ADD COLUMN {name} {ddl}"))
+
+    if "md_item" in tables:
+        cols = {c["name"] for c in insp.get_columns("md_item")}
+        alters_item: list[tuple[str, str]] = []
+        if "prod_category" not in cols:
+            alters_item.append(("prod_category", "TEXT NOT NULL DEFAULT ''"))
+        if "kg_per_board" not in cols:
+            alters_item.append(("kg_per_board", "NUMERIC"))
+        if "display_uom" not in cols:
+            alters_item.append(("display_uom", "TEXT NOT NULL DEFAULT 'BOARD'"))
+        if alters_item:
+            with engine.begin() as conn:
+                for name, ddl in alters_item:
+                    conn.execute(text(f"ALTER TABLE md_item ADD COLUMN {name} {ddl}"))
+        with engine.begin() as conn:
+            for code, cat in (
+                ("P1", "手工模具"),
+                ("P1M", "手工模具"),
+                ("P1L", "其他"),
+                ("P2", "切片"),
+                ("P5", "糖花"),
+                ("P6", "切片"),
+                ("P4", "logo"),
+                ("P7", "logo"),
+                ("P8", "logo"),
+                ("P9", "抹面"),
+            ):
+                conn.execute(
+                    text(
+                        "UPDATE md_item SET prod_category = :cat "
+                        "WHERE item_code = :code AND (prod_category IS NULL OR prod_category = '')"
+                    ),
+                    {"cat": cat, "code": code},
+                )
+            for code, kg in (
+                ("P1", "0.25"),
+                ("P1M", "0.20"),
+                ("P1L", "0.15"),
+                ("P2", "0.30"),
+                ("P5", "0.08"),
+                ("P6", "0.22"),
+                ("P4", "0.18"),
+                ("P7", "0.16"),
+                ("P8", "0.14"),
+                ("P9", "0.40"),
+            ):
+                conn.execute(
+                    text(
+                        "UPDATE md_item SET kg_per_board = :kg "
+                        "WHERE item_code = :code AND kg_per_board IS NULL"
+                    ),
+                    {"kg": kg, "code": code},
+                )
+            conn.execute(
+                text(
+                    "UPDATE md_item SET display_uom = unit_sale "
+                    "WHERE display_uom IS NULL OR display_uom = '' OR display_uom = 'BOARD'"
+                )
+            )
+
+    if "wo_task" in tables:
+        cols = {c["name"] for c in insp.get_columns("wo_task")}
+        alters_task: list[tuple[str, str]] = []
+        if "qty_actual" not in cols:
+            alters_task.append(("qty_actual", "INTEGER"))
+        if "kg_per_board_snap" not in cols:
+            alters_task.append(("kg_per_board_snap", "NUMERIC"))
+        if alters_task:
+            with engine.begin() as conn:
+                for name, ddl in alters_task:
+                    conn.execute(text(f"ALTER TABLE wo_task ADD COLUMN {name} {ddl}"))
+
+    if "prod_time_report" in tables:
+        cols = {c["name"] for c in insp.get_columns("prod_time_report")}
+        alters_tr: list[tuple[str, str]] = []
+        if "hours_normal" not in cols:
+            alters_tr.append(("hours_normal", "NUMERIC"))
+        if "hours_ot" not in cols:
+            alters_tr.append(("hours_ot", "NUMERIC"))
+        if "headcount_indirect" not in cols:
+            alters_tr.append(("headcount_indirect", "INTEGER"))
+        if "hours_indirect_normal" not in cols:
+            alters_tr.append(("hours_indirect_normal", "NUMERIC"))
+        if "hours_indirect_ot" not in cols:
+            alters_tr.append(("hours_indirect_ot", "NUMERIC"))
+        if alters_tr:
+            with engine.begin() as conn:
+                for name, ddl in alters_tr:
+                    conn.execute(text(f"ALTER TABLE prod_time_report ADD COLUMN {name} {ddl}"))
+
+    tables = set(inspect(engine).get_table_names())
+    for name in ("inv_inbound_daily", "inv_issue"):
+        if name not in tables:
+            Base.metadata.tables[name].create(engine)
