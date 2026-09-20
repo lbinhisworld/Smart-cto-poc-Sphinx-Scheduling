@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 
 from sealed_kb.reasoner import explain, prove
+from sealed_kb.store import format_tree
 
 
 def _ctx(raw: str) -> set[str]:
@@ -10,12 +11,17 @@ def _ctx(raw: str) -> set[str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="封印知识库 prove / explain")
-    parser.add_argument("cmd", choices=("prove", "explain"))
-    parser.add_argument("claim")
+    parser = argparse.ArgumentParser(description="封印知识库 prove / explain / tree")
+    parser.add_argument("cmd", choices=("prove", "explain", "tree"))
+    parser.add_argument("claim", nargs="?")
     parser.add_argument("--情境", default="")
     parser.add_argument("--角色", default="默认")
     args = parser.parse_args()
+    if args.cmd == "tree":
+        print(format_tree())
+        return
+    if not args.claim:
+        parser.error("prove / explain 需要结论或主张编号")
     ctx = _ctx(args.情境)
     if args.cmd == "prove":
         result = prove(args.claim, ctx)

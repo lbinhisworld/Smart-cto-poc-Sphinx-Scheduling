@@ -1,0 +1,1291 @@
+台账:
+- 资产: BR-01
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.normalize_to_board
+  状态: 已封印
+- 资产: BR-02
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.normalize_to_board
+  状态: 已封印
+- 资产: BR-03
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.normalize_to_board
+  状态: 已封印
+- 资产: BR-04
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.normalize_to_board
+  状态: 已封印
+- 资产: BR-05
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.normalize_to_board
+  状态: 已封印
+- 资产: BR-10
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.sph_and_hours
+  状态: 已封印
+- 资产: BR-11
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.sph_and_hours
+  状态: 已封印
+- 资产: BR-12
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.sph_and_hours
+  状态: 已封印
+- 资产: BR-13
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.sph_and_hours
+  状态: 已封印
+- 资产: BR-14
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.sph_and_hours
+  状态: 已封印
+- 资产: BR-20
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.backward_place
+  状态: 假设
+- 资产: BR-21
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.backward_place
+  状态: 假设
+- 资产: BR-22
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.backward_place
+  状态: 假设
+- 资产: BR-23
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.backward_place
+  状态: 假设
+- 资产: BR-24
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.backward_place
+  状态: 假设
+- 资产: BR-25
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.backward_place
+  状态: 假设
+- 资产: BR-26
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.backward_place
+  状态: 假设
+- 资产: BR-27
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.due_change_via_approval
+  - F.l4.br27_no_write_due
+  状态: 已封印
+- 资产: BR-30
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.finished_then_semi
+  状态: 假设
+- 资产: BR-31
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.finished_then_semi
+  状态: 假设
+- 资产: BR-32
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.finished_then_semi
+  状态: 假设
+- 资产: BR-33
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.finished_then_semi
+  状态: 假设
+- 资产: BR-34
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.finished_then_semi
+  状态: 假设
+- 资产: BR-35
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.finished_then_semi
+  状态: 假设
+- 资产: BR-36
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.finished_then_semi
+  状态: 假设
+- 资产: BR-32b
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.kitting
+  状态: 假设
+- 资产: BR-37
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.finished_then_semi
+  状态: 假设
+- 资产: BR-38
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.kitting
+  状态: 假设
+- 资产: BR-39
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.kitting
+  状态: 假设
+- 资产: BR-39b
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.kitting
+  状态: 假设
+- 资产: BR-40
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.fence_ripple
+  状态: 假设
+- 资产: BR-41
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.fence_ripple
+  状态: 假设
+- 资产: BR-42
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.fence_ripple
+  状态: 假设
+- 资产: BR-43
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.fence_ripple
+  状态: 假设
+- 资产: BR-44
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.fence_ripple
+  状态: 假设
+- 资产: BR-45
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.fence_ripple
+  状态: 假设
+- 资产: BR-46
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.fence_ripple
+  状态: 假设
+- 资产: BR-47
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.soft_conflicts
+  状态: 假设
+- 资产: BR-50
+  类: 业务规则
+  出处: 斯芬克斯-排程服务POC-开发需求规格.md
+  挂到:
+  - F.l3.soft_conflicts
+  状态: 假设
+- 资产: E1
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: E2
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: E3
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: E4
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: E5
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: E6
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: E7
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: E8
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: E9
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: E10
+  类: 冲突码
+  出处: conflicts.py
+  挂到:
+  - F.l3.soft_conflicts
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: Dept
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.dept
+  状态: 假设
+- 资产: GroupCode
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.group
+  状态: 已封印
+- 资产: WoType
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.wo
+  状态: 已封印
+- 资产: WoStatus
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.wo
+  状态: 已封印
+- 资产: Uom
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.uom
+  状态: 假设
+- 资产: SphBasis
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.sph
+  状态: 已封印
+- 资产: Confidence
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.sph
+  状态: 已封印
+- 资产: ConflictLv
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.conflict
+  状态: 假设
+- 资产: ChangeType
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.diff
+  状态: 假设
+- 资产: SortMode
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.schedule_io
+  状态: 假设
+- 资产: TraceAct
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.trace
+  状态: 假设
+- 资产: InsertReason
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.insert
+  状态: 假设
+- 资产: InsertStrategy
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.insert
+  状态: 假设
+- 资产: PlanTrigger
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.plan_version
+  状态: 假设
+- 资产: TraceEvent
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.trace
+  状态: 假设
+- 资产: ScheduleTrace
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.trace
+  状态: 假设
+- 资产: Item
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.item
+  状态: 假设
+- 资产: UomConvert
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.uom_convert
+  状态: 假设
+- 资产: ItemRoute
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.item_route
+  状态: 假设
+- 资产: ComponentRole
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.bom
+  状态: 假设
+- 资产: BomLine
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.bom
+  状态: 假设
+- 资产: KitMode
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.kit
+  状态: 假设
+- 资产: KitAllocation
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.kit
+  状态: 假设
+- 资产: KitLineResult
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.kit
+  状态: 假设
+- 资产: KitCheckResult
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.kit
+  状态: 假设
+- 资产: Sph
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.sph
+  状态: 已封印
+- 资产: CalendarDay
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.calendar
+  状态: 假设
+- 资产: Group
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.group
+  状态: 已封印
+- 资产: Order
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.order
+  状态: 已封印
+- 资产: Wo
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.wo
+  状态: 已封印
+- 资产: WoTask
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.wo_task
+  状态: 假设
+- 资产: WoDependency
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.wo_dep
+  状态: 假设
+- 资产: WoInsertLog
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.insert
+  状态: 假设
+- 资产: PlanVersion
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.plan_version
+  状态: 假设
+- 资产: Conflict
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.conflict
+  状态: 假设
+- 资产: Unplaced
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.unplaced
+  状态: 假设
+- 资产: ColineGroup
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.coline
+  状态: 假设
+- 资产: ColineSummary
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.coline
+  状态: 假设
+- 资产: LotSummary
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.coline
+  状态: 假设
+- 资产: PriorityWeights
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.schedule_io
+  状态: 假设
+- 资产: ScheduleConfig
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.schedule_io
+  状态: 假设
+- 资产: CapacityOverride
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.schedule_io
+  状态: 假设
+- 资产: ScheduleInput
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.schedule_io
+  状态: 假设
+- 资产: ScheduleResult
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.schedule_io
+  状态: 假设
+- 资产: DiffEntry
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.diff
+  状态: 假设
+- 资产: DiffResult
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.diff
+  状态: 假设
+- 资产: FeasibilityStatus
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.feasibility
+  状态: 假设
+- 资产: FeasibilityResult
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.feasibility
+  状态: 假设
+- 资产: InsertStrategyOutcome
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.insert
+  状态: 假设
+- 资产: InsertCompareResult
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.insert
+  状态: 假设
+- 资产: packages/engine/attendance.py
+  类: 引擎模块
+  出处: packages/engine/attendance.py
+  挂到:
+  - F.l4.mod_attendance
+  状态: 假设
+- 资产: packages/engine/backward.py
+  类: 引擎模块
+  出处: packages/engine/backward.py
+  挂到:
+  - F.l4.mod_backward
+  状态: 假设
+- 资产: packages/engine/bom.py
+  类: 引擎模块
+  出处: packages/engine/bom.py
+  挂到:
+  - F.l4.mod_bom
+  状态: 假设
+- 资产: packages/engine/calendar_util.py
+  类: 引擎模块
+  出处: packages/engine/calendar_util.py
+  挂到:
+  - F.l4.mod_calendar_util
+  状态: 假设
+- 资产: packages/engine/capacity.py
+  类: 引擎模块
+  出处: packages/engine/capacity.py
+  挂到:
+  - F.l4.mod_capacity
+  状态: 假设
+- 资产: packages/engine/cell_detail.py
+  类: 引擎模块
+  出处: packages/engine/cell_detail.py
+  挂到:
+  - F.l4.mod_cell_detail
+  状态: 假设
+- 资产: packages/engine/coline.py
+  类: 引擎模块
+  出处: packages/engine/coline.py
+  挂到:
+  - F.l4.mod_coline
+  状态: 假设
+- 资产: packages/engine/component_expand.py
+  类: 引擎模块
+  出处: packages/engine/component_expand.py
+  挂到:
+  - F.l4.mod_component_expand
+  状态: 假设
+- 资产: packages/engine/conflicts.py
+  类: 引擎模块
+  出处: packages/engine/conflicts.py
+  挂到:
+  - F.l4.mod_conflicts
+  状态: 假设
+- 资产: packages/engine/deadband.py
+  类: 引擎模块
+  出处: packages/engine/deadband.py
+  挂到:
+  - F.l4.mod_deadband
+  状态: 假设
+- 资产: packages/engine/diff.py
+  类: 引擎模块
+  出处: packages/engine/diff.py
+  挂到:
+  - F.l4.mod_diff
+  状态: 假设
+- 资产: packages/engine/errors.py
+  类: 引擎模块
+  出处: packages/engine/errors.py
+  挂到:
+  - F.l4.mod_errors
+  状态: 假设
+- 资产: packages/engine/expand.py
+  类: 引擎模块
+  出处: packages/engine/expand.py
+  挂到:
+  - F.l4.mod_expand
+  状态: 假设
+- 资产: packages/engine/insert.py
+  类: 引擎模块
+  出处: packages/engine/insert.py
+  挂到:
+  - F.l4.mod_insert
+  状态: 假设
+- 资产: packages/engine/interactive.py
+  类: 引擎模块
+  出处: packages/engine/interactive.py
+  挂到:
+  - F.l4.mod_interactive
+  状态: 假设
+- 资产: packages/engine/kit_pool.py
+  类: 引擎模块
+  出处: packages/engine/kit_pool.py
+  挂到:
+  - F.l4.mod_kit_pool
+  状态: 假设
+- 资产: packages/engine/kitting.py
+  类: 引擎模块
+  出处: packages/engine/kitting.py
+  挂到:
+  - F.l4.mod_kitting
+  状态: 假设
+- 资产: packages/engine/models.py
+  类: 引擎模块
+  出处: packages/engine/models.py
+  挂到:
+  - F.l4.mod_models
+  状态: 假设
+- 资产: packages/engine/run_log.py
+  类: 引擎模块
+  出处: packages/engine/run_log.py
+  挂到:
+  - F.l4.mod_run_log
+  状态: 假设
+- 资产: packages/engine/schedule.py
+  类: 引擎模块
+  出处: packages/engine/schedule.py
+  挂到:
+  - F.l4.mod_schedule
+  状态: 假设
+- 资产: packages/engine/trace.py
+  类: 引擎模块
+  出处: packages/engine/trace.py
+  挂到:
+  - F.l4.mod_trace
+  状态: 假设
+- 资产: packages/engine/uom.py
+  类: 引擎模块
+  出处: packages/engine/uom.py
+  挂到:
+  - F.l4.mod_uom
+  状态: 假设
+- 资产: packages/engine/work_center.py
+  类: 引擎模块
+  出处: packages/engine/work_center.py
+  挂到:
+  - F.l4.mod_work_center
+  状态: 假设
+- 资产: config/demo.yaml#today
+  类: 可调参数
+  出处: config/demo.yaml
+  挂到:
+  - F.l3.mod_M0
+  状态: 假设
+- 资产: config/demo.yaml#rng_seed
+  类: 可调参数
+  出处: config/demo.yaml
+  挂到:
+  - F.l3.mod_M0
+  状态: 假设
+- 资产: config/demo.yaml#default_headcount
+  类: 可调参数
+  出处: config/demo.yaml
+  挂到:
+  - F.l3.mod_M0
+  状态: 假设
+- 资产: config/demo.yaml#attendance_horizon_days
+  类: 可调参数
+  出处: config/demo.yaml
+  挂到:
+  - F.l3.mod_M0
+  状态: 假设
+- 资产: config/demo.yaml#groups
+  类: 可调参数
+  出处: config/demo.yaml
+  挂到:
+  - F.l3.mod_M0
+  状态: 假设
+- 资产: config/integrations.yaml#stock_provider
+  类: 可调参数
+  出处: config/integrations.yaml
+  挂到:
+  - F.l3.mod_M3
+  状态: 假设
+- 资产: config/integrations.yaml#kingdee
+  类: 可调参数
+  出处: config/integrations.yaml
+  挂到:
+  - F.l3.mod_M3
+  状态: 假设
+- 资产: config/qc_limits.yaml#period_anchor
+  类: 可调参数
+  出处: config/qc_limits.yaml
+  挂到:
+  - F.l3.mod_M9
+  状态: 假设
+- 资产: config/qc_limits.yaml#swab_test
+  类: 可调参数
+  出处: config/qc_limits.yaml
+  挂到:
+  - F.l3.mod_M9
+  状态: 假设
+- 资产: config/qc_limits.yaml#product_test
+  类: 可调参数
+  出处: config/qc_limits.yaml
+  挂到:
+  - F.l3.mod_M9
+  状态: 假设
+- 资产: config/qc_limits.yaml#qualitative
+  类: 可调参数
+  出处: config/qc_limits.yaml
+  挂到:
+  - F.l3.mod_M9
+  状态: 假设
+- 资产: config/qc_limits.yaml#exception_sla_days
+  类: 可调参数
+  出处: config/qc_limits.yaml
+  挂到:
+  - F.l3.mod_M9
+  状态: 假设
+- 资产: config/qc_limits.yaml#complaint_action_sla_days
+  类: 可调参数
+  出处: config/qc_limits.yaml
+  挂到:
+  - F.l3.mod_M9
+  状态: 假设
+- 资产: config/schedule.yaml#fence_days
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#protocol_days
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#ripple_limit
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#deadband_days
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#deadband_hours_ratio
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#reserved_ratio
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#horizon_days
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#jit
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#sort_mode
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#sort_mode_on_insert_or_change
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#default_lead_time_days
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#kit_mode
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#stock_refresh_on_run
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/schedule.yaml#attendance_scale_day_hours
+  类: 可调参数
+  出处: config/schedule.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/weights.yaml#urgency
+  类: 可调参数
+  出处: config/weights.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/weights.yaml#customer_level
+  类: 可调参数
+  出处: config/weights.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/weights.yaml#amount
+  类: 可调参数
+  出处: config/weights.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/weights.yaml#ready
+  类: 可调参数
+  出处: config/weights.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: config/weights.yaml#strategic
+  类: 可调参数
+  出处: config/weights.yaml
+  挂到:
+  - F.l3.fence_ripple
+  - D.schedule_io
+  状态: 假设
+- 资产: GM
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_GM
+  状态: 假设
+- 资产: SALES_MGR
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_SALES_MGR
+  状态: 假设
+- 资产: SALES
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_SALES
+  状态: 假设
+- 资产: PMC
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_PMC
+  状态: 假设
+- 资产: WH
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_WH
+  状态: 假设
+- 资产: FIN
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_FIN
+  状态: 假设
+- 资产: HR
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_HR
+  状态: 假设
+- 资产: TEAM_LEADER
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_TEAM_LEADER
+  状态: 假设
+- 资产: QC
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_QC
+  状态: 假设
+- 资产: portal
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_portal
+  状态: 假设
+- 资产: todos
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_todos
+  状态: 假设
+- 资产: demo
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_demo
+  状态: 假设
+- 资产: cockpit
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_cockpit
+  状态: 假设
+- 资产: crm_customers
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_crm_customers
+  状态: 假设
+- 资产: crm_opportunities
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_crm_opportunities
+  状态: 假设
+- 资产: crm_samples
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_crm_samples
+  状态: 假设
+- 资产: crm_reports
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_crm_reports
+  状态: 假设
+- 资产: ctp
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_ctp
+  状态: 假设
+- 资产: changes
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_changes
+  状态: 假设
+- 资产: orders
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_orders
+  状态: 假设
+- 资产: quotes
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_quotes
+  状态: 假设
+- 资产: kingdee
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_kingdee
+  状态: 假设
+- 资产: schedule
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_schedule
+  状态: 假设
+- 资产: stock
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_stock
+  状态: 假设
+- 资产: bom
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_bom
+  状态: 假设
+- 资产: hr_roster
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_hr_roster
+  状态: 假设
+- 资产: hr_attendance
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_hr_attendance
+  状态: 假设
+- 资产: hr_labor_cost
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_hr_labor_cost
+  状态: 假设
+- 资产: labor_time_report
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_labor_time_report
+  状态: 假设
+- 资产: dept1_stats
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_dept1_stats
+  状态: 假设
+- 资产: production
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_production
+  状态: 假设
+- 资产: finance
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_finance
+  状态: 假设
+- 资产: project
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_project
+  状态: 假设
+- 资产: qc_receipts
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_qc_receipts
+  状态: 假设
+- 资产: qc_exceptions
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_qc_exceptions
+  状态: 假设
+- 资产: qc_daily_defects
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_qc_daily_defects
+  状态: 假设
+- 资产: qc_complaints
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_qc_complaints
+  状态: 假设
+- 资产: qc_audits
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_qc_audits
+  状态: 假设
+- 资产: qc_lab_external
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_qc_lab_external
+  状态: 假设
+- 资产: qc_swab_tests
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_qc_swab_tests
+  状态: 假设
+- 资产: qc_product_tests
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_qc_product_tests
+  状态: 假设
+- 资产: qc_master
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_qc_master
+  状态: 假设
+- 资产: M0
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M0
+  状态: 假设
+- 资产: M2
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M2
+  状态: 假设
+- 资产: M3
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M3
+  状态: 假设
+- 资产: M8
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M8
+  状态: 假设
+- 资产: M4
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M4
+  状态: 假设
+- 资产: M1
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M1
+  状态: 假设
+- 资产: M5
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M5
+  状态: 假设
+- 资产: M6
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M6
+  状态: 假设
+- 资产: M7
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M7
+  状态: 假设
+- 资产: M9
+  类: 产品模块
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.mod_M9
+  状态: 假设
+- 资产: tests/test_db_redline.py
+  类: 锁链测试
+  出处: tests/test_db_redline.py
+  挂到:
+  - F.l4.br27_no_write_due
+  状态: 已封印
+- 资产: seed/
+  类: 刻意不收
+  出处: seed/
+  挂到: []
+  状态: 刻意不收
+  理由: 演示数字实例，不是对象定义
+- 资产: web/vite.config.ts
+  类: 刻意不收
+  出处: web/vite.config.ts
+  挂到: []
+  状态: 刻意不收
+  理由: 构建配置，不是业务本体
+- 资产: .vscode/settings.json
+  类: 刻意不收
+  出处: .vscode/settings.json
+  挂到: []
+  状态: 刻意不收
+  理由: 编辑器主题，不是业务本体

@@ -21,6 +21,11 @@ def test_internal_rework_inapplicable() -> None:
     assert result.verdict == "不适用"
 
 
+def test_board_and_crew_explain() -> None:
+    assert "归一到版" in explain("C.normalize_to_board", set())
+    assert "禁止再乘人数" in explain("C.crew_no_double_count", set())
+
+
 def test_hypothesis_does_not_breed() -> None:
     kb = load()
     kb.facts["F.l1.due_is_shared_reality"].status = "假设"

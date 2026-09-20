@@ -43,4 +43,4 @@ what-if=内存副本试排可丢弃；plan_version=每次重排生成版本号�
 
 ## 封印知识库（第一期）
 业务疑问先对照 `kb/`，用 `explain` / 顾问角色回答，禁止跳过知识库猜测主数据或流程。
-解析员只许写 `kb/` 且标「假设」；工匠必须持有绑定 Ticket。禁止写回 `so_order.due_date`（BR-27）。禁止改 `packages/engine/` 来「补」知识。
+解析员只许写 `kb/` 且标「假设」；工匠必须持有绑定 Ticket。禁止写回 `so_order.due_date`（BR-27）。禁止改 `packages/engine/` 来「补」知识。行业特征写成「A 的 B」并填「属于」；父卡「其下」与加载器反查对账。

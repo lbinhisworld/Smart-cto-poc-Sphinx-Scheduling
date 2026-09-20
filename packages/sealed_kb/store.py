@@ -6,7 +6,7 @@ from typing import Any
 
 import yaml
 
-_SKIP_NAMES = {"schema.yaml"}
+_SKIP_NAMES = {"schema.yaml", "coverage.yaml"}
 
 
 @dataclass
@@ -21,6 +21,8 @@ class Fact:
     false_when: list[str] = field(default_factory=list)
     supports: list[str] = field(default_factory=list)
     binds: list[str] = field(default_factory=list)
+    belongs_to: str | None = None
+    children: list[str] = field(default_factory=list)
     say: dict[str, str] = field(default_factory=dict)
     raw: dict[str, Any] = field(default_factory=dict)
 
@@ -43,6 +45,26 @@ class KnowledgeBase:
     def arguments_for(self, claim_id: str) -> list[Argument]:
         return [a for a in self.arguments if a.supports == claim_id]
 
+    def children_of(self, fact_id: str) -> list[str]:
+        fact = self.facts.get(fact_id)
+        return list(fact.children) if fact else []
+
+    def declared_under(self, fact_id: str) -> list[str]:
+        fact = self.facts.get(fact_id)
+        if fact is None:
+            return []
+        return _as_list(fact.raw.get("其下"))
+
+    def constitution_roots(self) -> list[Fact]:
+        return sorted(
+            (
+                fact
+                for fact in self.facts.values()
+                if fact.pack == "行业" and not fact.belongs_to
+            ),
+            key=lambda f: f.id,
+        )
+
 
 def _as_list(value: Any) -> list[str]:
     if value is None:
@@ -58,21 +80,63 @@ def _say(value: Any) -> dict[str, str]:
     return {str(k): str(v) for k, v in value.items()}
 
 
+def _claim_text(card: dict[str, Any]) -> str:
+    pack = str(card.get("套", ""))
+    if pack == "行业":
+        return str(card.get("定义") or "")
+    return str(card.get("命题") or "")
+
+
 def _fact_from_card(card: dict[str, Any]) -> Fact:
+    parent = card.get("属于")
     return Fact(
         id=str(card["编号"]),
         name=str(card.get("名称", "")),
         pack=str(card.get("套", "")),
         layer=str(card.get("层", "")),
         status=str(card.get("状态", "已封印")),
-        claim=str(card.get("这句话", "")),
+        claim=_claim_text(card),
         true_when=_as_list(card.get("何时成立")),
         false_when=_as_list(card.get("何时不算")),
         supports=_as_list(card.get("撑住谁")),
         binds=_as_list(card.get("绑哪个对象")),
+        belongs_to=str(parent) if parent else None,
         say=_say(card.get("对外怎么说")),
         raw=card,
     )
+
+
+def _index_constitution(kb: KnowledgeBase) -> None:
+    for fact in kb.facts.values():
+        fact.children = []
+    for fact in kb.facts.values():
+        parent_id = fact.belongs_to
+        if not parent_id:
+            continue
+        parent = kb.facts.get(parent_id)
+        if parent is None:
+            continue
+        parent.children.append(fact.id)
+    for fact in kb.facts.values():
+        fact.children.sort()
+
+
+def format_tree(kb: KnowledgeBase | None = None) -> str:
+    store = kb if kb is not None else load()
+    lines: list[str] = []
+
+    def walk(fact_id: str, depth: int) -> None:
+        fact = store.facts.get(fact_id)
+        if fact is None:
+            return
+        mark = f" [{fact.layer}]" if fact.layer == "槽" else ""
+        lines.append(f"{'  ' * depth}{fact.name} ({fact.id}){mark}")
+        for child_id in fact.children:
+            walk(child_id, depth + 1)
+
+    for root in store.constitution_roots():
+        walk(root.id, 0)
+    return "\n".join(lines)
 
 
 def default_kb_root() -> Path:
@@ -102,4 +166,5 @@ def load(root: Path | None = None) -> KnowledgeBase:
             kb.binds.append((str(row["从"]), str(row["到"])))
         for row in data.get("禁止") or []:
             kb.must_not_writes.extend(_as_list(row.get("禁止写入")))
+    _index_constitution(kb)
     return kb

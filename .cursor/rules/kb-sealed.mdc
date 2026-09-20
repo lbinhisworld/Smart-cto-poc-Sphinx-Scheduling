@@ -8,5 +8,8 @@ alwaysApply: true
 - 业务为什么、对象有哪些槽：先读 `kb/`，用 `python -m kb explain`（推理在 `packages/sealed_kb`）或顾问角色。不要跳过图现场编主数据。
 - 解析员：只改 `kb/`，新卡状态必须是「假设」。禁止改 `packages/engine/`。
 - 顾问：先看对象槽是否已封印，再 `prove`。树不够密就列出缺口，停止。
-- 工匠：无绑定 Ticket 则拒改。Ticket 须含事实编号、绑哪个对象、禁止项。禁止写回 `so_order.due_date`。
-- 卡片：中文栏名；说明在最底下。不要把 BR 全文写成 L1 主张。
+- 工匠：无绑定 Ticket 则拒改。Ticket 须含事实编号、绑哪个对象、禁止项、将改的 `kb/`。禁止写回 `so_order.due_date`。
+- 改 `packages/engine/` 或 `config/*.yaml` 必须同时改投影或台账，并跑 `pytest -q tests/test_kb_*.py`。
+- 卡片：中文栏名；说明在最底下。运营用「命题」，行业对象用「定义」。不要把 BR 全文写成 L1 主张。
+- 行业对象：独立事物可单独成名；若 B 是 A 的特征/槽/结果，名称必须是「A 的 B」并写「属于」，禁止只提取 B。父卡写「其下」，与加载器按「属于」反查一致。运营绑定仍指最小槽，不因 domain 分层而改成绑父对象。
+- 覆盖：新 BR、新 `engine/*.py`、新 `models` 类必须进 `kb/coverage.yaml` 并挂卡。

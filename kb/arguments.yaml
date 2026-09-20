@@ -13,3 +13,23 @@
     说明: >
       这四条同时成立时，系统只给最快可交日、不改订单约定日。
       内部返工使主张不适用，整条论证不适用。
+
+  - 编号: A.normalize_to_board
+    名称: 版尺子推出先换算
+    前提:
+      - F.l1.board_is_meter
+      - F.l3.normalize_to_board
+    推出: C.normalize_to_board
+    击败: []
+    说明: >
+      版是唯一尺子，所以计算前必须换算到版。
+
+  - 编号: A.crew_no_double
+    名称: CREW 口径不再乘
+    前提:
+      - F.l1.crew_in_sph
+      - F.l3.sph_and_hours
+    推出: C.crew_no_double_count
+    击败: []
+    说明: >
+      人数已含在 SPH 内，组速不再乘人。

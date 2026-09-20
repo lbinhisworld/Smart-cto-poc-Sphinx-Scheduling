@@ -1,0 +1,323 @@
+卡片:
+- 编号: F.l4.mod_attendance
+  名称: 引擎投影·attendance
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/attendance.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/attendance.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/attendance.py
+  对外怎么说:
+    默认: 改 attendance 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_backward
+  名称: 引擎投影·backward
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/backward.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/backward.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/backward.py
+  对外怎么说:
+    默认: 改 backward 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_bom
+  名称: 引擎投影·bom
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/bom.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/bom.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/bom.py
+  对外怎么说:
+    默认: 改 bom 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_calendar_util
+  名称: 引擎投影·calendar_util
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/calendar_util.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/calendar_util.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/calendar_util.py
+  对外怎么说:
+    默认: 改 calendar_util 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_capacity
+  名称: 引擎投影·capacity
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/capacity.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/capacity.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/capacity.py
+  对外怎么说:
+    默认: 改 capacity 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_cell_detail
+  名称: 引擎投影·cell_detail
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/cell_detail.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/cell_detail.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/cell_detail.py
+  对外怎么说:
+    默认: 改 cell_detail 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_coline
+  名称: 引擎投影·coline
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/coline.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/coline.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/coline.py
+  对外怎么说:
+    默认: 改 coline 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_component_expand
+  名称: 引擎投影·component_expand
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/component_expand.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/component_expand.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/component_expand.py
+  对外怎么说:
+    默认: 改 component_expand 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_conflicts
+  名称: 引擎投影·conflicts
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/conflicts.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/conflicts.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/conflicts.py
+  对外怎么说:
+    默认: 改 conflicts 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_deadband
+  名称: 引擎投影·deadband
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/deadband.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/deadband.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/deadband.py
+  对外怎么说:
+    默认: 改 deadband 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_diff
+  名称: 引擎投影·diff
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/diff.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/diff.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/diff.py
+  对外怎么说:
+    默认: 改 diff 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_errors
+  名称: 引擎投影·errors
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/errors.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/errors.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/errors.py
+  对外怎么说:
+    默认: 改 errors 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_expand
+  名称: 引擎投影·expand
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/expand.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/expand.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/expand.py
+  对外怎么说:
+    默认: 改 expand 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_insert
+  名称: 引擎投影·insert
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/insert.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/insert.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/insert.py
+  对外怎么说:
+    默认: 改 insert 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_interactive
+  名称: 引擎投影·interactive
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/interactive.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/interactive.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/interactive.py
+  对外怎么说:
+    默认: 改 interactive 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_kit_pool
+  名称: 引擎投影·kit_pool
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/kit_pool.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/kit_pool.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/kit_pool.py
+  对外怎么说:
+    默认: 改 kit_pool 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_kitting
+  名称: 引擎投影·kitting
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/kitting.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/kitting.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/kitting.py
+  对外怎么说:
+    默认: 改 kitting 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_models
+  名称: 引擎投影·models
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/models.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/models.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/models.py
+  对外怎么说:
+    默认: 改 models 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_run_log
+  名称: 引擎投影·run_log
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/run_log.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/run_log.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/run_log.py
+  对外怎么说:
+    默认: 改 run_log 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_schedule
+  名称: 引擎投影·schedule
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/schedule.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/schedule.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/schedule.py
+  对外怎么说:
+    默认: 改 schedule 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_trace
+  名称: 引擎投影·trace
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/trace.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/trace.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/trace.py
+  对外怎么说:
+    默认: 改 trace 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_uom
+  名称: 引擎投影·uom
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/uom.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/uom.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/uom.py
+  对外怎么说:
+    默认: 改 uom 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_work_center
+  名称: 引擎投影·work_center
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/work_center.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/work_center.py
+  实现情况: 已做到
+  出处:
+  - packages/engine/work_center.py
+  对外怎么说:
+    默认: 改 work_center 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。

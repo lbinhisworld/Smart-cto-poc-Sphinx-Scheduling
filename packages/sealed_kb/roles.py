@@ -52,4 +52,11 @@ def gate_ticket(ticket: dict) -> GuardResult:
     for write in writes:
         if any(token in write for token in _DUE_WRITES):
             return GuardResult(False, "工匠拒绝：BR-27 禁止写回约定日")
+    files = [str(p).replace("\\", "/") for p in (ticket.get("files") or [])]
+    touches_core = any(
+        p.startswith("packages/engine/") or p.startswith("config/") or p == "packages/engine/models.py"
+        for p in files
+    )
+    if touches_core and not any(p.startswith("kb/") for p in files):
+        return GuardResult(False, "工匠拒绝：改引擎或配置必须同时列出 kb/ 文件")
     return GuardResult(True)
