@@ -1,0 +1,15 @@
+论证:
+  - 编号: A.keep_due_give_earliest
+    名称: 交期锚推出只给最快日
+    前提:
+      - F.l1.due_is_shared_reality
+      - F.l2.sales_owns_promise
+      - F.l3.due_change_via_approval
+      - F.l4.br27_no_write_due
+    推出: C.give_earliest_keep_due
+    击败: []
+    对外怎么说:
+      默认: 因为约定是共同实在，只有人能改，试算只给最快日，代码不得写回。
+    说明: >
+      这四条同时成立时，系统只给最快可交日、不改订单约定日。
+      内部返工使主张不适用，整条论证不适用。

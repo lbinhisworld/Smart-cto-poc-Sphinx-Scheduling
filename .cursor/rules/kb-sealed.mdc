@@ -1,0 +1,12 @@
+---
+description: 封印知识库只读；先顾问后工匠；禁止写回约定日
+alwaysApply: true
+---
+
+# 封印知识库
+
+- 业务为什么、对象有哪些槽：先读 `kb/`，用 `python -m kb explain`（推理在 `packages/sealed_kb`）或顾问角色。不要跳过图现场编主数据。
+- 解析员：只改 `kb/`，新卡状态必须是「假设」。禁止改 `packages/engine/`。
+- 顾问：先看对象槽是否已封印，再 `prove`。树不够密就列出缺口，停止。
+- 工匠：无绑定 Ticket 则拒改。Ticket 须含事实编号、绑哪个对象、禁止项。禁止写回 `so_order.due_date`。
+- 卡片：中文栏名；说明在最底下。不要把 BR 全文写成 L1 主张。

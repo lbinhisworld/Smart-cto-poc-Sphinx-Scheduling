@@ -1,0 +1,11 @@
+绑定:
+  - 从: F.l1.due_is_shared_reality
+    到: D.order.due_date
+  - 从: F.l2.sales_owns_promise
+    到: D.order.due_date
+  - 从: F.l3.due_change_via_approval
+    到: D.order.due_date
+  - 从: F.l4.br27_no_write_due
+    到: D.order.due_date
+  - 从: C.give_earliest_keep_due
+    到: D.order.due_date

@@ -1,0 +1,46 @@
+卡片:
+  - 编号: F.l4.br27_no_write_due
+    名称: 代码禁止写回订单约定日
+    套: 运营
+    层: 投影
+    状态: 已封印
+    这句话: 代码与测试禁止任何路径写回订单约定日。
+    落在哪个文件:
+      - packages/engine/models.py
+      - packages/engine/run_log.py
+      - tests/test_db_redline.py
+    实现情况: 已做到
+    落实的是:
+      - F.l3.due_change_via_approval
+      - BR-27
+    禁止:
+      - 写回订单约定日
+      - 在倒排程序里开例外
+    撑住谁:
+      - F.l3.due_change_via_approval
+    绑哪个对象:
+      - D.order.due_date
+    出处:
+      - .cursorrules
+    对外怎么说:
+      默认: 引擎只把约定日当倒排起点，发布也不改订单日期。
+    说明: >
+      上面那条「改日必须审批」落在仓库里的位置。这里不发明新道理，只登记文件。
+
+  - 编号: F.l4.group_code_drift
+    名称: 组码规格与代码不一致
+    套: 运营
+    层: 投影
+    状态: 已封印
+    这句话: 规格曾列 SEMI 组码，代码只用手工、模具、浇注，二部用部门区分。
+    落在哪个文件:
+      - packages/engine/models.py
+    实现情况: 漂移
+    落实的是:
+      - D.group
+    出处:
+      - packages/engine/models.py
+    对外怎么说:
+      默认: 二部不是第四个组码，是同一套组挂在半成品部门上。
+    说明: >
+      记漂移，本期不改引擎。避免解析员按规格幻觉补出 GroupCode.SEMI。

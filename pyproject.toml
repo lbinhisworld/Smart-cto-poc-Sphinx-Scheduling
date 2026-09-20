@@ -25,9 +25,10 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.package-dir]
 engine = "packages/engine"
 shared = "packages/shared"
+sealed_kb = "packages/sealed_kb"
 
 [tool.setuptools.packages.find]
-include = ["engine*", "api*", "db*", "shared*"]
+include = ["engine*", "api*", "db*", "shared*", "sealed_kb*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
