@@ -108,6 +108,10 @@ class SoOrderLineRow(Base):
     unit: Mapped[str] = mapped_column(String)
     unit_price: Mapped[str] = mapped_column(Numeric(18, 4), default="0")
     line_amount: Mapped[str] = mapped_column(Numeric(18, 2), default="0")
+    spec: Mapped[str] = mapped_column(String, default="")
+    mold_fee: Mapped[str] = mapped_column(Numeric(18, 2), default="0")
+    rebate_qty: Mapped[str | None] = mapped_column(Numeric(18, 4), nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
 
 
 class SoOrderRow(Base):
@@ -130,6 +134,7 @@ class SoOrderRow(Base):
     kitting_rate_pct: Mapped[int | None] = mapped_column(Integer, nullable=True)
     order_source: Mapped[str] = mapped_column(String, default="MANUAL")
     contract_no: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    quote_no: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
 
 class KingdeeSyncLogRow(Base):
@@ -334,6 +339,33 @@ class CrmQuoteRow(Base):
     status: Mapped[str] = mapped_column(String, default="DRAFT")
     owner_sales: Mapped[str] = mapped_column(String, default="")
     lines_json: Mapped[str] = mapped_column(Text, default="[]")
+    opportunity_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    tax_rate: Mapped[str] = mapped_column(Numeric(18, 4), default="0.13")
+    valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    contract_no: Mapped[str | None] = mapped_column(String, nullable=True)
+    order_no: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+
+
+class CrmQuoteLineRow(Base):
+    __tablename__ = "crm_quote_line"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    quote_code: Mapped[str] = mapped_column(String, index=True)
+    line_no: Mapped[int] = mapped_column(Integer)
+    item_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    item_name: Mapped[str] = mapped_column(String, default="")
+    image_ref: Mapped[str] = mapped_column(Text, default="")
+    spec: Mapped[str] = mapped_column(String, default="")
+    process_label: Mapped[str] = mapped_column(String, default="")
+    category: Mapped[str] = mapped_column(String, default="")
+    unit_price_tax_in: Mapped[str] = mapped_column(Numeric(18, 4), default="0")
+    moq: Mapped[str | None] = mapped_column(Numeric(18, 4), nullable=True)
+    qty: Mapped[str] = mapped_column(Numeric(18, 4))
+    uom: Mapped[str] = mapped_column(String, default="BOX")
+    mold_fee: Mapped[str] = mapped_column(Numeric(18, 2), default="0")
+    rebate_qty: Mapped[str | None] = mapped_column(Numeric(18, 4), nullable=True)
+    rebate_uom: Mapped[str | None] = mapped_column(String, nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
 
 
 class OrderChangeRequestRow(Base):

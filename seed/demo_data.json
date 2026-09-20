@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "斯芬克斯一体化 POC 演示扩展",
-    "demo_version": "2026-09-16-sample-round-v1",
+    "demo_version": "2026-09-17-quote-v1",
     "hr_demo_version": "2026-09-16-hr-contract-v2",
     "today": "2026-09-15",
     "scheduling_seed": "seed/seed_data.json"
@@ -46,11 +46,136 @@
       {"name": "甜研浇注小批", "customer_code": "C-008", "stage": "成交", "amount": 9000, "owner_sales": "周婷", "expect_close_date": "2026-09-24"}
     ],
     "quotes": [
-      {"code": "QT-001", "customer_code": "C-001", "sample_code": "SP-001", "total_amount": 32000, "status": "APPROVED", "owner_sales": "陈雨桐", "lines": [{"item": "圣诞雪花插件", "qty": 1, "price": 32000}]},
-      {"code": "QT-002", "customer_code": "C-002", "sample_code": "SP-004", "total_amount": 18500, "status": "DRAFT", "owner_sales": "韩磊", "lines": [{"item": "淋酱长条", "qty": 1, "price": 18500}]},
-      {"code": "QT-003", "customer_code": "C-006", "sample_code": null, "total_amount": 24000, "status": "SUBMITTED", "owner_sales": "陈雨桐", "lines": [{"item": "P1 铲花插件", "qty": 40, "price": 600}]},
-      {"code": "QT-004", "customer_code": "C-010", "sample_code": "SP-007", "total_amount": 45000, "status": "DRAFT", "owner_sales": "孙悦", "lines": [{"item": "电商爆款模具", "qty": 1, "price": 45000}]},
-      {"code": "QT-005", "customer_code": "C-009", "sample_code": "SP-008", "total_amount": 52000, "status": "APPROVED", "owner_sales": "王芷若", "lines": [{"item": "婚庆陈列组合", "qty": 1, "price": 52000}]}
+      {
+        "code": "QT-001",
+        "customer_code": "C-001",
+        "sample_code": "SP-001",
+        "total_amount": 32000,
+        "status": "APPROVED",
+        "owner_sales": "陈雨桐",
+        "tax_rate": "0.13",
+        "note": "圣诞档期框架报价",
+        "lines": [
+          {
+            "item_code": "P2",
+            "item_name": "卡通造型件B",
+            "image_ref": "",
+            "spec": "圣诞雪花插件",
+            "process_label": "模具",
+            "category": "插件",
+            "unit_price_tax_in": "800",
+            "moq": 20,
+            "qty": 40,
+            "uom": "BOX",
+            "mold_fee": "0",
+            "rebate_qty": 200,
+            "rebate_uom": "BOX",
+            "note": "打样通过"
+          }
+        ]
+      },
+      {
+        "code": "QT-002",
+        "customer_code": "C-002",
+        "sample_code": "SP-004",
+        "total_amount": 18500,
+        "status": "DRAFT",
+        "owner_sales": "韩磊",
+        "tax_rate": "0.13",
+        "lines": [
+          {
+            "item_code": null,
+            "item_name": "淋酱长条",
+            "image_ref": "",
+            "spec": "打样中 · 未入库",
+            "process_label": "浇注",
+            "category": "长条",
+            "unit_price_tax_in": "18500",
+            "moq": 1,
+            "qty": 1,
+            "uom": "BOX",
+            "mold_fee": "0",
+            "note": "新品待补品号"
+          }
+        ]
+      },
+      {
+        "code": "QT-003",
+        "customer_code": "C-006",
+        "sample_code": null,
+        "total_amount": 24000,
+        "status": "SUBMITTED",
+        "owner_sales": "陈雨桐",
+        "tax_rate": "0.13",
+        "lines": [
+          {
+            "item_code": "P1",
+            "item_name": "巧克力装饰片A",
+            "image_ref": "",
+            "spec": "P1 铲花插件",
+            "process_label": "手工",
+            "category": "插件",
+            "unit_price_tax_in": "600",
+            "moq": 10,
+            "qty": 40,
+            "uom": "BOX",
+            "mold_fee": "0",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "code": "QT-004",
+        "customer_code": "C-010",
+        "sample_code": "SP-007",
+        "total_amount": 45000,
+        "status": "DRAFT",
+        "owner_sales": "孙悦",
+        "tax_rate": "0.13",
+        "lines": [
+          {
+            "item_code": null,
+            "item_name": "电商爆款模具",
+            "image_ref": "",
+            "spec": "开模报价",
+            "process_label": "模具",
+            "category": "OEM",
+            "unit_price_tax_in": "0",
+            "moq": 1,
+            "qty": 1,
+            "uom": "BOX",
+            "mold_fee": "45000",
+            "rebate_qty": 500,
+            "rebate_uom": "BOX",
+            "note": "达计量后退模费（V1 仅记录）"
+          }
+        ]
+      },
+      {
+        "code": "QT-005",
+        "customer_code": "C-009",
+        "sample_code": "SP-008",
+        "total_amount": 52000,
+        "status": "APPROVED",
+        "owner_sales": "王芷若",
+        "tax_rate": "0.13",
+        "lines": [
+          {
+            "item_code": "P9",
+            "item_name": "庆典组合雕塑（三胚装配）",
+            "image_ref": "",
+            "spec": "婚庆陈列组合",
+            "process_label": "模具",
+            "category": "礼盒",
+            "unit_price_tax_in": "1000",
+            "moq": 10,
+            "qty": 52,
+            "uom": "BOX",
+            "mold_fee": "0",
+            "note": ""
+          }
+        ]
+      }
     ],
     "contracts": [
       {

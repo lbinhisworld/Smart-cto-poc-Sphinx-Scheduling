@@ -37,11 +37,16 @@ from engine.models import (
 from engine.uom import to_board
 
 _GROUP_LABEL = {
-    "MANUAL": "手工组",
-    "MOLD": "模具组",
-    "POURING": "浇注组",
-    "SEMI": "二部半成品组",
+    "MANUAL": "一部·手工组",
+    "MOLD": "一部·模具组",
+    "POURING": "一部·浇注组",
+    "SEMI": "二部半成品",
 }
+
+ROUTING_NOTE = (
+    "一部手工/模具/浇筑是并行工作中心（多数品只走其中一组，不是 1→2→3）。"
+    "二部半成品片材可流向一部全部前端组。"
+)
 
 _UOM_ZH = {
     "PCS": "枚",
@@ -191,7 +196,11 @@ def _item_node(session: Session, item: Item) -> dict:
         "item_name": item.item_name,
         "is_semi": item.is_semi,
         "group_code": item.group_code.value,
-        "group_label": _GROUP_LABEL.get(item.group_code.value, item.group_code.value),
+        "group_label": (
+            "二部半成品（可流向一部三组）"
+            if item.is_semi
+            else _GROUP_LABEL.get(item.group_code.value, item.group_code.value)
+        ),
         "color": item.color,
         "loss_rate": float(item.loss_rate),
         "computable": item.computable,
@@ -310,6 +319,7 @@ def bom_design(session: Session, item_code: str) -> dict | None:
         "semi": semi_node,
         "edge": edge,
         "components": components,
+        "routing_note": ROUTING_NOTE,
     }
 
 
@@ -475,6 +485,7 @@ def bom_catalog(session: Session, seed_path: Path) -> dict:
     return {
         "seed_version": meta.get("seed_version"),
         "today": meta.get("today"),
+        "routing_note": ROUTING_NOTE,
         "catalog": catalog,
         "items": index,
     }

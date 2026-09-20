@@ -191,6 +191,30 @@ export function DemoConsolePage() {
         </div>
       )}
 
+      <section className="mt-4 rounded-lg border border-violet-800/50 bg-violet-950/25 p-4">
+        <h3 className="text-sm font-semibold text-violet-100">概念讲解（可离线讲）</h3>
+        <p className="mt-1 text-[11px] text-violet-200/70">
+          与下方十幕 live 操作互补：先讲逻辑，再进看板 / 生产成本实操。Workbuddy 静态页可放{" "}
+          <code className="text-violet-300">web/public/demo/</code> 后用 embed 参数挂载。
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            to="/demo/story/schedule"
+            className="rounded-lg border border-violet-600/60 bg-violet-950/40 px-4 py-2 text-xs text-violet-100 hover:border-violet-500"
+          >
+            排程算法讲解
+            <span className="mt-0.5 block text-[10px] text-violet-300/80">倒排 · 冲突 · 插单 → 再看 /schedule</span>
+          </Link>
+          <Link
+            to="/demo/story/cost"
+            className="rounded-lg border border-violet-600/60 bg-violet-950/40 px-4 py-2 text-xs text-violet-100 hover:border-violet-500"
+          >
+            计划人工成本讲解
+            <span className="mt-0.5 block text-[10px] text-violet-300/80">人·时 · 单价 · 打样剔除 → 再看生产成本</span>
+          </Link>
+        </div>
+      </section>
+
       <section className="mt-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-slate-100">场景台</h3>

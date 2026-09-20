@@ -10,6 +10,13 @@ type CatalogItem = {
   item_name: string;
   group_label?: string;
 };
+type QuoteOption = {
+  code: string;
+  customer_code: string;
+  status: string;
+  total_amount: number | null;
+  lines: { item_code?: string | null; item_name: string; qty: number; uom: string }[];
+};
 
 type DraftLine = {
   item_code: string;
@@ -63,6 +70,8 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
   const [ctpBusy, setCtpBusy] = useState(false);
   const [ctp, setCtp] = useState<CtpOrderResult | null>(null);
   const [ctpStamp, setCtpStamp] = useState<string | null>(null);
+  const [quotes, setQuotes] = useState<QuoteOption[]>([]);
+  const [quoteCode, setQuoteCode] = useState("");
 
   useEffect(() => {
     if (!open || !role) return;
@@ -73,6 +82,8 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
     setContracts([]);
     setCtp(null);
     setCtpStamp(null);
+    setQuoteCode("");
+    setQuotes([]);
     requestWithRole<Customer[]>("/api/crm/customers", role).then(setCustomers);
     fetch("/api/bom")
       .then((r) => r.json())
@@ -91,6 +102,13 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
     ).then((list) => {
       setContracts(list);
       setContractNo(list[0]?.contract_no ?? "");
+    });
+    requestWithRole<QuoteOption[]>(
+      `/api/crm/quotes?customer_code=${encodeURIComponent(customerCode)}&status=APPROVED`,
+      role,
+    ).then((list) => {
+      setQuotes(list);
+      setQuoteCode("");
     });
   }, [role, customerCode]);
 
@@ -177,7 +195,7 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
       setErr("请选择关联合同（需 ACTIVE 合同）");
       return;
     }
-    if (lines.length === 0) {
+    if (!quoteCode && lines.length === 0) {
       setErr("请添加至少一行产品");
       return;
     }
@@ -188,23 +206,32 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
     setBusy(true);
     setErr(null);
     try {
-      const r = await fetch("/api/mis/orders?today=2026-09-15", {
+      const r = await fetch(quoteCode ? "/api/mis/orders/from-quote?today=2026-09-15" : "/api/mis/orders?today=2026-09-15", {
         method: "POST",
         headers: {
           ...auth.headers(),
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          customer_code: customerCode,
-          contract_no: contractNo,
-          due_date: dueDate,
-          sales_name: auth.userName,
-          lines: lines.map((l) => ({
-            item_code: l.item_code,
-            qty: l.qty,
-            unit: l.unit,
-          })),
-        }),
+        body: JSON.stringify(
+          quoteCode
+            ? {
+                quote_code: quoteCode,
+                contract_no: contractNo,
+                due_date: dueDate,
+                sales_name: auth.userName,
+              }
+            : {
+                customer_code: customerCode,
+                contract_no: contractNo,
+                due_date: dueDate,
+                sales_name: auth.userName,
+                lines: lines.map((l) => ({
+                  item_code: l.item_code,
+                  qty: l.qty,
+                  unit: l.unit,
+                })),
+              },
+        ),
       });
       const text = await r.text();
       const j = text ? JSON.parse(text) : {};
@@ -266,6 +293,38 @@ export function CreateOrderModal({ open, onClose, onCreated }: Props) {
                 {contracts.map((c) => (
                   <option key={c.contract_no} value={c.contract_no}>
                     {c.contract_no} · {c.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-xs sm:col-span-2">
+              <span className="text-[var(--text-muted)]">从已批准报价导入</span>
+              <select
+                className="mt-1 w-full rounded border px-2 py-1.5"
+                style={{ borderColor: "var(--line)", background: "var(--bg-body)" }}
+                value={quoteCode}
+                disabled={!customerCode}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setQuoteCode(next);
+                  const q = quotes.find((x) => x.code === next);
+                  if (!q) return;
+                  setLines(
+                    q.lines
+                      .filter((ln) => ln.item_code)
+                      .map((ln) => ({
+                        item_code: ln.item_code as string,
+                        item_name: ln.item_name,
+                        qty: ln.qty,
+                        unit: ln.uom || "BOX",
+                      })),
+                  );
+                }}
+              >
+                <option value="">不使用报价（手工选品）</option>
+                {quotes.map((q) => (
+                  <option key={q.code} value={q.code}>
+                    {q.code} · {q.lines.length} 行
                   </option>
                 ))}
               </select>

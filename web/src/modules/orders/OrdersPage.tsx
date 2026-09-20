@@ -328,6 +328,15 @@ export function OrdersPage() {
         rowKey={(r) => r.order_no}
         toolbar={
           <>
+            {(auth.role === "GM" || auth.role === "SALES" || auth.role === "SALES_MGR" || auth.role === "FIN") && (
+              <Link
+                to="/orders/quotes"
+                className="rounded border px-2 py-1 text-xs"
+                style={{ borderColor: "var(--line)" }}
+              >
+                产品报价
+              </Link>
+            )}
             {canCreate && (
               <button
                 type="button"

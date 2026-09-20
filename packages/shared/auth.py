@@ -52,6 +52,7 @@ MENU: tuple[MenuItem, ...] = (
     MenuItem("ctp", "交期试算 CTP", "/crm/ctp", frozenset({"GM", "SALES_MGR", "SALES"}), "M2"),
     MenuItem("changes", "订单变更", "/changes", frozenset({"GM", "SALES_MGR", "SALES", "PMC"}), "M3"),
     MenuItem("orders", "销售订单", "/orders", frozenset({"GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN"}), "M3"),
+    MenuItem("quotes", "产品报价", "/orders/quotes", frozenset({"GM", "SALES_MGR", "SALES", "FIN"}), "M3"),
     MenuItem("kingdee", "金蝶同步", "/kingdee", frozenset({"GM", "PMC", "WH"}), "M3"),
     MenuItem("schedule", "生产排程", "/schedule", frozenset({"GM", "PMC"}), "M8"),
     MenuItem("stock", "库存中心", "/stock", frozenset({"GM", "PMC", "WH"}), "M4"),

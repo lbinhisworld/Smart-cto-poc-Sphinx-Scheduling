@@ -206,7 +206,7 @@ export function CockpitPage() {
           </div>
           {labor.top_products && labor.top_products.length > 0 && (
             <div className="mt-4 rounded-lg border p-4" style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}>
-              <p className="text-xs font-medium text-[var(--text-muted)]">品项计划人工成本 Top</p>
+              <p className="text-xs font-medium text-[var(--text-muted)]">量产品项计划人工成本 Top</p>
               <ul className="mt-2 space-y-1 text-sm">
                 {labor.top_products.map((p) => (
                   <li key={p.item_code} className="flex justify-between gap-4 tabular-nums">

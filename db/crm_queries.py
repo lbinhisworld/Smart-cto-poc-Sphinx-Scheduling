@@ -233,16 +233,6 @@ def sample_weekly_report(session: Session) -> dict:
 
 
 def list_quotes(session: Session) -> list[dict]:
-    rows = session.scalars(select(CrmQuoteRow).order_by(CrmQuoteRow.code)).all()
-    return [
-        {
-            "code": q.code,
-            "customer_code": q.customer_code,
-            "sample_code": q.sample_code,
-            "total_amount": float(q.total_amount),
-            "status": q.status,
-            "owner_sales": q.owner_sales,
-            "lines": json.loads(q.lines_json or "[]"),
-        }
-        for q in rows
-    ]
+    from db.quote_service import list_quotes as _list_quotes
+
+    return _list_quotes(session)

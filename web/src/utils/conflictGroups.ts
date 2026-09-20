@@ -19,6 +19,15 @@ export type ConflictWithIndex = {
   woType: string | null;
 };
 
+export type ConflictDisplayRow = {
+  /** 代表条（合并时为 bucket 内第一条） */
+  conflict: Conflict;
+  index: number;
+  woType: string | null;
+  /** 同 code / 文案 / 建议 / 工单类型且多条工单时合并展示 */
+  merged?: ConflictWithIndex[];
+};
+
 export type ConflictOrderGroup = {
   key: string;
   orderNo: string | null;
@@ -29,7 +38,102 @@ export type ConflictOrderGroup = {
   crossOrderLabels: string[];
   worstLevel: ConflictLevel;
   items: ConflictWithIndex[];
+  /** 组内折叠后的清单行（与 items 顺序语义一致，条数 ≤ items） */
+  rows: ConflictDisplayRow[];
 };
+
+function mergeSignature(item: ConflictWithIndex): string {
+  const c = item.conflict;
+  return [
+    c.code,
+    c.level,
+    c.message,
+    c.suggest ?? "",
+    item.woType ?? "",
+  ].join("\u0001");
+}
+
+function itemCodeForEntry(
+  item: ConflictWithIndex,
+  wmap: Map<string, Wo>,
+): string | null {
+  const woNo = item.conflict.wo_no;
+  if (!woNo) return null;
+  return wmap.get(woNo)?.item_code ?? null;
+}
+
+/** 同订单组内合并完全同质的工单级冲突（典型：多子件各一条 E1） */
+export function collapseGroupConflictItems(
+  items: ConflictWithIndex[],
+): ConflictDisplayRow[] {
+  if (items.length === 0) return [];
+
+  const bySig = new Map<string, ConflictWithIndex[]>();
+  for (const it of items) {
+    const sig = mergeSignature(it);
+    const list = bySig.get(sig) ?? [];
+    list.push(it);
+    bySig.set(sig, list);
+  }
+
+  const consumed = new Set<ConflictWithIndex>();
+  const rows: ConflictDisplayRow[] = [];
+
+  for (const it of items) {
+    if (consumed.has(it)) continue;
+    const bucket = bySig.get(mergeSignature(it)) ?? [it];
+    if (bucket.length === 1 || bucket.some((b) => !b.conflict.wo_no)) {
+      rows.push({
+        conflict: it.conflict,
+        index: it.index,
+        woType: it.woType,
+      });
+      consumed.add(it);
+      continue;
+    }
+    for (const b of bucket) consumed.add(b);
+    const head = bucket[0];
+    rows.push({
+      conflict: head.conflict,
+      index: head.index,
+      woType: head.woType,
+      merged: bucket,
+    });
+  }
+
+  return rows;
+}
+
+export function conflictDisplayRowKey(row: ConflictDisplayRow): string {
+  if (row.merged && row.merged.length > 1) {
+    const woNos = row.merged
+      .map((m) => m.conflict.wo_no ?? "")
+      .filter(Boolean)
+      .sort()
+      .join(",");
+    return ["merged", row.conflict.code, woNos, String(row.index)].join("|");
+  }
+  return [
+    row.conflict.code,
+    row.conflict.wo_no ?? "",
+    row.conflict.task_id ?? "",
+    row.conflict.group_code ?? "",
+    row.conflict.cell_date ?? "",
+    String(row.index),
+  ].join("|");
+}
+
+export function mergedItemCodes(
+  row: ConflictDisplayRow,
+  wmap: Map<string, Wo>,
+): string[] {
+  const source = row.merged ?? [{ conflict: row.conflict, index: row.index, woType: row.woType }];
+  return unique(
+    source
+      .map((m) => itemCodeForEntry(m, wmap))
+      .filter((c): c is string => Boolean(c)),
+  );
+}
 
 function orderByNo(orders: OrderRow[]): Map<string, OrderRow> {
   return new Map(orders.map((o) => [o.order_no, o]));
@@ -81,15 +185,16 @@ export function groupConflictsByOrder(
 
   const ensure = (
     key: string,
-    seed: Omit<ConflictOrderGroup, "key" | "items" | "worstLevel">,
+    seed: Omit<ConflictOrderGroup, "key" | "items" | "worstLevel" | "rows">,
   ): ConflictOrderGroup => {
     const existing = groups.get(key);
     if (existing) return existing;
     const created: ConflictOrderGroup = {
+      ...seed,
       key,
       worstLevel: "BLUE",
       items: [],
-      ...seed,
+      rows: [],
     };
     groups.set(key, created);
     return created;
@@ -138,7 +243,7 @@ export function groupConflictsByOrder(
     push(g, { conflict: c, index, woType: wo?.wo_type ?? null });
   });
 
-  return [...groups.values()].sort((a, b) => {
+  const sorted = [...groups.values()].sort((a, b) => {
     const lv = LEVEL_RANK[a.worstLevel] - LEVEL_RANK[b.worstLevel];
     if (lv !== 0) return lv;
     const da = a.dueDate ?? "";
@@ -146,4 +251,8 @@ export function groupConflictsByOrder(
     if (da !== db) return da.localeCompare(db);
     return (a.orderNo ?? a.key).localeCompare(b.orderNo ?? b.key);
   });
+  for (const g of sorted) {
+    g.rows = collapseGroupConflictItems(g.items);
+  }
+  return sorted;
 }

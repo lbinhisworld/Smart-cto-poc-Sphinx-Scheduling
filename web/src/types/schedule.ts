@@ -39,13 +39,23 @@ export type Wo = {
   source_order_no: string;
   item_code: string;
   group_code: string;
+  dept?: string;
   qty_board_plan: number;
+  qty_board_done?: number;
   due_date: string;
   plan_start?: string | null;
   plan_end?: string | null;
   crew_plan: number;
   is_locked: boolean;
   parent_wo_no: string | null;
+};
+
+export type UnplacedEntry = {
+  wo_no: string;
+  code: string;
+  remaining: number;
+  reason: string;
+  earliest_finish?: string | null;
 };
 
 export type WoTask = {
@@ -130,6 +140,7 @@ export type ScheduleResult = {
   wos: Wo[];
   tasks: WoTask[];
   dependencies: { pred_wo_no: string; succ_wo_no: string }[];
+  unplaced?: UnplacedEntry[];
   conflicts: Conflict[];
   kit_checks?: import("./kit").KitCheck[];
   kit_allocations?: import("./kit").KitAllocation[];

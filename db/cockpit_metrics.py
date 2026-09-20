@@ -63,7 +63,8 @@ def cockpit_snapshot(session: Session, *, today_iso: str = "2026-09-15") -> dict
             "plan_version": ver,
             "totals": labor_totals,
             "top_products": labor_products,
-            "note": "计划人工成本（人·时×标准单价），按成品品项汇总",
+            "note": lp.get("note")
+            or "量产成品人·时×标准单价；打样/研发工时已剔除",
         },
         "legacy_excel_sheets": 20,
         "note": "现状对照：Excel 一表三用 vs 一体化排程+CRM",

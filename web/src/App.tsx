@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { BomExplorerPage } from "./components/BomExplorerPage";
 import { KingdeeSyncPage } from "./modules/kingdee/KingdeeSyncPage";
 import { OrdersPage } from "./modules/orders/OrdersPage";
+import { QuotesPage } from "./modules/orders/QuotesPage";
 import ScheduleWorkspace from "./modules/schedule/ScheduleWorkspace";
 import { CockpitPage, ModuleSummaryPage } from "./modules/cockpit/CockpitPage";
 import {
@@ -12,6 +13,7 @@ import {
   CtpPage,
 } from "./modules/crm/CrmPages";
 import { DemoConsolePage, TodoCenterPage } from "./modules/demo/DemoPages";
+import { CostStoryPage, ScheduleStoryPage } from "./modules/demo/StoryPages";
 import { HrAttendancePage, HrRosterPage } from "./modules/hr/HrPages";
 import { HrLaborCostPage, ProductionTimeReportPage } from "./modules/labor/LaborPages";
 import { Dept1StatsPage } from "./modules/production/ProdStatsPages";
@@ -48,6 +50,8 @@ export default function App() {
           >
             <Route path="/portal" element={<PortalPage />} />
             <Route path="/demo" element={<DemoConsolePage />} />
+            <Route path="/demo/story/schedule" element={<ScheduleStoryPage />} />
+            <Route path="/demo/story/cost" element={<CostStoryPage />} />
             <Route path="/todos" element={<TodoCenterPage />} />
             <Route path="/cockpit" element={<CockpitPage />} />
             <Route path="/crm/customers" element={<CrmCustomersPage />} />
@@ -70,6 +74,7 @@ export default function App() {
             <Route path="/modules/finance" element={<ModuleSummaryPage module="finance" />} />
             <Route path="/modules/project" element={<ModuleSummaryPage module="project" />} />
             <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/quotes" element={<QuotesPage />} />
             <Route path="/kingdee" element={<KingdeeSyncPage />} />
             <Route path="/schedule" element={<ScheduleWorkspace />} />
             <Route path="/stock" element={<StockCenterPage planAllocations={[]} />} />

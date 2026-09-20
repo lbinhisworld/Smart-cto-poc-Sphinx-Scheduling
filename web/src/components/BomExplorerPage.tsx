@@ -80,7 +80,7 @@ export function BomExplorerPage() {
       <div className={`${OPS_PANEL} px-4 py-3`}>
         <h2 className="text-sm font-semibold">工艺 / BOM · 设计态</h2>
         <p className="mt-1 text-xs text-slate-400">
-          子件扇入成品（半成品并列、外购齐套；成品单节点）。种子版本{" "}
+          子件扇入成品（半成品并列、外购齐套；成品单节点）。一部组是并行工作中心，二部片材可流向一部三组。种子版本{" "}
           {catalog?.seed_version ?? "—"} · 基准日 {catalog?.today ?? DEMO_TODAY}
         </p>
       </div>
@@ -166,7 +166,7 @@ export function BomExplorerPage() {
                     )}
                   </p>
                   <p className="mt-1 text-[10px] text-violet-400/80">
-                    先「一键倒排」发布计划后此处才有数；与上方数量展开口径独立
+                    量产人·时×标准单价，打样已剔除；先「一键倒排」发布计划后才有数
                   </p>
                 </div>
               )}

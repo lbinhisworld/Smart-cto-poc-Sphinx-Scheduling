@@ -18,6 +18,7 @@ from db.tables import (
     CrmCustomerRow,
     CrmOpportunityRow,
     CrmPaymentReceiptRow,
+    CrmQuoteLineRow,
     CrmQuoteRow,
     CrmSampleRow,
     CrmSampleStepRow,
@@ -143,6 +144,7 @@ def _reload_crm_rows(session: Session, crm: dict) -> dict:
     session.execute(delete(CrmOpportunityRow))
     session.execute(delete(CrmSampleStepRow))
     session.execute(delete(CrmSampleRow))
+    session.execute(delete(CrmQuoteLineRow))
     session.execute(delete(CrmQuoteRow))
     stats = {"opportunities": 0, "samples": 0, "quotes": 0, "contracts": 0}
     for row in crm.get("opportunities", []):
@@ -187,18 +189,10 @@ def _reload_crm_rows(session: Session, crm: dict) -> dict:
                     round_no=st.get("round_no"),
                 )
             )
+    from db.quote_service import seed_quote_from_demo
+
     for row in crm.get("quotes", []):
-        session.add(
-            CrmQuoteRow(
-                code=row["code"],
-                customer_code=row["customer_code"],
-                sample_code=row.get("sample_code"),
-                total_amount=str(row["total_amount"]),
-                status=row.get("status", "DRAFT"),
-                owner_sales=row.get("owner_sales", ""),
-                lines_json=json.dumps(row.get("lines") or [], ensure_ascii=False),
-            )
-        )
+        seed_quote_from_demo(session, row)
         stats["quotes"] += 1
     stats["contracts"] = _reload_contracts(session, crm)
     return stats

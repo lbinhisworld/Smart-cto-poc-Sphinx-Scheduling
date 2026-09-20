@@ -204,6 +204,11 @@ export function renderStatusTag(status: string) {
     SCHEDULED: { cls: "bg-amber-950 text-amber-200 ring-1 ring-amber-700", label: "已进排程" },
     CLOSED: { cls: "bg-slate-800 text-slate-400 ring-1 ring-slate-700", label: "已关闭" },
     CANCELLED: { cls: "bg-rose-950 text-rose-300 ring-1 ring-rose-800", label: "已作废" },
+    DRAFT: { cls: "bg-slate-800 text-slate-300 ring-1 ring-slate-600", label: "草稿" },
+    SUBMITTED: { cls: "bg-sky-950 text-sky-200 ring-1 ring-sky-700", label: "已提交" },
+    APPROVED: { cls: "bg-emerald-950 text-emerald-200 ring-1 ring-emerald-700", label: "已批准" },
+    CONVERTED: { cls: "bg-violet-950 text-violet-200 ring-1 ring-violet-700", label: "已转订单" },
+    VOID: { cls: "bg-rose-950 text-rose-300 ring-1 ring-rose-800", label: "已作废" },
   };
   const item = map[status] ?? { cls: "bg-slate-800 text-slate-400 ring-1 ring-slate-700", label: status };
   return (

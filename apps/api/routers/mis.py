@@ -37,6 +37,14 @@ class MisCreateOrderIn(BaseModel):
     is_urgent: bool = False
 
 
+class FromQuoteIn(BaseModel):
+    quote_code: str
+    contract_no: str
+    due_date: date
+    sales_name: str = ""
+    is_urgent: bool = False
+
+
 def register_mis(app, get_db):
     @app.post("/api/mis/orders")
     def mis_create_order(
@@ -133,6 +141,8 @@ def register_mis(app, get_db):
                 "order_status": row.order_status,
                 "schedule_phase": row.schedule_phase,
                 "kitting_rate_pct": row.kitting_rate_pct,
+                "quote_no": row.quote_no,
+                "contract_no": row.contract_no,
                 "lines": lines,
                 "actions": {"can_change": can_change, "can_delete": can_delete},
             },
@@ -194,3 +204,33 @@ def register_mis(app, get_db):
             "message": "",
             "data": {"pool": scheduling_pool_order_nos(db), "added": order_nos},
         }
+
+    @app.post("/api/mis/orders/from-quote")
+    def mis_order_from_quote(
+        body: FromQuoteIn,
+        today: date | None = None,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        if role not in ("GM", "SALES", "SALES_MGR", "PMC"):
+            raise HTTPException(status_code=403, detail="无权从报价转订单")
+        ensure_demo_crm(db)
+        from db.quote_service import convert_to_order
+
+        anchor = today or date(2026, 9, 15)
+        try:
+            out = convert_to_order(
+                db,
+                quote_code=body.quote_code,
+                contract_no=body.contract_no,
+                due_date=body.due_date,
+                today=anchor,
+                sales_name=body.sales_name,
+                is_urgent=body.is_urgent,
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from None
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        return {"code": 0, "message": "已从报价转订单", "data": out}

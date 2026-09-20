@@ -50,6 +50,11 @@ def test_bom_design_p2_two_layer(api_client):
     assert d["semi"]["group_code"] == "MOLD"
     assert d["edge"]["semi_board_per_box"] == 2.0
     assert d["edge"]["lead_time_days"] == 4
+    note = d.get("routing_note") or ""
+    assert "工作中心" in note
+    assert "流向" in note
+    assert "一部" in d["finished"]["group_label"]
+    assert "二部" in d["semi"]["group_label"]
 
 
 def test_bom_design_p1_single_layer(api_client):

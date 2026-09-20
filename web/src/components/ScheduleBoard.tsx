@@ -1,6 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { forwardRef, useImperativeHandle, useRef, type ReactNode } from "react";
 import {
+  BOARD_ROUTING_NOTE,
   FENCE_DAYS,
   wcKey,
   WORK_CENTERS,
@@ -142,6 +143,9 @@ export const ScheduleBoard = forwardRef<ScheduleBoardHandle, Props>(function Sch
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <p className="mb-1 shrink-0 px-0.5 text-[11px] leading-relaxed text-slate-500">
+        {BOARD_ROUTING_NOTE}
+      </p>
       <div
         ref={scrollRootRef}
         className="min-h-0 flex-1 overflow-auto rounded-lg border border-slate-800 bg-slate-900"

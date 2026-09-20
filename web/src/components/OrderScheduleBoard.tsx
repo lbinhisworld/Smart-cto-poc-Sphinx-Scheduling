@@ -146,7 +146,7 @@ export const OrderScheduleBoard = forwardRef<OrderScheduleBoardHandle, Props>(
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <p className="mb-2 shrink-0 text-[11px] text-slate-500">
-          订单视图 · 行=订单 · 列=日期 · 交期列 🚩 · 未参与本次计划的勾选单排在最后
+          订单视图 · 行=订单 · 列=日期 · 交期列 🚩 · 一部组是并行产线 · 二部片材可流向一部三组
         </p>
         <div
           ref={scrollRootRef}

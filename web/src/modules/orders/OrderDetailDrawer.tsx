@@ -13,6 +13,10 @@ type OrderLine = {
   unit: string;
   unit_price: number;
   line_amount: number;
+  spec?: string;
+  mold_fee?: number;
+  rebate_qty?: number | null;
+  note?: string;
 };
 
 type Breakdown = {
@@ -26,6 +30,8 @@ type Breakdown = {
     schedule_phase?: string;
     kitting_rate_pct?: number | null;
     item_code?: string;
+    quote_no?: string | null;
+    contract_no?: string | null;
   };
   lines: OrderLine[];
   kitting: { kitting_rate_pct?: number | null; shortages?: { item_code?: string; shortage_board?: number }[] };
@@ -182,6 +188,18 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged, initialTab = "d
                   <dd>{o.sales_name ?? "—"}</dd>
                   <dt className="text-[var(--text-muted)]">齐套率</dt>
                   <dd>{renderProgress(o.kitting_rate_pct ?? null)}</dd>
+                  <dt className="text-[var(--text-muted)]">来源报价</dt>
+                  <dd>
+                    {o.quote_no ? (
+                      <Link to="/orders/quotes" className="font-mono text-[var(--accent)] hover:underline">
+                        {o.quote_no}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </dd>
+                  <dt className="text-[var(--text-muted)]">合同</dt>
+                  <dd className="font-mono">{o.contract_no ?? "—"}</dd>
                 </dl>
               )}
 
@@ -194,8 +212,10 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged, initialTab = "d
                     <tr>
                       <th className="px-2 py-1.5 text-left">行</th>
                       <th className="text-left">品项</th>
+                      <th className="text-left">规格</th>
                       <th className="text-right">数量</th>
                       <th className="text-right">单价</th>
+                      <th className="text-right">模具费</th>
                       <th className="text-right">行金额</th>
                     </tr>
                   </thead>
@@ -206,18 +226,21 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged, initialTab = "d
                         <td>
                           <span className="font-mono text-[var(--accent)]">{ln.item_code}</span>
                           <span className="ml-1 text-[var(--text-muted)]">{ln.item_name}</span>
+                          {ln.note ? <p className="text-[10px] text-[var(--text-muted)]">{ln.note}</p> : null}
                         </td>
+                        <td className="text-[var(--text-muted)]">{ln.spec || "—"}</td>
                         <td className="text-right tabular-nums">
                           {formatQtyUnit(ln.qty, ln.unit)}
                           <span className="ml-1 text-[10px] text-[var(--text-muted)]">({formatUnit(ln.unit)})</span>
                         </td>
                         <td className="text-right tabular-nums">{renderMoney(ln.unit_price)}</td>
+                        <td className="text-right tabular-nums">{renderMoney(ln.mold_fee ?? 0)}</td>
                         <td className="text-right tabular-nums">{renderMoney(ln.line_amount)}</td>
                       </tr>
                     ))}
                     {!lines.length && !data && (
                       <tr>
-                        <td colSpan={5} className="px-2 py-4 text-center text-[var(--text-muted)]">
+                        <td colSpan={7} className="px-2 py-4 text-center text-[var(--text-muted)]">
                           加载明细…
                         </td>
                       </tr>

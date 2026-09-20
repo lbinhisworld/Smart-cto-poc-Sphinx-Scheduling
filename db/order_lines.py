@@ -44,6 +44,10 @@ def lines_for_order(session: Session, order_no: str) -> list[dict]:
                 "unit": r.unit,
                 "unit_price": float(r.unit_price),
                 "line_amount": float(r.line_amount),
+                "spec": r.spec or "",
+                "mold_fee": float(r.mold_fee or 0),
+                "rebate_qty": float(r.rebate_qty) if r.rebate_qty is not None else None,
+                "note": r.note or "",
             }
             for r in rows
         ]

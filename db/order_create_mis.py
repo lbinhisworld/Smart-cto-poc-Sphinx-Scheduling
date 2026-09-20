@@ -36,6 +36,8 @@ def create_mis_order(
     today: date,
     sales_name: str = "",
     is_urgent: bool = False,
+    quote_no: str | None = None,
+    allow_default_price: bool = True,
 ) -> dict:
     if not lines:
         raise ValueError("至少选择一行产品")
@@ -64,8 +66,15 @@ def create_mis_order(
             raise ValueError(f"无效单位: {unit}") from None
         unit_price = Decimal(str(ln.get("unit_price") or 0))
         if unit_price <= 0:
+            if not allow_default_price:
+                raise ValueError("报价转单必须填写含税单价")
             unit_price = Decimal("100")
-        line_amount = (qty * unit_price).quantize(Decimal("0.01"))
+        mold_fee = Decimal(str(ln.get("mold_fee") or 0))
+        if mold_fee < 0:
+            raise ValueError("模具费用不能为负")
+        rebate_qty = ln.get("rebate_qty")
+        rebate_dec = Decimal(str(rebate_qty)) if rebate_qty not in (None, "") else None
+        line_amount = (qty * unit_price + mold_fee).quantize(Decimal("0.01"))
         total += line_amount
         parsed.append(
             {
@@ -76,6 +85,10 @@ def create_mis_order(
                 "unit": unit,
                 "unit_price": unit_price,
                 "line_amount": line_amount,
+                "spec": str(ln.get("spec") or ""),
+                "mold_fee": mold_fee,
+                "rebate_qty": rebate_dec,
+                "note": str(ln.get("note") or ""),
             }
         )
 
@@ -102,6 +115,7 @@ def create_mis_order(
             order_source="MIS",
             kitting_rate_pct=None,
             contract_no=contract_no,
+            quote_no=quote_no,
         )
     )
     for ln in parsed:
@@ -115,6 +129,10 @@ def create_mis_order(
                 unit=ln["unit"],
                 unit_price=str(ln["unit_price"]),
                 line_amount=str(ln["line_amount"]),
+                spec=ln["spec"],
+                mold_fee=str(ln["mold_fee"]),
+                rebate_qty=str(ln["rebate_qty"]) if ln["rebate_qty"] is not None else None,
+                note=ln["note"],
             )
         )
     session.flush()
@@ -129,4 +147,5 @@ def create_mis_order(
         "amount": float(total),
         "schedule_phase": "PENDING",
         "order_status": "CONFIRMED",
+        "quote_no": quote_no,
     }

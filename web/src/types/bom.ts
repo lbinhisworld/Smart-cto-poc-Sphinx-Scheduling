@@ -46,6 +46,7 @@ export type BomDesign = {
   semi: BomNode | null;
   edge: BomEdge | null;
   components?: BomComponentLine[];
+  routing_note?: string;
 };
 
 export type BomExplode = {
@@ -79,6 +80,7 @@ export type BomExplode = {
 export type BomCatalog = {
   seed_version?: string;
   today?: string;
+  routing_note?: string;
   catalog: {
     key: string;
     desc: string;

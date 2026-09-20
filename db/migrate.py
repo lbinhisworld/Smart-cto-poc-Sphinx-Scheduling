@@ -161,6 +161,50 @@ def ensure_schema(engine: Engine) -> None:
         if "contract_no" not in cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE so_order ADD COLUMN contract_no TEXT"))
+        cols = {c["name"] for c in insp.get_columns("so_order")}
+        if "quote_no" not in cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE so_order ADD COLUMN quote_no TEXT"))
+
+    if "so_order_line" in tables:
+        cols = {c["name"] for c in insp.get_columns("so_order_line")}
+        alters_sol: list[tuple[str, str]] = []
+        if "spec" not in cols:
+            alters_sol.append(("spec", "TEXT NOT NULL DEFAULT ''"))
+        if "mold_fee" not in cols:
+            alters_sol.append(("mold_fee", "NUMERIC NOT NULL DEFAULT 0"))
+        if "rebate_qty" not in cols:
+            alters_sol.append(("rebate_qty", "NUMERIC"))
+        if "note" not in cols:
+            alters_sol.append(("note", "TEXT NOT NULL DEFAULT ''"))
+        if alters_sol:
+            with engine.begin() as conn:
+                for name, ddl in alters_sol:
+                    conn.execute(text(f"ALTER TABLE so_order_line ADD COLUMN {name} {ddl}"))
+
+    if "crm_quote" in tables:
+        cols = {c["name"] for c in insp.get_columns("crm_quote")}
+        alters_q: list[tuple[str, str]] = []
+        if "opportunity_id" not in cols:
+            alters_q.append(("opportunity_id", "INTEGER"))
+        if "tax_rate" not in cols:
+            alters_q.append(("tax_rate", "NUMERIC NOT NULL DEFAULT 0.13"))
+        if "valid_until" not in cols:
+            alters_q.append(("valid_until", "DATE"))
+        if "contract_no" not in cols:
+            alters_q.append(("contract_no", "TEXT"))
+        if "order_no" not in cols:
+            alters_q.append(("order_no", "TEXT"))
+        if "note" not in cols:
+            alters_q.append(("note", "TEXT NOT NULL DEFAULT ''"))
+        if alters_q:
+            with engine.begin() as conn:
+                for name, ddl in alters_q:
+                    conn.execute(text(f"ALTER TABLE crm_quote ADD COLUMN {name} {ddl}"))
+
+    tables = set(inspect(engine).get_table_names())
+    if "crm_quote_line" not in tables:
+        Base.metadata.tables["crm_quote_line"].create(engine)
 
     for name in ("crm_contract", "crm_contract_payment_plan", "crm_payment_receipt"):
         if name not in tables:

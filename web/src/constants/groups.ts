@@ -13,7 +13,7 @@ export type WorkCenter = {
   headcount: number;
 };
 
-/** 工作中心 = 部门 × 工艺组（6 行看板） */
+/** 工作中心 = 部门 × 组（看板行）。一部三组是并行产线，不是 1→2→3。 */
 export const WORK_CENTERS: WorkCenter[] = [
   { dept: "FINISHED_DEPT", code: "MANUAL", name: "一部·手工组", headcount: 3 },
   { dept: "FINISHED_DEPT", code: "MOLD", name: "一部·模具组", headcount: 2 },
@@ -22,6 +22,9 @@ export const WORK_CENTERS: WorkCenter[] = [
   { dept: "SEMI_DEPT", code: "MOLD", name: "二部·模具组", headcount: 3 },
   { dept: "SEMI_DEPT", code: "POURING", name: "二部·浇注组", headcount: 2 },
 ];
+
+export const BOARD_ROUTING_NOTE =
+  "一部三行是并行工作中心（多数品只走其中一行）。二部半成品片材可流向一部全部前端组。";
 
 /** @deprecated 使用 WORK_CENTERS */
 export const GROUPS = WORK_CENTERS;

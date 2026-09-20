@@ -67,7 +67,12 @@ REHEARSAL_ACTS: tuple[RehearsalAct, ...] = (
         "M8",
         "PMC",
         "/schedule",
-        ("整池一键倒排", "拖拽/试排 Sandbox", "导出派工单 Excel"),
+        (
+            "（可选）先打开 /demo/story/schedule 讲倒排与冲突",
+            "整池一键倒排",
+            "拖拽/试排 Sandbox",
+            "导出派工单 Excel",
+        ),
     ),
     RehearsalAct(
         7,
@@ -100,6 +105,7 @@ REHEARSAL_ACTS: tuple[RehearsalAct, ...] = (
         "TEAM_LEADER→HR",
         "/modules/production/time-report",
         (
+            "（可选）先打开 /demo/story/cost 讲人·时与 ¥1152 算例",
             "班组长王强确认本组昨日实际人·时",
             "人事打开生产成本页看部门-组计划 vs 实际差异",
         ),

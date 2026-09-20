@@ -362,6 +362,9 @@ function InstanceStrip({ wos }: { wos: Wo[] }) {
 export function BomDiagram({ design, explode, instanceWos, compact }: Props) {
   return (
     <div className={compact ? "space-y-2" : "space-y-4"}>
+      {design.routing_note ? (
+        <p className="text-[11px] leading-relaxed text-slate-500">{design.routing_note}</p>
+      ) : null}
       {explode && <ExplodeSection explode={explode} />}
       <RouteSection design={design} compact={compact} />
       {instanceWos && <InstanceStrip wos={instanceWos} />}

@@ -40,9 +40,10 @@ import {
   TrialSuccessModal,
 } from "../../components/ScheduleTrialModals";
 import {
-  OrderScheduleBoard,
-  type OrderScheduleBoardHandle,
-} from "../../components/OrderScheduleBoard";
+  OrderDeliveryList,
+  type OrderDeliveryListHandle,
+} from "../../components/OrderDeliveryList";
+import { headerOrderNo } from "../../utils/coline";
 import {
   ScheduleBoard,
   type ConflictCellPulse,
@@ -113,7 +114,7 @@ export function ScheduleWorkspace() {
     null,
   );
   const boardRef = useRef<ScheduleBoardHandle>(null);
-  const orderBoardRef = useRef<OrderScheduleBoardHandle>(null);
+  const orderBoardRef = useRef<OrderDeliveryListHandle>(null);
   const [boardLayout, setBoardLayout] = useState<"dispatch" | "order">(
     "dispatch",
   );
@@ -210,7 +211,9 @@ export function ScheduleWorkspace() {
     if (!boardFilterOrderNo || !result) return null;
     return new Set(
       result.wos
-        .filter((w) => w.source_order_no === boardFilterOrderNo)
+        .filter(
+          (w) => headerOrderNo(w.source_order_no) === boardFilterOrderNo,
+        )
         .map((w) => w.wo_no),
     );
   }, [boardFilterOrderNo, result]);
@@ -294,7 +297,9 @@ export function ScheduleWorkspace() {
     if (!boardFilterOrderNo || !result) return conflicts;
     const wos = new Set(
       result.wos
-        .filter((w) => w.source_order_no === boardFilterOrderNo)
+        .filter(
+          (w) => headerOrderNo(w.source_order_no) === boardFilterOrderNo,
+        )
         .map((w) => w.wo_no),
     );
     return conflicts.filter((c) => c.wo_no && wos.has(c.wo_no));
@@ -973,7 +978,7 @@ export function ScheduleWorkspace() {
               </DndContext>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col">
-                <OrderScheduleBoard
+                <OrderDeliveryList
                   ref={orderBoardRef}
                   today={today}
                   orders={orders}
@@ -987,6 +992,11 @@ export function ScheduleWorkspace() {
                   onOpenCellDetail={openCellDetail}
                   onCrewChange={onCrewChange}
                   conflictPulse={replayActive ? replayPulse : conflictPulse}
+                  onFilterOrder={(no) =>
+                    setBoardFilterOrderNo((prev) =>
+                      no && prev === no ? null : no,
+                    )
+                  }
                 />
               </div>
             )}

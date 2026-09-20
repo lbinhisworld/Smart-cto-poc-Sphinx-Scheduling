@@ -104,6 +104,8 @@ def order_breakdown(session: Session, order_no: str, *, today: date) -> dict | N
             "order_source": row.order_source,
             "schedule_phase": row.schedule_phase,
             "kitting_rate_pct": row.kitting_rate_pct,
+            "quote_no": row.quote_no,
+            "contract_no": row.contract_no,
         },
         "lines": lines,
         "kitting": kit,

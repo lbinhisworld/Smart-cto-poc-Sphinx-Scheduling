@@ -22,10 +22,18 @@ from db.crm_queries import (
     funnel_report,
     list_customers,
     list_opportunities,
-    list_quotes,
     list_samples,
     opportunity_detail,
     sample_weekly_report,
+)
+from db.quote_service import (
+    approve_quote,
+    create_quote,
+    get_quote,
+    list_quotes,
+    submit_quote,
+    update_quote,
+    void_quote,
 )
 from db.sample_workflow import add_sample_step, close_sample, preview_next_round, sample_detail
 from db.demo_crm_seed import ensure_demo_crm
@@ -103,6 +111,45 @@ class SampleStepBody(BaseModel):
     evidence_images: list[str] = Field(default_factory=list)
     is_final: bool = False
     is_rework: bool = False
+
+
+class QuoteLineIn(BaseModel):
+    item_code: str | None = None
+    item_name: str = ""
+    image_ref: str = ""
+    spec: str = ""
+    process_label: str = ""
+    category: str = ""
+    unit_price_tax_in: Decimal = Decimal("0")
+    moq: Decimal | None = None
+    qty: Decimal = Field(default=Decimal("1"))
+    uom: str = "BOX"
+    mold_fee: Decimal = Decimal("0")
+    rebate_qty: Decimal | None = None
+    rebate_uom: str | None = None
+    note: str = ""
+
+
+class QuoteCreateIn(BaseModel):
+    customer_code: str
+    lines: list[QuoteLineIn] = Field(min_length=1)
+    sample_code: str | None = None
+    owner_sales: str = ""
+    opportunity_id: int | None = None
+    tax_rate: Decimal = Decimal("0.13")
+    valid_until: date | None = None
+    note: str = ""
+
+
+class QuoteUpdateIn(BaseModel):
+    customer_code: str | None = None
+    lines: list[QuoteLineIn] | None = None
+    sample_code: str | None = None
+    owner_sales: str | None = None
+    opportunity_id: int | None = None
+    tax_rate: Decimal | None = None
+    valid_until: date | None = None
+    note: str | None = None
 
 
 def register_crm(app, get_db):
@@ -396,14 +443,147 @@ def register_crm(app, get_db):
             ),
         }
 
+    def _quote_write_roles(role: str) -> None:
+        if role not in ("GM", "SALES_MGR", "SALES"):
+            raise HTTPException(status_code=403, detail="无权维护报价")
+
+    def _quote_approve_roles(role: str) -> None:
+        if role not in ("GM", "SALES_MGR"):
+            raise HTTPException(status_code=403, detail="仅销售总监/总经理可批准报价")
+
     @app.get("/api/crm/quotes")
     def crm_quotes(
+        customer_code: str | None = None,
+        status: str | None = None,
         x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
         db: Session = Depends(get_db),
     ):
-        _role(x_demo_role)
+        role = _role(x_demo_role)
+        if role not in ("GM", "SALES_MGR", "SALES", "FIN", "PMC"):
+            raise HTTPException(status_code=403, detail="无权查看报价")
         ensure_demo_crm(db)
-        return {"code": 0, "message": "", "data": list_quotes(db)}
+        hide = role == "WH"
+        return {
+            "code": 0,
+            "message": "",
+            "data": list_quotes(db, customer_code=customer_code, status=status, hide_amount=hide),
+        }
+
+    @app.post("/api/crm/quotes")
+    def crm_quote_create(
+        body: QuoteCreateIn,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        _quote_write_roles(role)
+        ensure_demo_crm(db)
+        try:
+            data = create_quote(
+                db,
+                customer_code=body.customer_code,
+                lines=[ln.model_dump() for ln in body.lines],
+                sample_code=body.sample_code,
+                owner_sales=body.owner_sales,
+                opportunity_id=body.opportunity_id,
+                tax_rate=body.tax_rate,
+                valid_until=body.valid_until,
+                note=body.note,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        return {"code": 0, "message": "报价已创建", "data": data}
+
+    @app.get("/api/crm/quotes/{code}")
+    def crm_quote_detail(
+        code: str,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        if role not in ("GM", "SALES_MGR", "SALES", "FIN", "PMC"):
+            raise HTTPException(status_code=403, detail="无权查看报价")
+        ensure_demo_crm(db)
+        try:
+            data = get_quote(db, code)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="报价单不存在") from None
+        if role == "WH":
+            data["total_amount"] = None
+        return {"code": 0, "message": "", "data": data}
+
+    @app.put("/api/crm/quotes/{code}")
+    def crm_quote_update(
+        code: str,
+        body: QuoteUpdateIn,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        _quote_write_roles(role)
+        ensure_demo_crm(db)
+        payload = body.model_dump(exclude_unset=True)
+        if "lines" in payload and payload["lines"] is not None:
+            payload["lines"] = [ln if isinstance(ln, dict) else ln for ln in payload["lines"]]
+        try:
+            data = update_quote(db, code, **payload)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="报价单不存在") from None
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        return {"code": 0, "message": "报价已更新", "data": data}
+
+    @app.post("/api/crm/quotes/{code}/submit")
+    def crm_quote_submit(
+        code: str,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        _quote_write_roles(role)
+        ensure_demo_crm(db)
+        try:
+            data = submit_quote(db, code)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="报价单不存在") from None
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        return {"code": 0, "message": "报价已提交", "data": data}
+
+    @app.post("/api/crm/quotes/{code}/approve")
+    def crm_quote_approve(
+        code: str,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        _quote_approve_roles(role)
+        ensure_demo_crm(db)
+        try:
+            data = approve_quote(db, code)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="报价单不存在") from None
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        return {"code": 0, "message": "报价已批准", "data": data}
+
+    @app.post("/api/crm/quotes/{code}/void")
+    def crm_quote_void(
+        code: str,
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        if role not in ("GM", "SALES_MGR"):
+            raise HTTPException(status_code=403, detail="无权作废报价")
+        ensure_demo_crm(db)
+        try:
+            data = void_quote(db, code)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="报价单不存在") from None
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        return {"code": 0, "message": "报价已作废", "data": data}
 
     @app.get("/api/crm/reports/funnel")
     def crm_funnel(

@@ -15,7 +15,11 @@ import {
   formatConflictMessage,
   suggestLabel,
 } from "../utils/conflictLabels";
-import { groupConflictsByOrder } from "../utils/conflictGroups";
+import {
+  conflictDisplayRowKey,
+  groupConflictsByOrder,
+  mergedItemCodes,
+} from "../utils/conflictGroups";
 import { shortLabel } from "../utils/dates";
 import { ScheduleProcessTab } from "./ScheduleProcessTab";
 
@@ -104,6 +108,10 @@ export function ConflictPanel({
     n: conflicts.filter((c) => c.level === lv).length,
   }));
   const groups = groupConflictsByOrder(conflicts, orders, wos, tasks);
+  const woByNo = new Map(wos.map((w) => [w.wo_no, w]));
+
+  const rowSelected = (rowKey: string, memberKeys: string[]) =>
+    selectedKey === rowKey || (selectedKey != null && memberKeys.includes(selectedKey));
 
   return (
     <aside className="flex h-full min-h-[280px] flex-col rounded-lg border border-slate-800 bg-slate-900">
@@ -211,16 +219,24 @@ export function ConflictPanel({
                 )}
               </header>
               <ul className="space-y-1">
-                {g.items.map(({ conflict: c, index, woType }) => {
-                  const key = conflictRowKey(c, index);
+                {g.rows.map((row) => {
+                  const c = row.conflict;
+                  const rowKey = conflictDisplayRowKey(row);
+                  const memberKeys = (row.merged ?? [{ conflict: c, index: row.index, woType: row.woType }]).map(
+                    (m) => conflictRowKey(m.conflict, m.index),
+                  );
                   const metric = conflictMetricNote(c);
-                  const selected = selectedKey === key;
-                  const typeHint = woTypeLabel(woType);
+                  const selected = rowSelected(rowKey, memberKeys);
+                  const typeHint = woTypeLabel(row.woType);
+                  const merged = row.merged && row.merged.length > 1;
+                  const itemCodes = mergedItemCodes(row, woByNo);
+                  const singleItem =
+                    !merged && c.wo_no ? woByNo.get(c.wo_no)?.item_code : null;
                   return (
-                    <li key={key}>
+                    <li key={rowKey}>
                       <button
                         type="button"
-                        onClick={() => onPick(c, key)}
+                        onClick={() => onPick(c, rowKey)}
                         className={`w-full rounded border px-2 py-1.5 text-left text-xs transition ${
                           selected
                             ? LEVEL_STYLE[c.level].cardSelected
@@ -233,6 +249,16 @@ export function ConflictPanel({
                         {typeHint && (
                           <span className="ml-1 text-[10px] text-slate-500">
                             {typeHint}
+                          </span>
+                        )}
+                        {merged && itemCodes.length > 0 && (
+                          <span className="ml-1 text-[10px] text-sky-300/90">
+                            ×{row.merged!.length}（{itemCodes.join(" · ")}）
+                          </span>
+                        )}
+                        {!merged && singleItem && singleItem !== g.itemCode && (
+                          <span className="ml-1 text-[10px] text-sky-300/90">
+                            {singleItem}
                           </span>
                         )}
                         <p className="mt-0.5 text-slate-300/90 leading-snug">
@@ -250,8 +276,46 @@ export function ConflictPanel({
                             建议：{suggestLabel(c.suggest)}
                           </p>
                         )}
+                        {merged ? (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {row.merged!.map((m) => {
+                              const code =
+                                (m.conflict.wo_no
+                                  ? woByNo.get(m.conflict.wo_no)?.item_code
+                                  : null) ?? m.conflict.wo_no ?? "?";
+                              const chipKey = conflictRowKey(m.conflict, m.index);
+                              return (
+                                <span
+                                  key={chipKey}
+                                  role="button"
+                                  tabIndex={0}
+                                  className={`rounded px-1.5 py-0.5 text-[10px] ${
+                                    selectedKey === chipKey
+                                      ? "bg-slate-700 text-slate-100 ring-1 ring-slate-500"
+                                      : "bg-slate-800/80 text-slate-400 hover:text-slate-200"
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onPick(m.conflict, chipKey);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      onPick(m.conflict, chipKey);
+                                    }
+                                  }}
+                                >
+                                  {code}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : null}
                         <p className="mt-1 text-[10px] text-slate-500">
-                          点击定位看板单元格
+                          {merged
+                            ? "点卡片定位首条工单；点子件定位对应工单"
+                            : "点击定位看板单元格"}
                         </p>
                       </button>
                     </li>
