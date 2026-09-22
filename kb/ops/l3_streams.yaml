@@ -1,0 +1,119 @@
+台账:
+  - 价值流: F.l3.vsm.order_to_delivery
+    兑现:
+      - F.l1.due_is_shared_reality
+      - F.l1.mto_no_fg_stock
+    环节:
+      - F.l3.stg.demand
+      - F.l3.stg.schedule
+      - F.l3.stg.make
+      - F.l3.stg.fulfill
+
+卡片:
+  - 编号: F.l3.vsm.order_to_delivery
+    名称: 按单履约价值流
+    套: 运营
+    层: 价值流
+    状态: 已封印
+    命题: 从约定确认到履约关闭，兑现按单零仓与交期锚。
+    撑住谁:
+      - F.l1.due_is_shared_reality
+      - F.l1.mto_no_fg_stock
+    其下:
+      - F.l3.stg.demand
+      - F.l3.stg.schedule
+      - F.l3.stg.make
+      - F.l3.stg.fulfill
+    出处:
+      - 客户会议反馈/运营L3价值流对齐.md
+    对外怎么说:
+      默认: 这一条流把约定变成可交的计划，不另开打样生意。
+    说明: >
+      批次 O5 已封印。一条流可撑住多张主张；别的主张可另建价值流，
+      禁止无主张、无出处为对称复制。环节仍假设。
+
+  - 编号: F.l3.stg.demand
+    名称: 需求与约定确认
+    套: 运营
+    层: 环节
+    状态: 假设
+    命题: 约定日进系统，数量能说到版。
+    阶段产出: 约定日进系统，数量能说到版
+    属于: F.l3.vsm.order_to_delivery
+    谁有权:
+      - F.l2.sales_owns_promise
+    其下:
+      - F.l3.due_change_via_approval
+      - F.l3.normalize_to_board
+      - F.l3.sup.sample
+    出处:
+      - 客户会议反馈/运营本体生成-升级方案.md
+    对外怎么说:
+      默认: 先把约定和版数量说清，再进入倒排。
+    说明: >
+      批次 O1 假设。打样只是支撑，不是第二条流。
+
+  - 编号: F.l3.stg.schedule
+    名称: 倒排与齐套锁定
+    套: 运营
+    层: 环节
+    状态: 假设
+    命题: 编出贴约定日的计划，半成品有着落。
+    阶段产出: 贴约定日的计划
+    属于: F.l3.vsm.order_to_delivery
+    谁有权:
+      - F.l2.cap_plan
+    其下:
+      - F.l3.backward_place
+      - F.l3.finished_then_semi
+      - F.l3.kitting
+      - F.l3.fence_ripple
+      - F.l3.sph_and_hours
+    出处:
+      - 客户会议反馈/运营本体生成-升级方案.md
+    对外怎么说:
+      默认: 从约定往回排并锁齐套，不默认全厂重排。
+    说明: >
+      批次 O1 假设。CREW 口径许可挂在这里，不当成主张主叙事。
+
+  - 编号: F.l3.stg.make
+    名称: 双部制成与报工
+    套: 运营
+    层: 环节
+    状态: 假设
+    命题: 组日任务落下，欠产能回池。
+    阶段产出: 组日任务落下，欠产能回池
+    属于: F.l3.vsm.order_to_delivery
+    谁有权:
+      - F.l2.cap_dept1
+      - F.l2.cap_dept2
+    其下:
+      - F.l3.attendance_cap
+      - F.l3.unfinished_to_pool
+    出处:
+      - docs/POC范围说明.md
+    对外怎么说:
+      默认: 一部二部按任务做，报工受考勤上限，欠产回池。
+    说明: >
+      批次 O4。报工与回池先占位假设，出处是 POC 范围说明。
+
+  - 编号: F.l3.stg.fulfill
+    名称: 履约关闭
+    套: 运营
+    层: 环节
+    状态: 假设
+    命题: 给最快日或交付，不改约定锚。
+    阶段产出: 最快日或交付，不改锚
+    属于: F.l3.vsm.order_to_delivery
+    谁有权:
+      - F.l2.sales_owns_promise
+      - F.l2.cap_plan
+    其下:
+      - F.l3.soft_conflicts
+      - F.l3.sup.payment
+    出处:
+      - 客户会议反馈/运营本体生成-升级方案.md
+    对外怎么说:
+      默认: 冲突只给最快日，关闭履约也不改订单约定日。
+    说明: >
+      批次 O1/O4。出货工艺与催收规格不足，缺口，不另建许可。

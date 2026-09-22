@@ -1,4 +1,4 @@
-"""行业对象构成：属于 → 其下由加载器反查，不靠 YAML 缩进。"""
+"""行业对象构成：属于 → 其下由加载器反查；关联 / 是一种不进其下。"""
 
 from __future__ import annotations
 
@@ -10,9 +10,14 @@ _INDEPENDENT_DOMAIN_NAMES = {
     "组",
     "工单",
     "装饰件品项",
-    "一部成品与二部半成品",
     "装饰件计量单位",
-    "一次倒排的输入输出",
+    "一部成品与二部半成品",
+    "成品工单",
+    "半成品工单",
+}
+
+_RUNTIME_ROOT_NAMES = {
+    "一次倒排运行",
 }
 
 
@@ -75,7 +80,10 @@ def test_belongs_parent_exists_and_name_is_a_of_b() -> None:
                 bad.append(f"{fact.id}:{fact.name}:有属于但名称不是A的B")
         elif fact.layer == "对象" and fact.name not in _INDEPENDENT_DOMAIN_NAMES:
             if "的" not in fact.name:
-                bad.append(f"{fact.id}:{fact.name}:特征未写成A的B")
+                bad.append(f"{fact.id}:{fact.name}:无属于的对象未进独立名单")
+        elif fact.layer == "运行结果" and not fact.belongs_to:
+            if fact.name not in _RUNTIME_ROOT_NAMES:
+                bad.append(f"{fact.id}:{fact.name}:运行结果根未登记")
     assert bad == [], bad
 
 
@@ -98,3 +106,10 @@ def test_format_tree_shows_order_slot() -> None:
     text = format_tree(load())
     assert "销售订单 (D.order)" in text
     assert "销售订单的客户约定日 (D.order.due_date)" in text
+
+
+def test_relates_do_not_enter_children() -> None:
+    kb = load()
+    assert "D.item" not in kb.children_of("D.sph")
+    assert "D.group" not in kb.children_of("D.sph")
+    assert "D.wo.finished" not in kb.children_of("D.wo")

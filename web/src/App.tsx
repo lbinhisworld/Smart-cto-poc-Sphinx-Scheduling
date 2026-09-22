@@ -29,6 +29,7 @@ import {
   QcReceiptsPage,
   QcSwabTestsPage,
 } from "./modules/qc/QcPages";
+import { KbPage } from "./modules/kb/KbPage";
 import { PortalPage } from "./pages/PortalPage";
 import { StockCenterPage } from "./pages/StockCenterPage";
 import { AuthProvider, RequireAuth } from "./shell/auth";
@@ -49,6 +50,7 @@ export default function App() {
             }
           >
             <Route path="/portal" element={<PortalPage />} />
+            <Route path="/kb" element={<KbPage />} />
             <Route path="/demo" element={<DemoConsolePage />} />
             <Route path="/demo/story/schedule" element={<ScheduleStoryPage />} />
             <Route path="/demo/story/cost" element={<CostStoryPage />} />

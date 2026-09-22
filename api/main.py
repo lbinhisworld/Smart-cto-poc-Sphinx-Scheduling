@@ -584,6 +584,7 @@ def create_app(session_factory: sessionmaker) -> FastAPI:
     from apps.api.routers.crm import register_crm
     from apps.api.routers.kingdee import register_kingdee
     from apps.api.routers.mis import register_mis
+    from apps.api.routers.kb import router as kb_router
     from apps.api.routers.portal import router as portal_router
     from apps.api.routers.wecom import register_wecom
     from db.dispatch_export import build_dispatch_workbook_bytes
@@ -599,6 +600,7 @@ def create_app(session_factory: sessionmaker) -> FastAPI:
         )
 
     app.include_router(portal_router)
+    app.include_router(kb_router)
     register_mis(app, get_db)
     register_kingdee(app, get_db)
     register_crm(app, get_db)

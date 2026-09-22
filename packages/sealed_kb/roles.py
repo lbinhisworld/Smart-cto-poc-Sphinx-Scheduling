@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from sealed_kb.reasoner import HOLD, MISSING
-from sealed_kb.store import load
+from sealed_kb.store import KnowledgeBase, load
 
 _ENGINE_MARKERS = ("packages/engine/", "engine/")
 _DUE_WRITES = ("so_order.due_date", "订单约定日", "due_date")
@@ -19,6 +19,13 @@ class GuardResult:
 class ConsultResult:
     verdict: str
     missing: list[str] = field(default_factory=list)
+
+
+@dataclass
+class HarvestCompleteResult:
+    ok: bool
+    reason: str = ""
+    path: list[str] = field(default_factory=list)
 
 
 def harvest_guard(paths: list[str]) -> GuardResult:
@@ -41,6 +48,65 @@ def consult(slot_ids: list[str]) -> ConsultResult:
     if missing:
         return ConsultResult(MISSING, missing=missing)
     return ConsultResult(HOLD)
+
+
+def _upward_ids(kb: KnowledgeBase, fact_id: str) -> list[str]:
+    fact = kb.facts.get(fact_id)
+    if fact is None:
+        return []
+    found = list(fact.supports)
+    if fact.belongs_to:
+        found.append(fact.belongs_to)
+    for argument in kb.arguments_for(fact_id):
+        found.extend(argument.premises)
+    return found
+
+
+def grounding_path(leaf_id: str, kb: KnowledgeBase | None = None) -> list[str]:
+    store = kb if kb is not None else load()
+    if leaf_id not in store.facts:
+        return []
+    prev: dict[str, str | None] = {leaf_id: None}
+    queue = [leaf_id]
+    found_l1: str | None = None
+    while queue:
+        current = queue.pop(0)
+        fact = store.facts.get(current)
+        if fact is not None and fact.layer == "主张":
+            found_l1 = current
+            break
+        for parent in _upward_ids(store, current):
+            if parent in prev or parent not in store.facts:
+                continue
+            prev[parent] = current
+            queue.append(parent)
+    if found_l1 is None:
+        return []
+    chain = [found_l1]
+    node = found_l1
+    while prev[node] is not None:
+        node = prev[node]
+        chain.append(node)
+    return chain
+
+
+def harvest_complete(
+    leaf_id: str,
+    *,
+    confirmed: bool,
+    files: list[str] | None = None,
+    kb: KnowledgeBase | None = None,
+) -> HarvestCompleteResult:
+    if files:
+        guarded = harvest_guard(files)
+        if not guarded.ok:
+            return HarvestCompleteResult(False, guarded.reason)
+    if not confirmed:
+        return HarvestCompleteResult(False, "用户未确认解释链")
+    path = grounding_path(leaf_id, kb)
+    if not path:
+        return HarvestCompleteResult(False, "没有从主张到叶子的边路径")
+    return HarvestCompleteResult(True, path=path)
 
 
 def gate_ticket(ticket: dict) -> GuardResult:

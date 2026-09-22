@@ -1025,6 +1025,12 @@
   挂到:
   - F.l3.menu_demo
   状态: 假设
+- 资产: kb
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l3.menu_kb
+  状态: 假设
 - 资产: cockpit
   类: 演示权责
   出处: packages/shared/auth.py

@@ -1,0 +1,30 @@
+# 主题点名表（台账，不是卡片）。待确认与探针共用。
+# 首屏默认打开「履约四环节」。禁止加菜单 / 投影 / coverage。
+批次:
+  - 主题: 履约四环节
+    轨: 运营
+    默认打开: true
+    叶子:
+      - F.l3.stg.demand
+      - F.l3.stg.schedule
+      - F.l3.stg.make
+      - F.l3.stg.fulfill
+  - 主题: 履约主林未封叶子
+    轨: 行业主林
+    叶子:
+      - D.item
+      - D.uom
+      - D.uom_convert
+      - D.bom
+      - D.item_route
+      - D.wo_task
+      - D.wo_task.hours_wall
+      - D.wo_task.hours_man
+  - 主题: 运行结果·插单
+    轨: 运行结果
+    叶子:
+      - D.insert
+    挂上许可:
+      - F.l3.backward_place
+      - F.l3.fence_ripple
+    说明: 不捎带 D.trace / D.conflict / D.plan_version

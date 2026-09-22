@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sealed_kb.roles import consult, gate_ticket, harvest_guard
+from sealed_kb.roles import consult, gate_ticket, harvest_complete, harvest_guard
 
 
 def test_harvest_only_kb() -> None:
@@ -35,6 +35,37 @@ def test_ticket_without_bind_refused() -> None:
     )
     assert not result.ok
     assert "绑定" in result.reason
+
+
+def test_harvest_complete_needs_confirm_and_l1_path() -> None:
+    due = harvest_complete("F.l3.due_change_via_approval", confirmed=True)
+    assert due.ok
+    assert due.path[0] == "F.l1.due_is_shared_reality"
+    assert due.path[-1] == "F.l3.due_change_via_approval"
+
+    unconfirmed = harvest_complete("F.l3.due_change_via_approval", confirmed=False)
+    assert not unconfirmed.ok
+    assert "确认" in unconfirmed.reason
+
+    isolated = harvest_complete("F.l3.menu_kb", confirmed=True)
+    assert not isolated.ok
+    assert "路径" in isolated.reason
+
+
+def test_harvest_complete_blocks_engine_write() -> None:
+    result = harvest_complete(
+        "F.l3.due_change_via_approval",
+        confirmed=True,
+        files=["packages/engine/backward.py"],
+    )
+    assert not result.ok
+    assert "engine" in result.reason
+
+
+def test_harvest_complete_conclusion_via_argument() -> None:
+    result = harvest_complete("C.give_earliest_keep_due", confirmed=True)
+    assert result.ok
+    assert "F.l1.due_is_shared_reality" in result.path
 
 
 def test_ticket_br27_write_refused() -> None:

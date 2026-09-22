@@ -3,7 +3,7 @@ import type { RoleCode } from "./auth";
 export type MenuItem = { key: string; label: string; path: string; module: string };
 
 /** 首页 / 侧栏：待办、演示控制台为一级直达（不进五类） */
-export const NAV_TOP_LEVEL_KEYS = ["todos", "demo"] as const;
+export const NAV_TOP_LEVEL_KEYS = ["todos", "demo", "kb"] as const;
 
 /** 业务域 → 菜单 key（与 MENU 对齐） */
 export const NAV_CATEGORY_DEFS: { id: string; label: string; itemKeys: string[] }[] = [
@@ -94,6 +94,7 @@ export const MENU_SHORT_DESC: Record<string, string> = {
   finance: "毛利预警 · 成本锁定",
   todos: "变更 · 排程池 · 打样/企微",
   demo: "九幕剧本 · 排程/成本概念讲解",
+  kb: "只读本体树 · 顾问询问",
   qc_receipts: "原辅料来料 · 编码主数据",
   qc_exceptions: "来料异常闭环",
   qc_daily_defects: "生产每日异常",
@@ -110,6 +111,7 @@ const MENU: MenuItem[] = [
   { key: "portal", label: "首页", path: "/portal", module: "M0" },
   { key: "todos", label: "待办中心", path: "/todos", module: "M0" },
   { key: "demo", label: "演示控制台", path: "/demo", module: "M0" },
+  { key: "kb", label: "封印本体", path: "/kb", module: "M0" },
   { key: "cockpit", label: "管理驾驶舱", path: "/cockpit", module: "M0" },
   { key: "crm_customers", label: "客户档案", path: "/crm/customers", module: "M2" },
   { key: "crm_opportunities", label: "商机列表", path: "/crm/opportunities", module: "M2" },
@@ -145,6 +147,7 @@ const MENU: MenuItem[] = [
 const QC_KEYS = [
   "portal",
   "todos",
+  "kb",
   "qc_receipts",
   "qc_exceptions",
   "qc_daily_defects",
@@ -162,6 +165,7 @@ const ROLE_MENU_KEYS: Record<RoleCode, string[]> = {
     "portal",
     "todos",
     "demo",
+    "kb",
     "crm_customers",
     "crm_opportunities",
     "crm_samples",
@@ -175,6 +179,7 @@ const ROLE_MENU_KEYS: Record<RoleCode, string[]> = {
   SALES: [
     "portal",
     "todos",
+    "kb",
     "crm_customers",
     "crm_opportunities",
     "crm_samples",
@@ -188,6 +193,7 @@ const ROLE_MENU_KEYS: Record<RoleCode, string[]> = {
     "portal",
     "todos",
     "demo",
+    "kb",
     "changes",
     "orders",
     "kingdee",
@@ -200,10 +206,10 @@ const ROLE_MENU_KEYS: Record<RoleCode, string[]> = {
     "hr_labor_cost",
     "qc_daily_defects",
   ],
-  WH: ["portal", "todos", "orders", "kingdee", "stock", "dept1_stats", "qc_receipts", "qc_exceptions", "qc_master"],
-  FIN: ["portal", "todos", "cockpit", "orders", "quotes", "finance", "hr_labor_cost", "dept1_stats"],
-  HR: ["portal", "todos", "hr_roster", "hr_attendance", "hr_labor_cost", "dept1_stats"],
-  TEAM_LEADER: ["portal", "todos", "labor_time_report", "dept1_stats", "schedule"],
+  WH: ["portal", "todos", "kb", "orders", "kingdee", "stock", "dept1_stats", "qc_receipts", "qc_exceptions", "qc_master"],
+  FIN: ["portal", "todos", "kb", "cockpit", "orders", "quotes", "finance", "hr_labor_cost", "dept1_stats"],
+  HR: ["portal", "todos", "kb", "hr_roster", "hr_attendance", "hr_labor_cost", "dept1_stats"],
+  TEAM_LEADER: ["portal", "todos", "kb", "labor_time_report", "dept1_stats", "schedule"],
   QC: QC_KEYS,
 };
 

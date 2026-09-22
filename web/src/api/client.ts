@@ -16,7 +16,7 @@ export type StockItem = {
   updated_at?: string | null;
 };
 
-async function request<T>(
+export async function request<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {

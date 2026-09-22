@@ -1,0 +1,21 @@
+# 行业轨闭集。加载器不把本文件当卡片。
+主林:
+  - D.order
+  - D.order.due_date
+  - D.order.qty
+  - D.order.unit
+  - D.item
+  - D.board
+  - D.uom
+  - D.uom_convert
+  - D.group
+  - D.sph
+  - D.wo
+  - D.wo_task
+  - D.wo_task.hours_wall
+  - D.wo_task.hours_man
+  - D.bom
+  - D.item_route
+运行结果林:
+  - D.schedule_io
+  - D.kit

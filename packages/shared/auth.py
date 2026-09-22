@@ -44,6 +44,7 @@ MENU: tuple[MenuItem, ...] = (
     MenuItem("portal", "首页", "/portal", _ALL_PORTAL, "M0"),
     MenuItem("todos", "待办中心", "/todos", _ALL_PORTAL, "M0"),
     MenuItem("demo", "演示控制台", "/demo", frozenset({"GM", "SALES_MGR", "PMC"}), "M0"),
+    MenuItem("kb", "封印本体", "/kb", frozenset({"GM", "SALES_MGR", "SALES", "PMC", "WH", "FIN", "HR", "TEAM_LEADER", "QC"}), "M0"),
     MenuItem("cockpit", "管理驾驶舱", "/cockpit", frozenset({"GM", "FIN"}), "M0"),
     MenuItem("crm_customers", "客户档案", "/crm/customers", frozenset({"GM", "SALES_MGR", "SALES"}), "M2"),
     MenuItem("crm_opportunities", "商机列表", "/crm/opportunities", frozenset({"GM", "SALES_MGR", "SALES"}), "M2"),
