@@ -5,13 +5,28 @@ import { OrdersPage } from "./modules/orders/OrdersPage";
 import { QuotesPage } from "./modules/orders/QuotesPage";
 import ScheduleWorkspace from "./modules/schedule/ScheduleWorkspace";
 import { CockpitPage, ModuleSummaryPage } from "./modules/cockpit/CockpitPage";
+import { ProjectBoardPage } from "./modules/project/ProjectBoardPage";
 import {
-  CrmCustomersPage,
   CrmOpportunitiesPage,
   CrmReportsPage,
   CrmSamplesPage,
   CtpPage,
 } from "./modules/crm/CrmPages";
+import {
+  CheckinPage,
+  FollowsPage,
+  MyCustomersPage,
+  OpportunitiesListPage,
+  SeaCustomersPage,
+} from "./modules/crm/CrmExtendedPages";
+import { VisitPage } from "./modules/crm/VisitPage";
+import { ContractedProgressPage } from "./modules/crm/ContractedProgressPage";
+import { LeadPoolPage, LeadPoolRulesPage, MyLeadsPage } from "./modules/crm/LeadsPages";
+import { GoalsPage } from "./modules/crm/GoalsPage";
+import { ScopeNotePage } from "./modules/crm/ScopeNotePage";
+import { PaymentsPage } from "./modules/crm/PaymentsPage";
+import { LeadReportPage } from "./modules/crm/LeadReportPage";
+import { SettingsPage } from "./modules/settings/SettingsPage";
 import { DemoConsolePage, TodoCenterPage } from "./modules/demo/DemoPages";
 import { CostStoryPage, ScheduleStoryPage } from "./modules/demo/StoryPages";
 import { HrAttendancePage, HrRosterPage } from "./modules/hr/HrPages";
@@ -56,8 +71,10 @@ export default function App() {
             <Route path="/demo/story/cost" element={<CostStoryPage />} />
             <Route path="/todos" element={<TodoCenterPage />} />
             <Route path="/cockpit" element={<CockpitPage />} />
-            <Route path="/crm/customers" element={<CrmCustomersPage />} />
-            <Route path="/crm/customers/:code" element={<CrmCustomersPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/crm/visit" element={<VisitPage />} />
+            <Route path="/crm/customers" element={<MyCustomersPage />} />
+            <Route path="/crm/customers/:code" element={<MyCustomersPage />} />
             <Route path="/crm/opportunities" element={<CrmOpportunitiesPage />} />
             <Route path="/crm/opportunities/:id" element={<CrmOpportunitiesPage />} />
             <Route path="/crm/samples" element={<CrmSamplesPage />} />
@@ -74,9 +91,24 @@ export default function App() {
             <Route path="/modules/production/time-report" element={<ProductionTimeReportPage />} />
             <Route path="/modules/production/stats/dept1" element={<Dept1StatsPage />} />
             <Route path="/modules/finance" element={<ModuleSummaryPage module="finance" />} />
-            <Route path="/modules/project" element={<ModuleSummaryPage module="project" />} />
+            <Route path="/modules/project" element={<ProjectBoardPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/orders/quotes" element={<QuotesPage />} />
+            <Route path="/crm/leads/mine" element={<MyLeadsPage />} />
+            <Route path="/crm/leads/pool" element={<LeadPoolPage />} />
+            <Route path="/crm/leads/rules" element={<LeadPoolRulesPage />} />
+            <Route path="/crm/leads/report" element={<LeadReportPage />} />
+            <Route path="/crm/goals" element={<GoalsPage />} />
+            <Route path="/crm/sea" element={<SeaCustomersPage />} />
+            <Route path="/crm/follows" element={<FollowsPage />} />
+            <Route path="/crm/checkin" element={<CheckinPage />} />
+            <Route path="/crm/opportunities-list" element={<OpportunitiesListPage />} />
+            <Route path="/crm/progress" element={<ContractedProgressPage />} />
+            <Route path="/crm/payments" element={<PaymentsPage />} />
+            <Route path="/crm/contacts" element={<ScopeNotePage kind="contacts" />} />
+            <Route path="/crm/returns" element={<ScopeNotePage kind="returns" />} />
+            <Route path="/crm/shipments" element={<ScopeNotePage kind="ship" />} />
+            <Route path="/crm/reconcile" element={<ScopeNotePage kind="recon" />} />
             <Route path="/kingdee" element={<KingdeeSyncPage />} />
             <Route path="/schedule" element={<ScheduleWorkspace />} />
             <Route path="/stock" element={<StockCenterPage planAllocations={[]} />} />

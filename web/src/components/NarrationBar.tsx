@@ -7,6 +7,7 @@ import {
   TRACE_ACTS,
 } from "../utils/scheduleTrace";
 import { workCenterLabel, type DeptCode, type GroupCode } from "../constants/groups";
+import { headerOrderNo } from "../utils/coline";
 import { shortLabel } from "../utils/dates";
 
 type Props = {
@@ -96,7 +97,10 @@ export function QueueLane({
               </li>
             );
           }
-          const sales = salesByOrder?.get(r.orderNo)?.trim() || "未填";
+          const sales =
+            salesByOrder?.get(r.orderNo)?.trim() ||
+            salesByOrder?.get(headerOrderNo(r.orderNo))?.trim() ||
+            "未填";
           return (
             <li
               key={`${r.rank}-${r.orderNo}`}

@@ -568,6 +568,18 @@
   挂到:
   - D.schedule_io
   状态: 假设
+- 资产: HeadcountGap
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.headcount_gap
+  状态: 假设
+- 资产: HeadcountTrial
+  类: 行业对象
+  出处: packages/engine/models.py
+  挂到:
+  - D.headcount_gap
+  状态: 假设
 - 资产: DiffEntry
   类: 行业对象
   出处: packages/engine/models.py
@@ -681,6 +693,12 @@
   出处: packages/engine/expand.py
   挂到:
   - F.l4.mod_expand
+  状态: 假设
+- 资产: packages/engine/headcount_gap.py
+  类: 引擎模块
+  出处: packages/engine/headcount_gap.py
+  挂到:
+  - F.l4.mod_headcount_gap
   状态: 假设
 - 资产: packages/engine/insert.py
   类: 引擎模块
@@ -971,6 +989,18 @@
   挂到:
   - F.l2.role_SALES
   状态: 假设
+- 资产: SALES_ASSIST
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_SALES_ASSIST
+  状态: 假设
+- 资产: RD
+  类: 演示权责
+  出处: packages/shared/auth.py
+  挂到:
+  - F.l2.role_RD
+  状态: 假设
 - 资产: PMC
   类: 演示权责
   出处: packages/shared/auth.py
@@ -1037,29 +1067,23 @@
   挂到:
   - F.l3.menu_cockpit
   状态: 假设
-- 资产: crm_customers
+- 资产: settings
   类: 演示权责
   出处: packages/shared/auth.py
   挂到:
-  - F.l3.menu_crm_customers
-  状态: 假设
-- 资产: crm_opportunities
-  类: 演示权责
-  出处: packages/shared/auth.py
-  挂到:
-  - F.l3.menu_crm_opportunities
-  状态: 假设
-- 资产: crm_samples
-  类: 演示权责
-  出处: packages/shared/auth.py
-  挂到:
-  - F.l3.menu_crm_samples
+  - F.l3.menu_settings
   状态: 假设
 - 资产: crm_reports
   类: 演示权责
   出处: packages/shared/auth.py
   挂到:
   - F.l3.menu_crm_reports
+  状态: 假设
+- 资产: crm_opportunity_redact
+  类: 测试投影
+  出处: tests/test_crm_opportunity_redact_matrix.py
+  挂到:
+  - F.l3.menu_crm_board
   状态: 假设
 - 资产: ctp
   类: 演示权责
@@ -1277,6 +1301,30 @@
   挂到:
   - F.l4.br27_no_write_due
   状态: 已封印
+- 资产: packages/shared/guided_demo_path.py
+  类: 演示支撑
+  出处: 客户会议反馈/演示线-升级方案.md
+  挂到:
+  - F.l3.guided_demo_line
+  状态: 假设
+- 资产: db/guided_demo_runs.py
+  类: 演示支撑
+  出处: 客户会议反馈/演示线-升级方案.md
+  挂到:
+  - F.l3.guided_demo_line
+  状态: 假设
+- 资产: db/guided_demo_realism.py
+  类: 演示支撑
+  出处: 客户会议反馈/演示线-升级方案.md
+  挂到:
+  - F.l3.guided_demo_line
+  状态: 假设
+- 资产: db/crm_field_visit.py
+  类: CRM
+  出处: 客户会议反馈/拜访签到-升级方案.md
+  挂到:
+  - F.l3.guided_demo_line
+  状态: 假设
 - 资产: seed/
   类: 刻意不收
   出处: seed/

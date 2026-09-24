@@ -181,6 +181,22 @@
   对外怎么说:
     默认: 改 expand 必须同步投影。
   说明: 批次 G。每个引擎模块一张投影，禁止逃课。
+- 编号: F.l4.mod_headcount_gap
+  名称: 引擎投影·headcount_gap
+  套: 运营
+  层: 投影
+  状态: 假设
+  命题: packages/engine/headcount_gap.py 是倒排引擎的一个实现文件。
+  落在哪个文件:
+  - packages/engine/headcount_gap.py
+  实现情况: 已做到
+  落实的是:
+  - F.l3.headcount_to_capacity
+  出处:
+  - packages/engine/headcount_gap.py
+  对外怎么说:
+    默认: 改 headcount_gap 必须同步投影。
+  说明: 批次 G。每个引擎模块一张投影，禁止逃课。落实组人数折产能假设叶子。
 - 编号: F.l4.mod_insert
   名称: 引擎投影·insert
   套: 运营

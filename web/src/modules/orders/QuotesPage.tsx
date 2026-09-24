@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { requestWithRole } from "../../api/client";
 import { renderMoney, renderStatusTag } from "../../ui/cellRenderers";
 import { formatUnit } from "../../utils/uomDisplay";
+import { useGuidedDemoSeedReload } from "../../hooks/guidedDemoSeed";
 import { useAuth } from "../../shell/auth";
 
 type QuoteLine = {
@@ -42,6 +43,18 @@ type Customer = { code: string; name: string; owner_sales: string };
 type CatalogItem = { item_code: string; item_name: string; group_label?: string };
 type ContractOption = { contract_no: string; title: string; status: string };
 
+const QUOTE_UI_TABS = ["全部", "未发出", "谈判中", "已确认", "需重新报价"] as const;
+
+function quoteUiTab(q: Quote): (typeof QUOTE_UI_TABS)[number] {
+  const note = q.note || "";
+  const st = (q.status || "").toUpperCase();
+  if (note.includes("需重新报价")) return "需重新报价";
+  if (st === "DRAFT") return "未发出";
+  if (st === "SUBMITTED") return "谈判中";
+  if (st === "APPROVED" || st === "CONVERTED") return "已确认";
+  return "未发出";
+}
+
 const PROCESS_FROM_GROUP: Record<string, string> = {
   手工组: "手工",
   模具组: "模具",
@@ -70,27 +83,44 @@ function emptyLine(): QuoteLine {
 export function QuotesPage() {
   const auth = useAuth();
   const role = auth.role;
-  const [rows, setRows] = useState<Quote[]>([]);
+  const [allRows, setAllRows] = useState<Quote[]>([]);
+  const [uiTab, setUiTab] = useState<(typeof QUOTE_UI_TABS)[number]>("全部");
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Quote | "new" | null>(null);
 
+  const tabCounts = useMemo(() => {
+    const c: Record<string, number> = Object.fromEntries(QUOTE_UI_TABS.map((t) => [t, 0]));
+    for (const q of allRows) {
+      c["全部"] += 1;
+      const t = quoteUiTab(q);
+      c[t] += 1;
+    }
+    return c;
+  }, [allRows]);
+
+  const rows = useMemo(() => {
+    if (uiTab === "全部") return allRows;
+    return allRows.filter((q) => quoteUiTab(q) === uiTab);
+  }, [allRows, uiTab]);
+
+  const demoSeedReload = useGuidedDemoSeedReload("quote");
   const load = useCallback(() => {
     if (!role) return;
     setError(null);
     requestWithRole<Quote[]>("/api/crm/quotes", role)
-      .then(setRows)
+      .then(setAllRows)
       .catch((e) => setError(String(e)));
   }, [role]);
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, demoSeedReload]);
 
   return (
     <div className="px-6 py-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 className="text-lg font-semibold">产品报价</h2>
+          <h2 className="text-lg font-semibold">报价</h2>
           <p className="text-xs text-[var(--text-muted)]">
             一单一议 · 11 列手工填报 · 批准后转销售订单（V1 不做自动计价）
           </p>
@@ -111,6 +141,19 @@ export function QuotesPage() {
         </div>
       </div>
       {error && <p className="mt-2 text-xs text-rose-400">{error}</p>}
+      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+        {QUOTE_UI_TABS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            className={`rounded-full border px-2 py-0.5 ${uiTab === t ? "border-[var(--accent)] text-[var(--accent)]" : ""}`}
+            style={{ borderColor: "var(--line)" }}
+            onClick={() => setUiTab(t)}
+          >
+            {t} ({tabCounts[t] ?? 0})
+          </button>
+        ))}
+      </div>
       <div className="mt-4 overflow-x-auto rounded-lg border" style={{ borderColor: "var(--line)" }}>
         <table className="w-full min-w-[880px] border-collapse text-xs">
           <thead className="bg-[var(--table-head)] text-[var(--text-muted)]">
@@ -340,10 +383,62 @@ function QuoteDrawer({
           <div>
             <p className="font-semibold">{code || "新建报价"}</p>
             <p className="text-xs text-[var(--text-muted)]">产品报价表 · 含税单价 · 达计量仅记录</p>
+            {initial && (
+              <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs md:grid-cols-4">
+                <div>
+                  <dt className="text-[var(--text-muted)]">客户</dt>
+                  <dd>{customers.find((c) => c.code === customerCode)?.name ?? customerCode}</dd>
+                </div>
+                <div>
+                  <dt className="text-[var(--text-muted)]">关联打样</dt>
+                  <dd>{initial.sample_code ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[var(--text-muted)]">税率</dt>
+                  <dd>{initial.tax_rate != null ? `${Math.round(Number(initial.tax_rate) * 100)}%` : "13%"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[var(--text-muted)]">有效期至</dt>
+                  <dd>{initial.valid_until ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[var(--text-muted)]">业务员</dt>
+                  <dd>{initial.owner_sales}</dd>
+                </div>
+                <div>
+                  <dt className="text-[var(--text-muted)]">合同/订单</dt>
+                  <dd>
+                    {initial.contract_no ?? "—"} / {initial.order_no ?? "—"}
+                  </dd>
+                </div>
+              </dl>
+            )}
           </div>
-          <button type="button" className="text-sm text-[var(--text-muted)]" onClick={onClose}>
-            关闭
-          </button>
+          <div className="flex items-center gap-2">
+            {code && (
+              <>
+                <a
+                  href={`/api/crm/quotes/${encodeURIComponent(code)}/print`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded border px-2 py-1 text-xs text-[var(--accent)]"
+                  style={{ borderColor: "var(--line)" }}
+                >
+                  打印 HTML
+                </a>
+                <a
+                  href={`/api/crm/quotes/${encodeURIComponent(code)}/pdf`}
+                  className="rounded border px-2 py-1 text-xs text-[var(--accent)]"
+                  style={{ borderColor: "var(--line)" }}
+                >
+                  下载 PDF
+                </a>
+              </>
+            )}
+            <button type="button" className="text-sm text-[var(--text-muted)]" onClick={onClose}>
+              关闭
+            </button>
+          </div>
         </div>
         <div className="min-h-0 flex-1 overflow-auto p-4 text-sm">
           {err && <p className="mb-2 text-xs text-rose-400">{err}</p>}
@@ -630,9 +725,22 @@ function QuoteDrawer({
             </button>
           )}
           {canApprove && status === "SUBMITTED" && (
-            <button type="button" disabled={busy} className="rounded bg-emerald-700 px-3 py-1.5 text-xs text-white" onClick={() => void act(`/api/crm/quotes/${code}/approve`)}>
-              批准
-            </button>
+            <>
+              {(role === "GM" || role === "SALES_MGR") && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="rounded border px-3 py-1.5 text-xs text-amber-300"
+                  style={{ borderColor: "var(--line)" }}
+                  onClick={() => void act(`/api/crm/quotes/${code}/requote`)}
+                >
+                  需重新报价
+                </button>
+              )}
+              <button type="button" disabled={busy} className="rounded bg-emerald-700 px-3 py-1.5 text-xs text-white" onClick={() => void act(`/api/crm/quotes/${code}/approve`)}>
+                批准
+              </button>
+            </>
           )}
           {canApprove && (status === "DRAFT" || status === "SUBMITTED" || status === "APPROVED") && code && (
             <button type="button" disabled={busy} className="rounded border px-3 py-1.5 text-xs text-rose-400" style={{ borderColor: "var(--line)" }} onClick={() => void act(`/api/crm/quotes/${code}/void`)}>

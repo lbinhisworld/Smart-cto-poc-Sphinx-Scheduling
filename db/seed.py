@@ -7,7 +7,7 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from db.tables import (
@@ -95,6 +95,12 @@ def clear_master_and_orders(session: Session) -> None:
     session.execute(delete(WoInsertLogRow))
     session.execute(delete(WoRow))
     session.execute(delete(PlanVersionRow))
+    from db.tables import OrderChangeRequestRow, PendingRollRow, SoOrderDueEventRow, SoOrderLineRow
+
+    session.execute(delete(SoOrderLineRow))
+    session.execute(delete(SoOrderDueEventRow))
+    session.execute(delete(OrderChangeRequestRow))
+    session.execute(delete(PendingRollRow))
     session.execute(delete(SoOrderRow))
     session.execute(delete(MdCapacityCalendarRow))
     session.execute(delete(MdUomConvertRow))
@@ -105,19 +111,327 @@ def clear_master_and_orders(session: Session) -> None:
     session.execute(delete(MdItemRow))
 
 
+def _collect_item_closure(seed: dict, root_codes: list[str]) -> set[str]:
+    codes = set(root_codes)
+    changed = True
+    while changed:
+        changed = False
+        for row in seed.get("bom_lines", []):
+            parent = row["parent_item_code"]
+            comp = row["component_item_code"]
+            if parent in codes and comp not in codes:
+                codes.add(comp)
+                changed = True
+        for row in seed.get("routes", []):
+            ic = row["item_code"]
+            semi = row.get("semi_item_code")
+            if ic in codes and semi and semi not in codes:
+                codes.add(semi)
+                changed = True
+    return codes
+
+
+def delete_items_subset(session: Session, item_codes: set[str]) -> None:
+    if not item_codes:
+        return
+    codes = list(item_codes)
+    session.execute(
+        delete(MdBomLineRow).where(
+            or_(MdBomLineRow.parent_item_code.in_(codes), MdBomLineRow.component_item_code.in_(codes))
+        )
+    )
+    session.execute(delete(MdSphRow).where(MdSphRow.item_code.in_(codes)))
+    session.execute(delete(MdItemRouteRow).where(MdItemRouteRow.item_code.in_(codes)))
+    session.execute(delete(MdUomConvertRow).where(MdUomConvertRow.item_code.in_(codes)))
+    session.execute(delete(StockRow).where(StockRow.item_code.in_(codes)))
+    session.execute(delete(MdItemRow).where(MdItemRow.item_code.in_(codes)))
+
+
+def _import_capacity_calendar(session: Session, seed: dict) -> int:
+    existing = int(session.scalar(select(func.count()).select_from(MdCapacityCalendarRow)) or 0)
+    if existing > 0:
+        return 0
+    cal = seed["calendar"]
+    start = date.fromisoformat(cal["range"][0])
+    end = date.fromisoformat(cal["range"][1])
+    workdays = set(cal["workdays"])
+    hours = str(cal["hours_per_day"])
+    reserved = str(seed["config"].get("reserved_ratio_in_tests", seed["config"]["reserved_ratio"]))
+    n = 0
+    cursor = start
+    while cursor <= end:
+        is_wd = cursor.isoweekday() in workdays
+        for group in seed["groups"]:
+            session.add(
+                MdCapacityCalendarRow(
+                    dept=group["dept"],
+                    group_code=group["code"],
+                    work_date=cursor,
+                    is_workday=is_wd,
+                    hours_per_day=hours,
+                    headcount=group["headcount"],
+                    reserved_ratio=reserved,
+                )
+            )
+            n += 1
+        cursor += timedelta(days=1)
+    return n
+
+
+def import_seed_items_subset(session: Session, seed_path: Path, root_item_codes: list[str]) -> dict:
+    """从官方种子导入指定成品及其 BOM/工艺依赖（不含订单）。"""
+    with seed_path.open(encoding="utf-8") as fh:
+        seed = json.load(fh, parse_float=Decimal)
+    closure = _collect_item_closure(seed, root_item_codes)
+    delete_items_subset(session, closure)
+    items_by_code = {str(r["item_code"]): r for r in seed.get("items", [])}
+    added_items = 0
+    for code in sorted(closure):
+        row = items_by_code.get(code)
+        if row is None:
+            continue
+        session.add(
+            MdItemRow(
+                item_code=row["item_code"],
+                item_name=row["item_name"],
+                dept=row["dept"],
+                group_code=row["group_code"],
+                unit_sale=row["unit_sale"],
+                pcs_per_board=row["pcs_per_board"],
+                board_per_box=str(row["board_per_box"]),
+                loss_rate=str(row["loss_rate"]),
+                color=row["color"],
+                is_semi=row["is_semi"],
+                computable=row["computable"],
+                prod_category=row.get("prod_category") or _default_prod_category(row),
+                kg_per_board=_opt_num(row.get("kg_per_board"), _default_kg_per_board(row)),
+                display_uom=row.get("display_uom") or row.get("unit_sale") or "BOARD",
+            )
+        )
+        added_items += 1
+    for row in seed.get("uom_converts", []):
+        if row["item_code"] not in closure:
+            continue
+        session.add(
+            MdUomConvertRow(
+                item_code=row["item_code"],
+                from_uom=row["from_uom"],
+                to_uom=row["to_uom"],
+                factor=str(row["factor"]),
+            )
+        )
+    for row in seed.get("routes", []):
+        if row["item_code"] not in closure:
+            continue
+        session.add(
+            MdItemRouteRow(
+                item_code=row["item_code"],
+                needs_semi=row["needs_semi"],
+                semi_item_code=row.get("semi_item_code"),
+                semi_board_per_box=str(row["semi_board_per_box"]) if row.get("semi_board_per_box") is not None else None,
+                lead_time_days=row["lead_time_days"],
+                changeover_min=row["changeover_min"],
+            )
+        )
+    for row in seed.get("sph", []):
+        if row["item_code"] not in closure:
+            continue
+        session.add(
+            MdSphRow(
+                item_code=row["item_code"],
+                group_code=row["group_code"],
+                sph_value=str(row["sph_value"]),
+                sph_basis=row["sph_basis"],
+                sph_crew=row.get("sph_crew"),
+                sph_uom=row["sph_uom"],
+                crew_std=row["crew_std"],
+                confidence=row["confidence"],
+                effective_date=date.fromisoformat(row["effective_date"]),
+                source=row["source"],
+            )
+        )
+    now = datetime.now(UTC)
+    for code in closure:
+        if code not in items_by_code:
+            continue
+        session.add(
+            StockRow(
+                item_code=code,
+                qty_available="0",
+                uom_display="BOARD",
+                source="GUIDED_DEMO",
+                updated_at=now,
+            )
+        )
+    for row in seed.get("bom_lines", []):
+        if row["parent_item_code"] not in closure:
+            continue
+        session.add(
+            MdBomLineRow(
+                parent_item_code=row["parent_item_code"],
+                line_no=row["line_no"],
+                component_item_code=row["component_item_code"],
+                component_role=row["component_role"],
+                qty_per_parent=str(row["qty_per_parent"]),
+                qty_basis_uom=row.get("qty_basis_uom", "BOX"),
+                scrap_rate=str(row["scrap_rate"]) if row.get("scrap_rate") is not None else None,
+                offset_days=row.get("offset_days", 0),
+                lead_time_days=row.get("lead_time_days", 4),
+                kit_critical=row.get("kit_critical", True),
+            )
+        )
+    calendar_rows = _import_capacity_calendar(session, seed)
+    return {
+        "root_item_codes": list(root_item_codes),
+        "closure_size": len(closure),
+        "items_added": added_items,
+        "calendar_rows": calendar_rows,
+    }
+
+
 def reload_seed_json(session: Session, seed_path: Path) -> dict:
     clear_master_and_orders(session)
     import_seed_json(session, seed_path)
     return seed_manifest(seed_path)
 
 
+def import_seed_json_master_only(session: Session, seed_path: Path) -> dict:
+    """仅导入产品/BOM/工艺/SPH/产能日历；不导入订单与 CRM，库存数量置 0。"""
+    with seed_path.open(encoding="utf-8") as fh:
+        seed = json.load(fh, parse_float=Decimal)
+
+    for row in seed["items"]:
+        session.add(
+            MdItemRow(
+                item_code=row["item_code"],
+                item_name=row["item_name"],
+                dept=row["dept"],
+                group_code=row["group_code"],
+                unit_sale=row["unit_sale"],
+                pcs_per_board=row["pcs_per_board"],
+                board_per_box=str(row["board_per_box"]),
+                loss_rate=str(row["loss_rate"]),
+                color=row["color"],
+                is_semi=row["is_semi"],
+                computable=row["computable"],
+                prod_category=row.get("prod_category") or _default_prod_category(row),
+                kg_per_board=_opt_num(row.get("kg_per_board"), _default_kg_per_board(row)),
+                display_uom=row.get("display_uom") or row.get("unit_sale") or "BOARD",
+            )
+        )
+    for row in seed["uom_converts"]:
+        session.add(
+            MdUomConvertRow(
+                item_code=row["item_code"],
+                from_uom=row["from_uom"],
+                to_uom=row["to_uom"],
+                factor=str(row["factor"]),
+            )
+        )
+    for row in seed["routes"]:
+        session.add(
+            MdItemRouteRow(
+                item_code=row["item_code"],
+                needs_semi=row["needs_semi"],
+                semi_item_code=row.get("semi_item_code"),
+                semi_board_per_box=str(row["semi_board_per_box"]) if row.get("semi_board_per_box") is not None else None,
+                lead_time_days=row["lead_time_days"],
+                changeover_min=row["changeover_min"],
+            )
+        )
+    for row in seed["sph"]:
+        session.add(
+            MdSphRow(
+                item_code=row["item_code"],
+                group_code=row["group_code"],
+                sph_value=str(row["sph_value"]),
+                sph_basis=row["sph_basis"],
+                sph_crew=row.get("sph_crew"),
+                sph_uom=row["sph_uom"],
+                crew_std=row["crew_std"],
+                confidence=row["confidence"],
+                effective_date=date.fromisoformat(row["effective_date"]),
+                source=row["source"],
+            )
+        )
+    cal = seed["calendar"]
+    start = date.fromisoformat(cal["range"][0])
+    end = date.fromisoformat(cal["range"][1])
+    workdays = set(cal["workdays"])
+    hours = str(cal["hours_per_day"])
+    reserved = str(seed["config"].get("reserved_ratio_in_tests", seed["config"]["reserved_ratio"]))
+    cursor = start
+    while cursor <= end:
+        is_wd = cursor.isoweekday() in workdays
+        for group in seed["groups"]:
+            session.add(
+                MdCapacityCalendarRow(
+                    dept=group["dept"],
+                    group_code=group["code"],
+                    work_date=cursor,
+                    is_workday=is_wd,
+                    hours_per_day=hours,
+                    headcount=group["headcount"],
+                    reserved_ratio=reserved,
+                )
+            )
+        cursor += timedelta(days=1)
+    now = datetime.now(UTC)
+    for row in seed["items"]:
+        session.add(
+            StockRow(
+                item_code=row["item_code"],
+                qty_available="0",
+                uom_display="BOARD",
+                source="DEMO_RESET",
+                updated_at=now,
+            )
+        )
+    for row in seed.get("bom_lines", []):
+        session.add(
+            MdBomLineRow(
+                parent_item_code=row["parent_item_code"],
+                line_no=row["line_no"],
+                component_item_code=row["component_item_code"],
+                component_role=row["component_role"],
+                qty_per_parent=str(row["qty_per_parent"]),
+                qty_basis_uom=row.get("qty_basis_uom", "BOX"),
+                scrap_rate=str(row["scrap_rate"]) if row.get("scrap_rate") is not None else None,
+                offset_days=row.get("offset_days", 0),
+                lead_time_days=row.get("lead_time_days", 4),
+                kit_critical=row.get("kit_critical", True),
+            )
+        )
+    return {
+        "item_count": len(seed["items"]),
+        "order_count": 0,
+        "seed_version": seed.get("meta", {}).get("seed_version"),
+        "master_only": True,
+    }
+
+
+def reload_seed_json_master_only(session: Session, seed_path: Path) -> dict:
+    clear_master_and_orders(session)
+    return import_seed_json_master_only(session, seed_path)
+
+
 def needs_seed_reload(session: Session, seed_path: Path) -> bool:
+    from db.demo_manual_data import is_manual_data_mode
     from db.demo_scenario import is_scenario_locked
 
+    if is_manual_data_mode(session):
+        return False
     if is_scenario_locked(session):
         return False
     manifest = seed_manifest(seed_path)
-    order_count = session.scalar(select(func.count()).select_from(SoOrderRow)) or 0
+    from db.prod_stats_seed import capacity_fixture_clause
+
+    order_count = (
+        session.scalar(
+            select(func.count()).select_from(SoOrderRow).where(~capacity_fixture_clause())
+        )
+        or 0
+    )
     item_count = session.scalar(select(func.count()).select_from(MdItemRow)) or 0
     return order_count != manifest["order_count"] or item_count != manifest["item_count"]
 

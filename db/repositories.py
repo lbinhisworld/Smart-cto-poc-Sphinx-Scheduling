@@ -14,6 +14,7 @@ from db.plan_store import (
     log_insert,
     save_schedule_result,
 )
+from db.prod_stats_seed import is_capacity_fixture_order
 from db.snapshot import load_schedule_input
 from db.tables import SoOrderRow
 from engine.insert import schedule_insert
@@ -50,6 +51,7 @@ def list_orders(session: Session) -> list[Order]:
             schedule_phase=r.schedule_phase or "PENDING",
         )
         for r in rows
+        if not is_capacity_fixture_order(r.order_no, r.order_source)
     ]
 
 
@@ -90,6 +92,23 @@ def create_order(session: Session, order: Order) -> None:
             schedule_phase=order.schedule_phase or "PENDING",
         )
     )
+
+
+def set_group_headcount(session: Session, dept: str, group_code: str, headcount: int) -> int:
+    """只改这一组日历上的在编。不改订单交期，不触发倒排。"""
+    from db.tables import MdCapacityCalendarRow
+
+    rows = list(
+        session.scalars(
+            select(MdCapacityCalendarRow).where(
+                MdCapacityCalendarRow.dept == dept,
+                MdCapacityCalendarRow.group_code == group_code,
+            )
+        ).all()
+    )
+    for row in rows:
+        row.headcount = headcount
+    return len(rows)
 
 
 def update_order_due_date_by_user(session: Session, order_no: str, due_date: date) -> None:
@@ -179,7 +198,7 @@ def apply_insert_strategy(
     )
     picked = next(s for s in compare.strategies if s.strategy == strategy)
     before = current_plan_version(session)
-    after = save_schedule_result(session, picked.result, trigger="插单")
+    after = save_schedule_result(session, picked.result, trigger=f"插单-{strategy.value}")
     from db.schedule_run_log import write_schedule_run_log
 
     write_schedule_run_log(
@@ -207,4 +226,7 @@ def apply_insert_strategy(
         version_before=before,
         version_after=after,
     )
+    from db.order_lifecycle import add_to_scheduling_pool
+
+    add_to_scheduling_pool(session, [urgent_order_no])
     return picked.result, after

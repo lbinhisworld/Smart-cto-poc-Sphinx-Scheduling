@@ -257,6 +257,27 @@ def register_labor(app, get_db):
             raise HTTPException(status_code=404, detail="工单不存在") from None
         return {"code": 0, "message": "", "data": data}
 
+    @app.post("/api/labor/demo-report")
+    def labor_demo_report(
+        x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+        db: Session = Depends(get_db),
+    ):
+        role = _role(x_demo_role)
+        if role not in ("GM", "PMC"):
+            raise HTTPException(status_code=403, detail="测试报工仅总经理或生管")
+        from db.flow_demo import scripted_labor_report
+
+        user = user_for_role(role)
+        try:
+            data = scripted_labor_report(
+                db,
+                today=date(2026, 9, 15),
+                reported_by=user.name if user else role,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        return {"code": 0, "message": data["next"], "data": data}
+
     @app.get("/api/labor/qty-rolls")
     def labor_qty_rolls(
         status: str | None = "PENDING_CONFIRMATION",

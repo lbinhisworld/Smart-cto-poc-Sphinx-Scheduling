@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetState
 import { Link } from "react-router-dom";
 import { requestWithRole } from "../../api/client";
 import { renderMoney } from "../../ui/cellRenderers";
+import { useGuidedDemoSeedReload } from "../../hooks/guidedDemoSeed";
 import { useAuth } from "../../shell/auth";
 import { LaborTaskDrawer } from "./LaborTaskDrawer";
 
@@ -67,6 +68,7 @@ type SummaryRow = {
 export function ProductionTimeReportPage() {
   const auth = useAuth();
   const role = auth.role;
+  const demoSeedReload = useGuidedDemoSeedReload(["labor_report", "dispatch", "reschedule"]);
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [showDone, setShowDone] = useState(false);
   const [draftActual, setDraftActual] = useState<Record<string, string>>({});
@@ -97,7 +99,7 @@ export function ProductionTimeReportPage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, demoSeedReload]);
 
   const canEditRow = (r: GridRow) => {
     if (role === "GM" || role === "PMC") return true;
@@ -166,6 +168,32 @@ export function ProductionTimeReportPage() {
         <Link to="/schedule" className="text-[var(--accent)] underline">
           去排程发布
         </Link>
+        {(role === "GM" || role === "PMC") && (
+          <button
+            type="button"
+            className="rounded border border-emerald-700 px-2 py-1 text-xs text-emerald-200"
+            onClick={() => {
+              if (!role) return;
+              setErr(null);
+              setRollMsg(null);
+              requestWithRole<{
+                reports: { order_no: string; qty_board_done: number; qty_board_remain: number; note: string }[];
+                next: string;
+                time_notes?: string[];
+              }>("/api/labor/demo-report", role, { method: "POST" })
+                .then((data) => {
+                  const lines = data.reports
+                    .map((r) => `${r.order_no}：${r.note}，完成 ${r.qty_board_done} 版，剩余 ${r.qty_board_remain} 版`)
+                    .join("；");
+                  setRollMsg(`${lines}。${data.next}${data.time_notes?.length ? " " + data.time_notes.join(" ") : ""}`);
+                  load();
+                })
+                .catch((e) => setErr(String(e)));
+            }}
+          >
+            测试报工
+          </button>
+        )}
         <Link to="/modules/production/stats/dept1" className="text-[var(--text-muted)] hover:text-[var(--accent)]">
           一部产能统计
         </Link>
@@ -393,6 +421,7 @@ type ReportLine = {
 export function HrLaborCostPage() {
   const auth = useAuth();
   const role = auth.role;
+  const demoSeedReload = useGuidedDemoSeedReload(["order_cost", "inbound", "labor_report"]);
   const [data, setData] = useState<{
     plan_version: number;
     totals: { cost_planned: number; cost_actual: number; variance_pct: number | null };
@@ -407,7 +436,7 @@ export function HrLaborCostPage() {
       `/api/hr/labor-cost/summary?date_from=${ANCHOR_FROM}&date_to=${ANCHOR_TO}`,
       role,
     ).then(setData);
-  }, [role]);
+  }, [role, demoSeedReload]);
 
   useEffect(() => {
     if (!role || !detailRow) {

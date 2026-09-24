@@ -85,8 +85,8 @@ function NodeCard({
         )}
       </div>
       <p className={`mt-1 font-semibold text-slate-100 ${compact ? "text-xs" : ""}`}>
-        {node.item_code}
-        <span className="ml-1 font-normal text-slate-400">{node.item_name}</span>
+        {node.item_name.replace(/（拟真）|\(拟真\)/g, "").trim() || node.item_name}
+        <span className="ml-1.5 font-mono text-[11px] font-normal text-slate-500">{node.item_code}</span>
       </p>
       {purchased ? (
         <p className="mt-1 text-slate-500">不生成工单 · 只参与齐套占库</p>

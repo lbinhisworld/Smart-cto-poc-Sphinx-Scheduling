@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { DEMO_TODAY } from "../../constants/groups";
 import { useAuth } from "../../shell/auth";
+import { CUSTOMER_QUESTIONS } from "./customerQuestions";
+import { GuidedDemoRunsPanel } from "./GuidedDemoRunsPanel";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"] as const;
 
@@ -15,24 +17,6 @@ function formatDemoDate(iso: string) {
   };
 }
 
-type Act = {
-  act: number;
-  title: string;
-  module: string;
-  role: string;
-  path: string;
-  steps: string[];
-  note?: string;
-};
-
-type LoopAct = {
-  step: number;
-  title: string;
-  role: string;
-  path: string;
-  steps: string[];
-};
-
 type Scope = {
   offline_ok: boolean;
   disclaimer: string;
@@ -41,58 +25,15 @@ type Scope = {
 
 type ScenarioStatus = {
   today: string;
-  locked: boolean;
-  order_count: number;
-  item_count: number;
-  stock_zero: boolean;
-  groups: { dept: string; group_code: string; label: string; headcount: number }[];
 };
 
-type Preview = {
-  order_count: number;
-  due_mode: string;
-  item_share: string;
-  core_skus: string[];
-  cluster_order_nos: string[];
-  due_histogram: { fence: number; mid: number; far: number };
-  warnings: string[];
-  intersections: { a: string; b: string; intersection: string[] }[];
-};
-
-const DUE_OPTIONS = [
-  { id: "FOCUS_FENCE", label: "集中 4 天内（冻结区）" },
-  { id: "FOCUS_MID", label: "集中 5–15 天" },
-  { id: "FOCUS_FAR", label: "集中 16–30 天" },
-  { id: "UNIFORM", label: "30 天内均匀" },
-] as const;
-
-const SHARE_OPTIONS = [
-  { id: "NONE", label: "无品项共享（集合不相交）" },
-  { id: "SHARE_10_1", label: "10% 单相交 1 个 SKU" },
-  { id: "SHARE_20_4", label: "20% 单相交 4 个 SKU" },
-] as const;
-
-function apiError(j: { detail?: unknown; message?: string }, fallback: string): string {
-  if (typeof j.detail === "string") return j.detail;
-  if (Array.isArray(j.detail)) return j.detail.map((x) => JSON.stringify(x)).join("; ");
-  return j.message || fallback;
-}
+type DemoConsoleTab = "runs" | "questions";
 
 export function DemoConsolePage() {
   const auth = useAuth();
-  const isGm = auth.role === "GM";
-  const [acts, setActs] = useState<Act[]>([]);
-  const [loopActs, setLoopActs] = useState<LoopAct[]>([]);
+  const [tab, setTab] = useState<DemoConsoleTab>("runs");
   const [scope, setScope] = useState<Scope | null>(null);
   const [status, setStatus] = useState<ScenarioStatus | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [headcount, setHeadcount] = useState(5);
-  const [orderCount, setOrderCount] = useState<5 | 10 | 20 | 50 | 100>(5);
-  const [dueMode, setDueMode] = useState<string>("UNIFORM");
-  const [itemShare, setItemShare] = useState<string>("SHARE_10_1");
-  const [preview, setPreview] = useState<Preview | null>(null);
 
   const loadStatus = useCallback(() => {
     fetch("/api/demo/scenario/status", { headers: auth.headers() })
@@ -104,58 +45,10 @@ export function DemoConsolePage() {
   useEffect(() => {
     fetch("/api/demo/rehearsal", { headers: auth.headers() })
       .then((r) => r.json())
-      .then((j) => {
-        setActs(j.data?.acts ?? []);
-        setLoopActs(j.data?.loop_acts ?? []);
-        setScope(j.data?.scope ?? null);
-      });
+      .then((j) => setScope(j.data?.scope ?? null))
+      .catch(() => undefined);
     loadStatus();
   }, [auth, loadStatus]);
-
-  const postJson = async (url: string, body?: unknown) => {
-    setBusy(true);
-    setMsg(null);
-    setErr(null);
-    try {
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { ...auth.headers(), "Content-Type": "application/json" },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
-      const j = await r.json();
-      if (!r.ok) {
-        setErr(apiError(j, `请求失败 ${r.status}`));
-        return null;
-      }
-      setMsg(j.message || "完成");
-      loadStatus();
-      return j.data;
-    } catch (e) {
-      setErr(String(e));
-      return null;
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const triggerS5 = () => {
-    postJson("/api/demo/trigger-sample-overdue?sample_code=SP-001");
-  };
-
-  const genBody = () => ({
-    order_count: orderCount,
-    due_mode: dueMode,
-    item_share: itemShare,
-    rng_seed: 20260915,
-    auto_add_to_pool: false,
-  });
-
-  const applyPreset = (count: 5 | 10 | 20 | 50 | 100, due: string, share: string) => {
-    setOrderCount(count);
-    setDueMode(due);
-    setItemShare(share);
-    setPreview(null);
-  };
 
   const demoDate = formatDemoDate(status?.today || DEMO_TODAY);
 
@@ -163,9 +56,9 @@ export function DemoConsolePage() {
     <div className="px-6 py-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">演示控制台 · 场景台</h2>
+          <h2 className="text-lg font-semibold">演示控制台</h2>
           <p className="mt-1 text-xs text-slate-400">
-            生成后订单只进待排程，由生管全选加入排程。交期与下单日都按右侧基准日计算。
+            全链路走查用「演示线」；待客户拍板项在「待确认问题」。交期与下单日按右侧演示基准日计算。
           </p>
         </div>
         <div
@@ -184,6 +77,7 @@ export function DemoConsolePage() {
           <p className="mt-1 text-[10px] text-sky-300/80">不是电脑今天 · 造数 / 排程 / 齐套都用这一天</p>
         </div>
       </div>
+
       {scope && (
         <div className="mt-2 rounded border border-amber-800/60 bg-amber-950/30 px-3 py-2 text-xs text-amber-100">
           <p>{scope.disclaimer}</p>
@@ -191,281 +85,105 @@ export function DemoConsolePage() {
         </div>
       )}
 
-      <section className="mt-4 rounded-lg border border-violet-800/50 bg-violet-950/25 p-4">
-        <h3 className="text-sm font-semibold text-violet-100">概念讲解（可离线讲）</h3>
-        <p className="mt-1 text-[11px] text-violet-200/70">
-          与下方十幕 live 操作互补：先讲逻辑，再进看板 / 生产成本实操。Workbuddy 静态页可放{" "}
-          <code className="text-violet-300">web/public/demo/</code> 后用 embed 参数挂载。
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Link
-            to="/demo/story/schedule"
-            className="rounded-lg border border-violet-600/60 bg-violet-950/40 px-4 py-2 text-xs text-violet-100 hover:border-violet-500"
-          >
-            排程算法讲解
-            <span className="mt-0.5 block text-[10px] text-violet-300/80">倒排 · 冲突 · 插单 → 再看 /schedule</span>
-          </Link>
-          <Link
-            to="/demo/story/cost"
-            className="rounded-lg border border-violet-600/60 bg-violet-950/40 px-4 py-2 text-xs text-violet-100 hover:border-violet-500"
-          >
-            计划人工成本讲解
-            <span className="mt-0.5 block text-[10px] text-violet-300/80">人·时 · 单价 · 打样剔除 → 再看生产成本</span>
-          </Link>
-        </div>
-      </section>
-
-      <section className="mt-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-slate-100">场景台</h3>
-          {status && (
-            <p className="text-[10px] text-slate-500">
-              {status.locked ? "场景已锁（不会自动重导 12 单）" : "未锁 · 订单数变化可能触发种子重导"}
-              {" · "}订单 {status.order_count} · 品项 {status.item_count}
-              {status.stock_zero ? " · 库存已清零" : " · 库存非空"}
-            </p>
-          )}
-        </div>
-        {status && (
-          <p className="mt-1 text-[10px] text-slate-500">
-            编制：
-            {status.groups.map((g) => `${g.label} ${g.headcount}人`).join(" · ")}
-          </p>
-        )}
-        {!isGm && (
-          <p className="mt-2 text-[10px] text-amber-400">清场 / 造数仅总经理可执行，请切换角色后操作。</p>
-        )}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={busy || !isGm}
-            className="rounded border border-rose-800 px-3 py-1 text-xs text-rose-200 disabled:opacity-40"
-            onClick={() => {
-              if (window.confirm("清空全部订单、排产/派工、报工，并把库存数量清零？产品维表保留。")) {
-                postJson("/api/demo/scenario/reset-orders");
-              }
-            }}
-          >
-            初始化订单
-          </button>
-          <label className="flex items-center gap-1 text-[10px] text-slate-400">
-            每组
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={headcount}
-              disabled={busy || !isGm}
-              onChange={(e) => setHeadcount(Number(e.target.value) || 5)}
-              className="w-12 rounded border border-slate-700 bg-slate-950 px-1 py-0.5 text-xs text-slate-100"
-            />
-            人
-          </label>
-          <button
-            type="button"
-            disabled={busy || !isGm}
-            className="rounded border border-slate-600 px-3 py-1 text-xs disabled:opacity-40"
-            onClick={() => {
-              if (window.confirm(`按每组 ${headcount} 人重建生产花名册，并同步日历编制与出勤？`)) {
-                postJson("/api/demo/scenario/reset-roster", { headcount });
-              }
-            }}
-          >
-            初始产线人员
-          </button>
-          <button
-            type="button"
-            disabled={busy || !isGm}
-            className="rounded border border-slate-600 px-3 py-1 text-xs disabled:opacity-40"
-            onClick={() => {
-              if (window.confirm("恢复官方 12 单种子并解锁场景？本轮造数将丢失。")) {
-                postJson("/api/demo/scenario/restore-seed");
-              }
-            }}
-          >
-            恢复官方种子
-          </button>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <label className="text-[10px] text-slate-400">
-            订单数量
-            <select
-              value={orderCount}
-              onChange={(e) => setOrderCount(Number(e.target.value) as 5 | 10 | 20 | 50 | 100)}
-              className="mt-1 block w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
-            >
-              {[5, 10, 20, 50, 100].map((n) => (
-                <option key={n} value={n}>
-                  {n} 单
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-[10px] text-slate-400">
-            交期集中度
-            <select
-              value={dueMode}
-              onChange={(e) => setDueMode(e.target.value)}
-              className="mt-1 block w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
-            >
-              {DUE_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-[10px] text-slate-400">
-            品项共享
-            <select
-              value={itemShare}
-              onChange={(e) => setItemShare(e.target.value)}
-              className="mt-1 block w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
-            >
-              {SHARE_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <p className="mt-2 text-[10px] text-slate-500">
-          无共享且每单 2 行时最多 5 单。共享 = 两单各有 SKU 集合且相交，不是一单一行。
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded border border-slate-700 px-2 py-1 text-[10px] text-slate-300"
-            onClick={() => applyPreset(5, "UNIFORM", "NONE")}
-          >
-            预设：闭环畅通 · 5 单均匀无共享
-          </button>
-          <button
-            type="button"
-            className="rounded border border-slate-700 px-2 py-1 text-[10px] text-slate-300"
-            onClick={() => applyPreset(20, "FOCUS_FENCE", "SHARE_10_1")}
-          >
-            预设：协同压力 · 20 单冻结区相交 1 SKU
-          </button>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            className="rounded border border-sky-700 px-3 py-1 text-xs text-sky-300 disabled:opacity-40"
-            onClick={async () => {
-              const data = await postJson("/api/demo/scenario/preview-orders", genBody());
-              if (data) setPreview(data);
-            }}
-          >
-            预览订单集
-          </button>
-          <button
-            type="button"
-            disabled={busy || !isGm}
-            className="rounded border border-emerald-700 px-3 py-1 text-xs text-emerald-300 disabled:opacity-40"
-            onClick={async () => {
-              if (!window.confirm("将先清场再写入本轮订单，全部进入待排程。继续？")) return;
-              const data = await postJson("/api/demo/scenario/generate-orders", genBody());
-              if (data) setPreview(data);
-            }}
-          >
-            生成并填充
-          </button>
-          <Link to="/orders" className="rounded border border-slate-600 px-3 py-1 text-xs text-slate-300">
-            去订单中心 →
-          </Link>
-          <Link to="/schedule" className="rounded border border-slate-600 px-3 py-1 text-xs text-slate-300">
-            去排程 →
-          </Link>
-        </div>
-        {preview && (
-          <div className="mt-3 rounded border border-slate-800 bg-slate-950/60 px-3 py-2 text-[11px] text-slate-300">
-            <p>
-              {preview.order_count} 单 · 交期 冻结{preview.due_histogram.fence} / 中期
-              {preview.due_histogram.mid} / 远期{preview.due_histogram.far}
-              {preview.core_skus.length > 0 && ` · 核心相交 {${preview.core_skus.join(", ")}}`}
-            </p>
-            {preview.warnings.length > 0 && (
-              <p className="mt-1 text-amber-300">{preview.warnings.join("；")}</p>
-            )}
-            {preview.intersections.length > 0 && (
-              <ul className="mt-1 space-y-0.5 text-slate-400">
-                {preview.intersections.slice(0, 8).map((x) => (
-                  <li key={`${x.a}-${x.b}`}>
-                    {`${x.a} ∩ ${x.b} = {${x.intersection.join(", ") || "∅"}}`}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-      </section>
-
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div
+        className="mt-4 flex gap-1 border-b border-slate-800"
+        role="tablist"
+        aria-label="演示控制台分区"
+      >
         <button
           type="button"
-          className="rounded border border-slate-600 px-3 py-1 text-xs"
-          onClick={triggerS5}
+          role="tab"
+          aria-selected={tab === "runs"}
+          className={`rounded-t px-4 py-2 text-sm font-medium transition-colors ${
+            tab === "runs"
+              ? "border border-b-0 border-sky-600/60 bg-sky-950/40 text-sky-100"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+          onClick={() => setTab("runs")}
         >
-          联调：触发 S5 打样超期消息
+          演示线
         </button>
-        <Link to="/todos" className="rounded border border-sky-700 px-3 py-1 text-xs text-sky-300">
-          待办中心 →
-        </Link>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "questions"}
+          className={`rounded-t px-4 py-2 text-sm font-medium transition-colors ${
+            tab === "questions"
+              ? "border border-b-0 border-amber-600/60 bg-amber-950/30 text-amber-100"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+          onClick={() => setTab("questions")}
+        >
+          待确认问题
+          <span className="ml-1.5 text-[11px] font-normal text-slate-500">{CUSTOMER_QUESTIONS.length}</span>
+        </button>
       </div>
-      {msg && <p className="mt-2 text-xs text-emerald-400">{msg}</p>}
-      {err && <p className="mt-2 text-xs text-rose-400">{err}</p>}
 
-      {loopActs.length > 0 && (
-        <>
-          <h3 className="mt-8 text-sm font-semibold text-slate-200">产销财务闭环</h3>
-          <ol className="mt-3 space-y-3">
-            {loopActs.map((a) => (
-              <li key={a.step} className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-sm">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-slate-100">
-                    第 {a.step} 步 · {a.title}
-                  </p>
-                  <Link to={a.path} className="text-xs text-sky-400 underline">
-                    {a.path} · {a.role}
-                  </Link>
+      {tab === "runs" && (
+        <div role="tabpanel" className="mt-4">
+          <GuidedDemoRunsPanel />
+
+          <section className="mt-6 rounded-lg border border-violet-800/50 bg-violet-950/25 p-4">
+            <h3 className="text-sm font-semibold text-violet-100">概念讲解（可离线讲）</h3>
+            <p className="mt-1 text-[11px] text-violet-200/70">
+              与演示线 live 操作互补：先讲逻辑，再进看板 / 生产成本实操。
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                to="/demo/story/schedule"
+                className="rounded-lg border border-violet-600/60 bg-violet-950/40 px-4 py-2 text-xs text-violet-100 hover:border-violet-500"
+              >
+                排程算法讲解
+                <span className="mt-0.5 block text-[10px] text-violet-300/80">倒排 · 冲突 · 插单 → 再看 /schedule</span>
+              </Link>
+              <Link
+                to="/demo/story/cost"
+                className="rounded-lg border border-violet-600/60 bg-violet-950/40 px-4 py-2 text-xs text-violet-100 hover:border-violet-500"
+              >
+                计划人工成本讲解
+                <span className="mt-0.5 block text-[10px] text-violet-300/80">人·时 · 单价 · 打样剔除 → 再看生产成本</span>
+              </Link>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {tab === "questions" && (
+        <section role="tabpanel" className="mt-4">
+          <div>
+            <h3 className="text-base font-semibold text-amber-100">还要客户确认</h3>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-400">
+              每一张都还没有拍板。演示按卡片上的「现在」继续跑；确认之前不改排程算法，也不改客户交期。
+            </p>
+          </div>
+          <ol className="mt-4 space-y-4">
+            {CUSTOMER_QUESTIONS.map((q) => (
+              <li
+                key={q.id}
+                className="rounded-2xl border border-amber-700/55 bg-gradient-to-br from-amber-950/55 via-slate-950 to-slate-950 px-6 py-6"
+              >
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="rounded-full bg-amber-400 px-3 py-1 text-sm font-bold tracking-wide text-amber-950">
+                    {q.id}
+                  </span>
+                  <span className="text-sm text-amber-200/90">请{q.ask}确认</span>
                 </div>
-                <ul className="mt-2 list-decimal pl-5 text-xs text-slate-300">
-                  {a.steps.map((s) => (
-                    <li key={s}>{s}</li>
-                  ))}
-                </ul>
+                <h4 className="mt-4 text-2xl font-semibold leading-snug text-amber-50">{q.question}</h4>
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-4">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500">现在演示</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-200">{q.now}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-4">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500">确认之后才能做</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-200">{q.after}</p>
+                  </div>
+                </div>
               </li>
             ))}
           </ol>
-        </>
+        </section>
       )}
-
-      <h3 className="mt-8 text-sm font-semibold text-slate-200">十幕剧本</h3>
-      <ol className="mt-3 space-y-4">
-        {acts.map((a) => (
-          <li key={a.act} className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-semibold text-slate-100">
-                第 {a.act} 幕 · {a.title}
-              </p>
-              <Link to={a.path} className="text-xs text-sky-400 underline">
-                {a.path} · 建议 {a.role}
-              </Link>
-            </div>
-            <p className="mt-1 text-[10px] text-slate-500">{a.module}</p>
-            <ul className="mt-2 list-decimal pl-5 text-xs text-slate-300">
-              {a.steps.map((s) => (
-                <li key={s}>{s}</li>
-              ))}
-            </ul>
-            {a.note && <p className="mt-2 text-[10px] text-slate-500">{a.note}</p>}
-          </li>
-        ))}
-      </ol>
     </div>
   );
 }

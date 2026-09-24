@@ -264,6 +264,8 @@ _MODEL_OBJ = {
     "CapacityOverride": "D.schedule_io",
     "ScheduleInput": "D.schedule_io",
     "ScheduleResult": "D.schedule_io",
+    "HeadcountGap": "D.headcount_gap",
+    "HeadcountTrial": "D.headcount_gap",
     "DiffEntry": "D.diff",
     "DiffResult": "D.diff",
     "FeasibilityStatus": "D.feasibility",

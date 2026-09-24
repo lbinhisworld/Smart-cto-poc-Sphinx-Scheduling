@@ -256,7 +256,7 @@ def test_api_insert_trial_and_apply(api_client):
 
     from sqlalchemy import select
 
-    from db.tables import WoInsertLogRow
+    from db.tables import SoOrderRow, WoInsertLogRow
 
     with factory() as session:
         row = session.scalar(
@@ -270,3 +270,43 @@ def test_api_insert_trial_and_apply(api_client):
         assert row.strategy == "B"
         assert row.plan_version_before == 1
         assert row.plan_version_after == 2
+
+    with factory() as session:
+        phase = session.scalar(
+            select(SoOrderRow.schedule_phase).where(SoOrderRow.order_no == insert_no)
+        )
+        assert phase == "IN_SCHEDULING"
+        pool = sorted(
+            session.scalars(
+                select(SoOrderRow.order_no).where(SoOrderRow.schedule_phase == "IN_SCHEDULING")
+            ).all()
+        )
+
+    applied = apply_resp.json()["data"]
+    urgent_wo_nos = {
+        w["wo_no"] for w in applied["result"]["wos"] if w["source_order_no"] == insert_no
+    }
+    urgent_tasks = sorted(
+        (t["task_date"], t["qty_board"])
+        for t in applied["result"]["tasks"]
+        if t["wo_no"] in urgent_wo_nos
+    )
+    published = client.post(
+        "/api/orders/publish",
+        json={"today": TODAY.isoformat(), "order_nos": pool, "force_red": True},
+    )
+    assert published.status_code == 200, published.text
+    body = published.json()["data"]
+    assert body["published"] is True
+    assert body["plan_version"] == applied["plan_version"]
+    kept = sorted(
+        (t["task_date"], t["qty_board"])
+        for t in body["result"]["tasks"]
+        if t["wo_no"] in urgent_wo_nos
+    )
+    assert kept == urgent_tasks
+    with factory() as session:
+        phase = session.scalar(
+            select(SoOrderRow.schedule_phase).where(SoOrderRow.order_no == insert_no)
+        )
+        assert phase == "IN_PRODUCTION"

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from db.attendance_capacity import apply_attendance_to_calendar
 from db.config_loader import load_schedule_config
+from db.prod_stats_seed import capacity_fixture_clause
 from db.tables import (
     MdBomLineRow,
     MdCapacityCalendarRow,
@@ -143,7 +144,7 @@ def load_schedule_input(
         )
         bom_lines.setdefault(bl.parent_item_code, []).append(bl)
 
-    q = select(SoOrderRow)
+    q = select(SoOrderRow).where(~capacity_fixture_clause())
     if order_nos:
         q = q.where(SoOrderRow.order_no.in_(order_nos))
     orders = _orders_for_schedule(session, list(session.scalars(q).all()))

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { GuidedDemoToolbar } from "../components/GuidedDemoToolbar";
 import { WecomBell } from "../components/WecomBell";
 import { useAuth, type RoleCode } from "./auth";
 import { checkApiHealth, requestWithRole } from "../api/client";
@@ -40,6 +41,7 @@ export function ShellLayout() {
   }, [location.pathname]);
 
   const grouped = role ? groupedNavForRole(role as RoleCode, menu) : null;
+  const phoneVisit = location.pathname.startsWith("/crm/visit");
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `mb-0.5 block rounded px-2 py-1.5 text-[var(--text-nav)] ${
@@ -51,7 +53,7 @@ export function ShellLayout() {
 
   return (
     <div
-      className="flex min-h-screen flex-col"
+      className="flex h-screen flex-col overflow-hidden"
       style={{ background: "var(--bg-body)", color: "var(--text-body)" }}
     >
       {apiDown && (
@@ -86,9 +88,9 @@ export function ShellLayout() {
           </button>
         </div>
       </header>
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <nav
-          className="w-52 shrink-0 overflow-y-auto border-r p-2 text-sm text-[var(--text-nav)]"
+          className={`h-full w-52 shrink-0 overflow-y-auto overscroll-contain border-r p-2 text-sm text-[var(--text-nav)] ${phoneVisit ? "hidden" : ""}`}
           style={{
             borderColor: "var(--line)",
             background: "var(--bg-nav)",
@@ -139,7 +141,8 @@ export function ShellLayout() {
             </div>
           ))}
         </nav>
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
+        <main className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+          {!phoneVisit && <GuidedDemoToolbar />}
           <Outlet />
         </main>
       </div>

@@ -449,6 +449,7 @@ class ScheduleInput(_Model):
     baseline: ScheduleResult | None = None
     deadband_trigger_wo_nos: list[str] = Field(default_factory=list)
     capacity_overrides: list[CapacityOverride] = Field(default_factory=list)
+    crew_sets: dict[str, int] = Field(default_factory=dict)
 
     def converts_for(self, item_code: str) -> list[UomConvert]:
         return self.uom.get(item_code, [])
@@ -476,6 +477,40 @@ class ScheduleInput(_Model):
         return []
 
 
+class HeadcountGap(_Model):
+    """一组在一轮倒排后的人数缺口。试排前不改日历、不改交期。"""
+
+    dept: str
+    group_code: str
+    basis_code: str
+    basis_label: str
+    headcount: int
+    sph_crew: int | None = None
+    crew_matches: bool | None = None
+    hours_man_need: Decimal = Decimal("0")
+    hours_man_have: Decimal = Decimal("0")
+    add_people_estimate: int | None = None
+    includes_unplaced: bool = False
+    add_people_exact: int | None = None
+    exact_infeasible: bool = False
+    note: str = ""
+
+
+class HeadcountTrial(_Model):
+    """内存试排的对照。不写订单交期，不替换当前计划。"""
+
+    dept: str
+    group_code: str
+    mode: str
+    headcount: int
+    added_people: int | None = None
+    cleared_wo_nos: list[str] = Field(default_factory=list)
+    still_late: list[str] = Field(default_factory=list)
+    earliest_finish: dict[str, date] = Field(default_factory=dict)
+    infeasible: bool = False
+    note: str = ""
+
+
 class ScheduleResult(_Model):
     wos: list[Wo] = Field(default_factory=list)
     tasks: list[WoTask] = Field(default_factory=list)
@@ -491,6 +526,7 @@ class ScheduleResult(_Model):
     coline_summary: ColineSummary = Field(default_factory=ColineSummary)
     lot_summary: LotSummary = Field(default_factory=LotSummary)
     trace: ScheduleTrace | None = None
+    headcount_gaps: list[HeadcountGap] = Field(default_factory=list)
 
 
 class DiffEntry(_Model):

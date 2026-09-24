@@ -2,9 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
   background: var(--bg-body, #020617);
   color: var(--text-body, #e2e8f0);
   font-family: "PingFang SC", "Microsoft YaHei", sans-serif;

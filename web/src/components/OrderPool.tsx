@@ -11,7 +11,6 @@ type Props = {
   onToggle: (orderNo: string) => void;
   onDueChange: (orderNo: string, due: string) => void;
   onBoardFilter: (orderNo: string | null) => void;
-  onReloadSeed: () => void;
   onShowBom: (order: OrderRow) => void;
   onShowKit?: (orderNo: string) => void;
   kitByOrder?: Map<string, KitCheck>;
@@ -37,7 +36,6 @@ export function OrderPool({
   onToggle,
   onDueChange,
   onBoardFilter,
-  onReloadSeed,
   onShowKit,
   onShowBom,
   kitByOrder,
@@ -61,16 +59,6 @@ export function OrderPool({
         <p className="mb-2 text-[10px] text-slate-500">
           勾选参与倒排 · 「看板」仅显示该单任务
         </p>
-      )}
-      {!embedded && (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onReloadSeed}
-          className="mt-2 w-full rounded border border-slate-600 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800 disabled:opacity-40"
-        >
-          重导演示数据
-        </button>
       )}
       <ul className={`space-y-2 ${embedded ? "" : "mt-3 max-h-[70vh] overflow-y-auto"}`}>
         {orders.map((o) => {

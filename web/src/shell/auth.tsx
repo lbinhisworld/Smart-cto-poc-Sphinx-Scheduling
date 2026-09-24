@@ -14,11 +14,14 @@ import {
   normalizeStoredSkin,
   type SkinId,
 } from "../design/tokens";
+import { buildDemoAuthHeaders } from "../utils/demoAuthHeaders";
 
 export type RoleCode =
   | "GM"
   | "SALES_MGR"
   | "SALES"
+  | "SALES_ASSIST"
+  | "RD"
   | "PMC"
   | "WH"
   | "FIN"
@@ -93,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const headers = useCallback((): HeadersInit => {
     if (!state) return {};
-    return { "X-Demo-Role": state.role };
+    return buildDemoAuthHeaders(state.role, state.userName);
   }, [state]);
 
   const value = useMemo(

@@ -7,6 +7,7 @@ from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select
 
 from api.main import create_app
 from db.prod_stats import dept1_daily, dept1_detail, dept1_efficiency
@@ -506,6 +507,14 @@ def test_dept1_demo_seed_fills_reported_days(seeded_stats_db):
     assert first["planted"] is True
     assert first["task_days"] >= 9
     assert second["planted"] is False
+    session = factory()
+    try:
+        fixture_orders = session.scalar(
+            select(func.count()).select_from(SoOrderRow).where(SoOrderRow.order_no.like("SO-D1S-%"))
+        )
+    finally:
+        session.close()
+    assert fixture_orders == 0
     session = factory()
     try:
         daily = dept1_daily(session, date_from=date(2026, 9, 1), date_to=date(2026, 9, 30))

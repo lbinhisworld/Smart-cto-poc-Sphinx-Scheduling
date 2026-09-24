@@ -14,6 +14,9 @@ _INDEPENDENT_DOMAIN_NAMES = {
     "一部成品与二部半成品",
     "成品工单",
     "半成品工单",
+    "拜访记录",
+    "销售商机",
+    "大客户项目",
 }
 
 _RUNTIME_ROOT_NAMES = {

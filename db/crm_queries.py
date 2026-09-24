@@ -48,7 +48,13 @@ def list_customers(session: Session, *, role: str, owner_filter: str | None = No
     return out
 
 
-def customer_detail(session: Session, code: str) -> dict | None:
+def customer_detail(
+    session: Session,
+    code: str,
+    *,
+    role: str = "GM",
+    actor: str = "",
+) -> dict | None:
     r = session.get(CrmCustomerRow, code)
     if r is None:
         return None
@@ -64,7 +70,9 @@ def customer_detail(session: Session, code: str) -> dict | None:
     samples = session.scalars(
         select(CrmSampleRow).where(CrmSampleRow.customer_code == code)
     ).all()
-    return {
+    from db.crm_follows import list_follows
+
+    payload = {
         "customer": {
             "code": r.code,
             "name": r.name,
@@ -111,6 +119,10 @@ def customer_detail(session: Session, code: str) -> dict | None:
         "payment_summary": customer_payment_summary(session, code),
         "complaints": list_complaints_for_customer(session, code),
     }
+    payload["follow_timeline"] = list_follows(
+        session, role=role, actor=actor, customer_code=code
+    )
+    return payload
 
 
 def opportunity_detail(session: Session, opp_id: int) -> dict | None:
@@ -120,7 +132,7 @@ def opportunity_detail(session: Session, opp_id: int) -> dict | None:
     cust = session.get(CrmCustomerRow, o.customer_code)
     sample_code = _resolve_opportunity_sample_code(session, o)
     sample = sample_detail(session, sample_code) if sample_code else None
-    return {
+    base = {
         "id": o.id,
         "name": o.name,
         "stage": o.stage,
@@ -135,6 +147,9 @@ def opportunity_detail(session: Session, opp_id: int) -> dict | None:
         },
         "sample": sample,
     }
+    from db.crm_opportunity_ui import enrich_detail
+
+    return enrich_detail(session, o, base, role="GM", actor="")
 
 
 def list_opportunities(
@@ -145,23 +160,33 @@ def list_opportunities(
     ).all()
     out: list[dict] = []
     for o in rows:
-        if role == "SALES" and owner_filter and o.owner_sales != owner_filter:
+        if role in ("SALES", "SALES_ASSIST") and owner_filter and o.owner_sales != owner_filter:
             continue
+        if role == "RD":
+            if not o.sample_code:
+                continue
+            sample = session.get(CrmSampleRow, o.sample_code)
+            if sample is None or sample.current_stage == "结案":
+                continue
         cust = session.get(CrmCustomerRow, o.customer_code)
-        out.append(
-            {
-                "id": o.id,
-                "name": o.name,
-                "customer_code": o.customer_code,
-                "customer_name": cust.name if cust else o.customer_code,
-                "stage": o.stage,
-                "amount": float(o.amount),
-                "owner_sales": o.owner_sales,
-                "sales_name": o.owner_sales,
-                "expect_close_date": o.expect_close_date.isoformat() if o.expect_close_date else None,
-                "sample_code": o.sample_code,
-            }
-        )
+        row = {
+            "id": o.id,
+            "name": o.name,
+            "customer_code": o.customer_code,
+            "customer_name": cust.name if cust else o.customer_code,
+            "stage": o.stage,
+            "amount": float(o.amount),
+            "owner_sales": o.owner_sales,
+            "sales_name": o.owner_sales,
+            "expect_close_date": o.expect_close_date.isoformat() if o.expect_close_date else None,
+            "sample_code": o.sample_code,
+        }
+        from db.crm_opportunity_ui import enrich_list_row
+
+        enrich_list_row(session, row, o)
+        if role == "RD":
+            row["amount"] = None
+        out.append(row)
     return out
 
 
@@ -180,20 +205,21 @@ def list_samples(
         if role == "SALES" and owner_filter and s.owner_sales != owner_filter:
             continue
         cust = session.get(CrmCustomerRow, s.customer_code)
-        out.append(
-            {
-                "code": s.code,
-                "customer_code": s.customer_code,
-                "customer_name": cust.name if cust else s.customer_code,
-                "item_draft_name": s.item_draft_name,
-                "current_stage": s.current_stage,
-                "round_no": s.round_no,
-                "owner_sales": s.owner_sales,
-                "due_date": s.due_date.isoformat() if s.due_date else None,
-                "is_old_product": s.is_old_product,
-                "result": s.result,
-            }
-        )
+        from db.crm_samples_ui import enrich_sample_row
+
+        base = {
+            "code": s.code,
+            "customer_code": s.customer_code,
+            "customer_name": cust.name if cust else s.customer_code,
+            "item_draft_name": s.item_draft_name,
+            "current_stage": s.current_stage,
+            "round_no": s.round_no,
+            "owner_sales": s.owner_sales,
+            "due_date": s.due_date.isoformat() if s.due_date else None,
+            "is_old_product": s.is_old_product,
+            "result": s.result,
+        }
+        out.append(enrich_sample_row(s, base))
     return out
 
 

@@ -26,6 +26,8 @@ from api.schemas import (
     PublishPoolBody,
     SchedulingPoolBody,
     ScheduleBody,
+    HeadcountAdoptBody,
+    HeadcountTrialBody,
 )
 from db.cell_detail_service import resolve_cell_detail
 from db.plan_store import current_plan_version, load_schedule_result
@@ -36,8 +38,16 @@ from db.repositories import (
     list_orders,
     run_insert_trial,
     run_schedule,
+    set_group_headcount,
     update_order_due_date_by_user,
 )
+from pydantic import BaseModel
+
+
+class EarliestPlanBody(BaseModel):
+    order_no: str
+    run_id: str = ""
+    today: date | None = None
 from db.seed import import_seed_json
 from engine.models import InsertStrategy, Order, ScheduleResult, Uom, WoTask
 
@@ -194,6 +204,46 @@ def create_app(session_factory: sessionmaker) -> FastAPI:
             reserved_ratio=reserved,
         )
         return ok(data)
+
+    @app.post("/api/schedule/headcount-trial")
+    def schedule_headcount_trial(body: HeadcountTrialBody, db: Session = Depends(get_db)):
+        from db.snapshot import load_schedule_input
+        from engine.headcount_gap import trial_extra_crew, trial_recalibrate, trial_roster
+        from engine.models import Dept, GroupCode
+
+        reserved = Decimal(str(body.reserved_ratio if body.reserved_ratio is not None else 0))
+        inp = load_schedule_input(
+            db,
+            today=body.today,
+            order_nos=body.order_nos,
+            reserved_ratio=reserved,
+        )
+        dept = Dept(body.dept)
+        group = GroupCode(body.group_code)
+        if body.mode == "recalibrate":
+            if not body.item_code or body.sph_value is None:
+                raise HTTPException(status_code=400, detail="重新标定需要品项和标准小时产能")
+            trial = trial_recalibrate(inp, body.item_code, group, Decimal(str(body.sph_value)))
+        elif body.mode == "extra_crew":
+            trial = trial_extra_crew(inp, dept, group)
+        else:
+            trial = trial_roster(inp, dept, group, add_people=body.add_people)
+        return ok({"trial": trial.model_dump(mode="json"), "due_dates_unchanged": True})
+
+    @app.post("/api/schedule/headcount-adopt")
+    def schedule_headcount_adopt(body: HeadcountAdoptBody, db: Session = Depends(get_db)):
+        if body.headcount < 0:
+            raise HTTPException(status_code=400, detail="在编不能为负")
+        updated = set_group_headcount(db, body.dept, body.group_code, body.headcount)
+        return ok(
+            {
+                "dept": body.dept,
+                "group_code": body.group_code,
+                "headcount": body.headcount,
+                "days": updated,
+                "rescheduled": False,
+            }
+        )
 
     @app.post("/api/schedule/what-if")
     def schedule_what_if(body: ScheduleBody, db: Session = Depends(get_db)):
@@ -371,6 +421,8 @@ def create_app(session_factory: sessionmaker) -> FastAPI:
             raise HTTPException(status_code=404, detail="订单不存在") from None
         except StopIteration:
             raise HTTPException(status_code=400, detail="策略结果缺失") from None
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
         return ok({"plan_version": version, "result": result.model_dump(mode="json")})
 
     @app.post("/api/orders/scheduling-pool")
@@ -587,16 +639,80 @@ def create_app(session_factory: sessionmaker) -> FastAPI:
     from apps.api.routers.kb import router as kb_router
     from apps.api.routers.portal import router as portal_router
     from apps.api.routers.wecom import register_wecom
-    from db.dispatch_export import build_dispatch_workbook_bytes
+    from db.dispatch_export import build_dispatch_workbook
+    from db.pick_list import build_pick_list
+    from db.qc_ledgers import production_qc_alerts
+    from db.earliest_plan import build_earliest_plan
+    from db.schedule_progress import pending_load, schedule_progress, unscheduled_workbook_bytes
     from fastapi.responses import Response
 
     @app.get("/api/plan/export-dispatch")
-    def export_dispatch(db: Session = Depends(get_db)):
-        data = build_dispatch_workbook_bytes(db)
+    def export_dispatch(
+        group: str | None = None,
+        dept: str | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        db: Session = Depends(get_db),
+    ):
+        data, filename = build_dispatch_workbook(
+            db, group=group, dept=dept, date_from=date_from, date_to=date_to
+        )
         return Response(
             content=data,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": 'attachment; filename="dispatch.xlsx"'},
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    @app.get("/api/plan/pick-list")
+    def plan_pick_list(
+        group: str | None = None,
+        dept: str | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        db: Session = Depends(get_db),
+    ):
+        rows = build_pick_list(
+            db, group=group, dept=dept, date_from=date_from, date_to=date_to
+        )
+        return {"code": 0, "message": "", "data": {"rows": rows}}
+
+    @app.get("/api/production/qc-alerts")
+    def production_qc_board(db: Session = Depends(get_db)):
+        return {"code": 0, "message": "", "data": production_qc_alerts(db)}
+
+    @app.post("/api/schedule/earliest-plan")
+    def earliest_plan(body: EarliestPlanBody, db: Session = Depends(get_db)):
+        try:
+            data = build_earliest_plan(
+                db,
+                order_no=body.order_no,
+                today=body.today or date(2026, 9, 15),
+                run_id=body.run_id,
+            )
+        except KeyError:
+            raise HTTPException(status_code=404, detail="订单不存在") from None
+        from db.tables import SoOrderRow
+
+        due_after = db.get(SoOrderRow, data["order_no"])
+        if due_after is not None and due_after.due_date.isoformat() != data["original_due"]:
+            raise HTTPException(status_code=500, detail="最快方案误写了交期")
+        return ok(data)
+
+    @app.get("/api/orders/schedule-progress")
+    def orders_schedule_progress(db: Session = Depends(get_db)):
+        return ok(schedule_progress(db))
+
+    @app.get("/api/orders/pending-load")
+    def orders_pending_load(today: date | None = None, db: Session = Depends(get_db)):
+        return ok(pending_load(db, today=today or date(2026, 9, 15)))
+
+    @app.get("/api/orders/unscheduled-export")
+    def orders_unscheduled_export(today: date | None = None, db: Session = Depends(get_db)):
+        data = unscheduled_workbook_bytes(db, today=today or date(2026, 9, 15))
+        return Response(
+            content=data,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="unscheduled.xlsx"'},
         )
 
     app.include_router(portal_router)

@@ -6,6 +6,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { WORK_CENTERS } from "../../constants/groups";
 import {
   fetchConflicts,
   fetchOrdersDetailed,
@@ -18,7 +19,7 @@ import {
   updateSchedulingPool,
   fetchPlan,
   fetchPlanKitStatus,
-  reloadDemoSeed,
+  request,
 } from "../../api/client";
 import { KitDetailDrawer } from "../../components/KitDetailDrawer";
 import { StockCenterPage } from "../../pages/StockCenterPage";
@@ -32,6 +33,7 @@ import {
   type CellDetailFocus,
 } from "../../components/CellDetailDrawer";
 import { ConflictPanel } from "../../components/ConflictPanel";
+import { HeadcountGapPanel } from "../../components/HeadcountGapPanel";
 import { NarrationBar } from "../../components/NarrationBar";
 import { OrderBomDrawer } from "../../components/OrderBomDrawer";
 import { OrderPoolSidebar } from "../../components/OrderPoolSidebar";
@@ -50,6 +52,7 @@ import {
   type ScheduleBoardHandle,
 } from "../../components/ScheduleBoard";
 import { DEMO_TODAY, type DeptCode, type GroupCode } from "../../constants/groups";
+import { useGuidedDemoSeedReload } from "../../hooks/guidedDemoSeed";
 import type {
   Conflict,
   OrderRow,
@@ -104,6 +107,30 @@ export function ScheduleWorkspace() {
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [dispatchGroup, setDispatchGroup] = useState("");
+  const [dispatchFrom, setDispatchFrom] = useState("");
+  const [dispatchTo, setDispatchTo] = useState("");
+  const [pickOpen, setPickOpen] = useState(false);
+  const [pickRows, setPickRows] = useState<
+    {
+      work_date: string;
+      group: string;
+      item_code: string;
+      seq: number;
+      component_code: string;
+      component_name: string;
+      role: string;
+      day_qty: number;
+      gross_board: number;
+      issued: number | null;
+      pending: number | null;
+      this_time: number | null;
+      stock_board: number | null;
+      demand_board: number;
+      wo_no?: string;
+    }[]
+  >([]);
+  const [qcAlerts, setQcAlerts] = useState<{ item: string; phenomenon: string; at: string; actor: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [cellDetailFocus, setCellDetailFocus] = useState<CellDetailFocus | null>(
@@ -165,6 +192,13 @@ export function ScheduleWorkspace() {
   );
   const baselineRef = useRef<ScheduleResult | null>(null);
   const crewPreviewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const demoSeedReload = useGuidedDemoSeedReload([
+    "to_order",
+    "schedule",
+    "dispatch",
+    "reschedule",
+    "labor_report",
+  ]);
 
   useEffect(() => {
     baselineRef.current = baselineSnapshot;
@@ -185,7 +219,25 @@ export function ScheduleWorkspace() {
 
   useEffect(() => {
     loadOrders().catch((e) => setError(String(e)));
-  }, [loadOrders]);
+    request<{ item: string; phenomenon: string; at: string; actor: string }[]>("/api/production/qc-alerts")
+      .then(setQcAlerts)
+      .catch(() => setQcAlerts([]));
+  }, [loadOrders, demoSeedReload]);
+
+  const loadPickList = () => {
+    const q = new URLSearchParams();
+    if (dispatchGroup) {
+      const [dept, group] = dispatchGroup.split("|");
+      q.set("dept", dept);
+      q.set("group", group);
+    }
+    if (dispatchFrom) q.set("date_from", dispatchFrom);
+    if (dispatchTo) q.set("date_to", dispatchTo);
+    const qs = q.toString();
+    request<{ rows: typeof pickRows }>(`/api/plan/pick-list${qs ? `?${qs}` : ""}`)
+      .then((data) => setPickRows(data.rows))
+      .catch((e) => setError(String(e)));
+  };
 
   const poolOrderNos = useMemo(
     () =>
@@ -589,23 +641,16 @@ export function ScheduleWorkspace() {
     setSandboxPreviewError(null);
   };
 
-  const onReloadSeed = async () => {
+  const onRemoveAllFromPool = async () => {
+    const nos = orders
+      .filter((o) => (o.schedule_phase ?? "PENDING") === "IN_SCHEDULING")
+      .map((o) => o.order_no);
+    if (nos.length === 0) return;
     setBusy(true);
     setError(null);
     try {
-      const r = await reloadDemoSeed();
-      if (r.orders_in_db < 12) {
-        throw new Error(
-          `重导后仍只有 ${r.orders_in_db} 单（期望 12）。库：${r.db_file}。请确认已重启后端。`,
-        );
-      }
-      setPlanVersion(0);
-      setResult(null);
-      setBaselineSnapshot(null);
-      setTasks([]);
-      setConflicts([]);
-      setBoardFilterOrderNo(null);
-      setOrderPoolOpen(true);
+      await updateSchedulingPool("remove", nos);
+      setBoardFilterOrderNo((prev) => (prev && nos.includes(prev) ? null : prev));
       await loadOrders();
     } catch (e) {
       setError(String(e));
@@ -834,7 +879,10 @@ export function ScheduleWorkspace() {
             </button>
             <InsertTrialPanel
               today={today}
-              onApplied={(data) => void applyResult(data as { plan_version: number; result: ScheduleResult })}
+              onApplied={async (data) => {
+                await applyResult(data as { plan_version: number; result: ScheduleResult });
+                await loadOrders();
+              }}
             />
             <label className="flex items-center gap-1 text-[11px] text-slate-400">
               <input
@@ -853,11 +901,53 @@ export function ScheduleWorkspace() {
             >
               回放刚才的倒排
             </button>
+            <label className="flex items-center gap-1 text-[11px] text-slate-400">
+              组
+              <select
+                className="rounded border border-slate-700 bg-slate-950 px-1 py-1 text-slate-200"
+                value={dispatchGroup}
+                onChange={(e) => setDispatchGroup(e.target.value)}
+              >
+                <option value="">全部</option>
+                {WORK_CENTERS.map((g) => (
+                  <option key={`${g.dept}|${g.code}`} value={`${g.dept}|${g.code}`}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-1 text-[11px] text-slate-400">
+              从
+              <input
+                type="date"
+                className="rounded border border-slate-700 bg-slate-950 px-1 py-1 text-slate-200"
+                value={dispatchFrom}
+                onChange={(e) => setDispatchFrom(e.target.value)}
+              />
+            </label>
+            <label className="flex items-center gap-1 text-[11px] text-slate-400">
+              到
+              <input
+                type="date"
+                className="rounded border border-slate-700 bg-slate-950 px-1 py-1 text-slate-200"
+                value={dispatchTo}
+                onChange={(e) => setDispatchTo(e.target.value)}
+              />
+            </label>
             <button
               type="button"
               disabled={busy || planVersion <= 0}
               onClick={() => {
-                window.open("/api/plan/export-dispatch", "_blank");
+                const q = new URLSearchParams();
+                if (dispatchGroup) {
+                  const [dept, group] = dispatchGroup.split("|");
+                  q.set("dept", dept);
+                  q.set("group", group);
+                }
+                if (dispatchFrom) q.set("date_from", dispatchFrom);
+                if (dispatchTo) q.set("date_to", dispatchTo);
+                const qs = q.toString();
+                window.open(`/api/plan/export-dispatch${qs ? `?${qs}` : ""}`, "_blank");
               }}
               className="rounded border border-emerald-700 px-3 py-1.5 text-sm text-emerald-200 hover:bg-emerald-950 disabled:opacity-40"
             >
@@ -865,8 +955,27 @@ export function ScheduleWorkspace() {
             </button>
             <button
               type="button"
+              disabled={busy || planVersion <= 0}
+              onClick={() => {
+                setPickOpen((open) => !open);
+                loadPickList();
+              }}
+              className="rounded border border-slate-600 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+            >
+              领料
+            </button>
+            <button
+              type="button"
+              className="rounded border border-slate-600 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+              onClick={() => window.open("/api/orders/unscheduled-export", "_blank")}
+            >
+              导出未排汇总
+            </button>
+            <button
+              type="button"
               disabled={busy || orderNos.length === 0}
               onClick={runPublish}
+              title="若当前计划来自已确认插单，沿用该计划下达，不再倒排"
               className="rounded border border-sky-600 px-3 py-1.5 text-sm text-sky-300 hover:bg-sky-950 disabled:opacity-40"
             >
               保存发布
@@ -900,6 +1009,60 @@ export function ScheduleWorkspace() {
           </p>
         )}
       </header>
+      {qcAlerts.length > 0 && (
+        <div className="border-b px-3 py-2 text-xs" style={{ borderColor: "var(--line)" }}>
+          <p className="font-medium text-amber-200">品控异常</p>
+          <ul className="mt-1 space-y-0.5 text-[var(--text-muted)]">
+            {qcAlerts.slice(0, 5).map((row) => (
+              <li key={`${row.at}-${row.item}-${row.phenomenon}`}>
+                {row.item} · {row.phenomenon} · {row.at} · {row.actor || "未记"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {pickOpen && (
+        <div className="max-h-56 overflow-auto border-b px-3 py-2 text-xs" style={{ borderColor: "var(--line)" }}>
+          <p className="font-medium">领料 · 只读</p>
+          <p className="mt-0.5 text-[var(--text-muted)]">已领 / 待领 / 本次领没有记录就空着。库存与需求只展示，不扣账。</p>
+          <table className="mt-2 w-full text-left">
+            <thead className="text-[var(--text-muted)]">
+              <tr>
+                <th className="py-1">日期</th>
+                <th>组</th>
+                <th>型号</th>
+                <th>子件</th>
+                <th>角色</th>
+                <th>当日</th>
+                <th>整单</th>
+                <th>已领</th>
+                <th>待领</th>
+                <th>本次领</th>
+                <th>库存</th>
+                <th>需求</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pickRows.map((row) => (
+                <tr key={`${row.wo_no ?? row.item_code}-${row.work_date}-${row.component_code}-${row.seq}`}>
+                  <td className="py-1">{row.work_date}</td>
+                  <td>{row.group}</td>
+                  <td>{row.item_code}</td>
+                  <td>{row.component_name}</td>
+                  <td>{row.role}</td>
+                  <td>{row.day_qty}</td>
+                  <td>{row.gross_board}</td>
+                  <td>{row.issued ?? ""}</td>
+                  <td>{row.pending ?? ""}</td>
+                  <td>{row.this_time ?? ""}</td>
+                  <td>{row.stock_board ?? ""}</td>
+                  <td>{row.demand_board}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {mainView === "bom" ? (
         <BomExplorerPage />
@@ -916,7 +1079,7 @@ export function ScheduleWorkspace() {
           today={today}
           boardFilterOrderNo={boardFilterOrderNo}
           onBoardFilter={setBoardFilterOrderNo}
-          onReloadSeed={onReloadSeed}
+          onRemoveAllFromPool={() => void onRemoveAllFromPool()}
           onShowBom={setBomOrder}
           onShowKit={setKitDrawerOrder}
           kitByOrder={kitByOrder}
@@ -1016,7 +1179,14 @@ export function ScheduleWorkspace() {
             )}
           </main>
 
-          <div className="flex h-full min-h-[280px] lg:h-auto lg:min-h-0 lg:w-96 shrink-0 flex-col">
+          <div className="flex h-full min-h-[280px] lg:h-auto lg:min-h-0 lg:w-96 shrink-0 flex-col overflow-y-auto">
+            <HeadcountGapPanel
+              gaps={result?.headcount_gaps ?? []}
+              wos={result?.wos ?? []}
+              orderNos={orderNos}
+              today={today}
+              busy={busy}
+            />
             <ConflictPanel
               conflicts={displayConflicts}
               orders={orders}

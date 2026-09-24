@@ -21,7 +21,7 @@ type Props = {
   onTogglePending: (orderNo: string) => void;
   onDueChange: (orderNo: string, due: string) => void;
   onBoardFilter: (orderNo: string | null) => void;
-  onReloadSeed: () => void;
+  onRemoveAllFromPool: () => void;
   onShowBom: (order: OrderRow) => void;
   onShowKit?: (orderNo: string) => void;
   kitByOrder?: Map<string, KitCheck>;
@@ -45,7 +45,7 @@ export function OrderPoolSidebar({
   onTogglePending,
   onDueChange,
   onBoardFilter,
-  onReloadSeed,
+  onRemoveAllFromPool,
   onShowBom,
   onShowKit,
   kitByOrder,
@@ -211,12 +211,12 @@ export function OrderPoolSidebar({
           )}
           <button
             type="button"
-            disabled={busy}
-            onClick={onReloadSeed}
-            title="从 seed/seed_data.json 覆盖订单与主数据（演示用）"
+            disabled={busy || poolCount === 0}
+            onClick={onRemoveAllFromPool}
+            title="排程中的订单全部回到待排程，订单状态改回已确认"
             className="w-full rounded border border-slate-600 py-1.5 text-[11px] text-slate-300 hover:border-slate-500 hover:bg-slate-800 disabled:opacity-40"
           >
-            重导演示数据
+            全量移出排程池
           </button>
         </div>
 
@@ -231,7 +231,6 @@ export function OrderPoolSidebar({
               today={today}
               boardFilterOrderNo={boardFilterOrderNo}
               onBoardFilter={onBoardFilter}
-              onReloadSeed={onReloadSeed}
               onShowBom={onShowBom}
               onShowKit={onShowKit}
               kitByOrder={kitByOrder}

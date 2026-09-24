@@ -10,6 +10,7 @@ import {
   renderTrafficLight,
   type OrderRow,
 } from "../../ui/cellRenderers";
+import { useGuidedDemoSeedReload } from "../../hooks/guidedDemoSeed";
 import { useAuth } from "../../shell/auth";
 import { CreateOrderModal } from "./CreateOrderModal";
 import { OrderDetailDrawer } from "./OrderDetailDrawer";
@@ -50,10 +51,17 @@ export function OrdersPage() {
   const [search, setSearch] = useState("");
   const [data, setData] = useState<ApiData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingLoad, setPendingLoad] = useState<{
+    label?: string;
+    order_count?: number;
+    hours?: { wall?: string; man?: string };
+    components?: { component_name: string; gross_board: number; shortage_board: number }[];
+  } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailNo, setDetailNo] = useState<string | null>(null);
   const [poolBusy, setPoolBusy] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const demoSeedReload = useGuidedDemoSeedReload(["to_order", "contract_payment", "quote"]);
 
   const load = useCallback(() => {
     setError(null);
@@ -70,7 +78,18 @@ export function OrdersPage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, demoSeedReload]);
+
+  useEffect(() => {
+    if (view !== "pending" && view !== "pending_schedule") {
+      setPendingLoad(null);
+      return;
+    }
+    fetch("/api/orders/pending-load")
+      .then((r) => r.json())
+      .then((j) => setPendingLoad(j.data ?? null))
+      .catch(() => setPendingLoad(null));
+  }, [view]);
 
   useEffect(() => {
     const v = searchParams.get("view");
@@ -296,6 +315,20 @@ export function OrdersPage() {
         <p className="px-6 pt-4 text-sm text-red-600" role="alert">
           {error}
         </p>
+      )}
+      {view === "pending" && pendingLoad && (
+        <div className="mx-6 mt-3 rounded border px-3 py-2 text-xs" style={{ borderColor: "var(--line)" }}>
+          <p className="font-medium">
+            待排负荷 · {pendingLoad.label} · {pendingLoad.order_count ?? 0} 张 · 墙钟 {pendingLoad.hours?.wall} h ·
+            人·时 {pendingLoad.hours?.man}
+          </p>
+          <p className="mt-1 text-[var(--text-muted)]">
+            {(pendingLoad.components ?? [])
+              .slice(0, 6)
+              .map((c) => `${c.component_name} 毛需求 ${c.gross_board} 版 / 缺口 ${c.shortage_board} 版`)
+              .join("；") || "没有可展开的子件"}
+          </p>
+        </div>
       )}
       {auth.role === "SALES" && (
         <p className="px-6 pt-2 text-xs text-[var(--text-muted)]">

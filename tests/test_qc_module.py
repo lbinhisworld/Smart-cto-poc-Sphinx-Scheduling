@@ -130,6 +130,37 @@ def test_attachments_and_swab_test():
     assert st.json()["data"]["verdict_computed"] == "FAIL"
 
 
+def test_qc_alerts_on_production_board():
+    client.post("/api/kingdee/sync-suppliers", headers=HDR_GM)
+    client.post("/api/kingdee/sync-raw-materials", headers=HDR_GM)
+    rec = client.post(
+        "/api/qc/receipts",
+        headers=HDR_QC,
+        json={
+            "incoming_date": "2026-09-15",
+            "supplier_code": "SUP-001",
+            "material_code": "RM-COCOA-70",
+            "qty": 2,
+            "batch_no": "BOARD-ALERT",
+        },
+    )
+    assert rec.status_code == 200
+    client.post(
+        "/api/qc/exceptions",
+        headers=HDR_QC,
+        json={"receipt_id": rec.json()["data"]["id"], "phenomenon": "看板现象"},
+    )
+    board = client.get("/api/production/qc-alerts", headers=HDR_GM)
+    assert board.status_code == 200
+    rows = board.json()["data"]
+    assert rows
+    hit = next(row for row in rows if row["phenomenon"] == "看板现象")
+    assert hit["item"]
+    assert hit["at"]
+    assert "actor" in hit
+    assert "photo" not in hit
+
+
 def test_qc_summary_and_export():
     s = client.get("/api/qc/summary", headers=HDR_QC)
     assert s.status_code == 200

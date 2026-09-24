@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from db.order_lines import lines_for_order, lines_summary
+from db.prod_stats_seed import is_capacity_fixture_order
 from db.tables import SoOrderRow
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,7 +33,12 @@ def list_mis_orders(
 ) -> tuple[list[dict], dict]:
     q = select(SoOrderRow).order_by(SoOrderRow.due_date, SoOrderRow.order_no)
     rows = list(session.scalars(q).all())
-    rows = [r for r in rows if (r.order_status or "") != "CANCELLED"]
+    rows = [
+        r
+        for r in rows
+        if (r.order_status or "") != "CANCELLED"
+        and not is_capacity_fixture_order(r.order_no, r.order_source)
+    ]
 
     sales_as = _sales_filter_for_role(role)
     if role == "SALES" and sales_as:
@@ -81,6 +87,7 @@ def list_mis_orders(
         r
         for r in session.scalars(select(SoOrderRow)).all()
         if (r.order_status or "") != "CANCELLED"
+        and not is_capacity_fixture_order(r.order_no, r.order_source)
     ]
     pending_n = sum(1 for r in all_rows if (r.schedule_phase or "PENDING") == "PENDING")
     in_sched_n = sum(1 for r in all_rows if (r.schedule_phase or "") == "IN_SCHEDULING")

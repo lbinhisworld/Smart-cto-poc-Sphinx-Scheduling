@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useGuidedDemoSeedReload } from "../../hooks/guidedDemoSeed";
 import { useAuth } from "../../shell/auth";
 import { renderMoney, renderOppStageTag, renderSampleStageTag } from "../../ui/cellRenderers";
 import { Customer360Drawer } from "./Customer360Drawer";
 import { OpportunityDetailDrawer } from "./OpportunityDetailDrawer";
+import { SalesBoard } from "./SalesBoard";
 import { SampleDetailDrawer } from "./SampleDetailDrawer";
 
-function useFetch<T>(url: string): { data: T | null; error: string | null } {
+function useFetch<T>(
+  url: string,
+  demoStepId?: string,
+): { data: T | null; error: string | null } {
   const auth = useAuth();
+  const demoSeedReload = useGuidedDemoSeedReload(demoStepId);
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -15,7 +21,7 @@ function useFetch<T>(url: string): { data: T | null; error: string | null } {
       .then((r) => r.json())
       .then((j) => setData(j.data))
       .catch((e) => setError(String(e)));
-  }, [url, auth]);
+  }, [url, auth, demoSeedReload]);
   return { data, error };
 }
 
@@ -94,7 +100,7 @@ export function CrmCustomersPage() {
 
   return (
     <div className="px-6 py-4">
-      <h2 className="text-lg font-semibold">客户档案</h2>
+      <h2 className="text-lg font-semibold">我的客户</h2>
       <p className="text-xs text-[var(--text-muted)]">点击客户打开 360 侧滑 · 合同/订单/回款可穿透详情并返回</p>
       {error && <p className="mt-2 text-xs text-rose-400">{error}</p>}
       {metrics && <CustomerListMetrics metrics={metrics} />}
@@ -142,66 +148,22 @@ type OpportunityListRow = {
   customer_code: string;
   customer_name: string;
   stage: string;
-  amount: number;
+  amount: number | null;
   sales_name: string;
   owner_sales: string;
   expect_close_date: string | null;
   sample_code: string | null;
 };
 
-const OPP_PIPELINE = ["线索", "商机", "方案", "报价", "谈判", "成交"] as const;
-
-function OpportunityStageMetrics({ rows }: { rows: OpportunityListRow[] }) {
-  const total = rows.length;
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const st of OPP_PIPELINE) c[st] = 0;
-    for (const r of rows) {
-      c[r.stage] = (c[r.stage] ?? 0) + 1;
-    }
-    return c;
-  }, [rows]);
-  const max = useMemo(() => Math.max(...OPP_PIPELINE.map((st) => counts[st] ?? 0), 1), [counts]);
-
-  return (
-    <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(140px,180px)_1fr]" aria-label="商机漏斗阶段指标">
-      <div className="rounded-lg border p-4" style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}>
-        <p className="text-xs text-[var(--text-muted)]">商机总数</p>
-        <p className="mt-1 text-3xl font-semibold tabular-nums">{total}</p>
-        <p className="mt-1 text-[10px] text-[var(--text-muted)]">与下方列表口径一致</p>
-      </div>
-      <div className="rounded-lg border p-4" style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}>
-        <p className="text-xs font-medium text-[var(--text-muted)]">各阶段商机数</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-          {OPP_PIPELINE.map((st) => {
-            const n = counts[st] ?? 0;
-            const pct = max > 0 ? Math.round((n / max) * 100) : 0;
-            return (
-              <div key={st} className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  {renderOppStageTag(st)}
-                  <span className="text-lg font-semibold tabular-nums">{n}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-md bg-[var(--line)]">
-                  <div
-                    className="h-full rounded-md bg-[var(--accent)] transition-all"
-                    style={{ width: `${pct}%`, minWidth: n > 0 ? "4px" : 0 }}
-                    title={`${st}：${n}`}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function CrmOpportunitiesPage() {
   const params = useParams<{ id?: string }>();
   const { data, error } = useFetch<OpportunityListRow[]>("/api/crm/opportunities");
-  const rows = useMemo(() => data ?? [], [data]);
+  const rows = useMemo(() => {
+    const list = data ?? [];
+    return [...list]
+      .filter((o) => (o as { lost_reason?: string }).lost_reason == null && o.stage !== "丢单")
+      .sort((a, b) => (a.expect_close_date ?? "").localeCompare(b.expect_close_date ?? ""));
+  }, [data]);
   const [detailId, setDetailId] = useState<number | null>(() => {
     const n = params.id ? Number(params.id) : NaN;
     return Number.isFinite(n) ? n : null;
@@ -214,11 +176,17 @@ export function CrmOpportunitiesPage() {
 
   return (
     <div className="px-6 py-4">
-      <h2 className="text-lg font-semibold">商机列表</h2>
-      <p className="text-xs text-[var(--text-muted)]">点击行打开侧滑详情 · 可查看关联打样过程</p>
+      <h2 className="text-lg font-semibold">商机大盘</h2>
+      <p className="text-xs text-[var(--text-muted)]">
+        漏斗看打单走到哪。完整度看这家拜访信息齐不齐。下面是要跟的单。点开的名单各算各的。
+      </p>
       {error && <p className="mt-2 text-xs text-rose-400">{error}</p>}
-      <OpportunityStageMetrics rows={rows} />
-      <div className="mt-4 overflow-x-auto rounded-lg border" style={{ borderColor: "var(--line)" }}>
+      <SalesBoard />
+      <div className="mt-8">
+        <h3 className="text-sm font-semibold">要跟进的商机</h3>
+        <p className="mt-0.5 text-xs text-[var(--text-muted)]">点一行打开单据列（打样、报价、签单）。已丢单的不出现在此表。</p>
+      </div>
+      <div className="mt-3 overflow-x-auto rounded-xl border" style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}>
         <table className="w-full min-w-[980px] border-collapse text-xs">
           <thead className="bg-[var(--table-head)] text-[var(--text-muted)]">
             <tr>
@@ -326,24 +294,72 @@ function SampleStageMetrics({ rows, activeOnly }: { rows: SampleListRow[]; activ
 }
 
 export function CrmSamplesPage() {
+  const auth = useAuth();
   const [searchParams] = useSearchParams();
   const params = useParams<{ code?: string }>();
   const activeOnly = searchParams.get("active") === "1";
   const url = activeOnly ? "/api/crm/samples?active_only=true" : "/api/crm/samples";
-  const { data } = useFetch<SampleListRow[]>(url);
+  const { data } = useFetch<SampleListRow[]>(url, "sample");
   const rows = useMemo(() => data ?? [], [data]);
   const [detailCode, setDetailCode] = useState<string | null>(params.code ?? null);
+  const [launchOpen, setLaunchOpen] = useState(false);
+  const [opps, setOpps] = useState<{ id: number; name: string; customer_name: string }[]>([]);
+  const [launchOpp, setLaunchOpp] = useState("");
+  const [launchDue, setLaunchDue] = useState("2026-09-25");
+  const [launchItem, setLaunchItem] = useState("");
+  const [launchMsg, setLaunchMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.code) setDetailCode(params.code);
   }, [params.code]);
 
+  const openLaunch = () => {
+    setLaunchMsg(null);
+    setLaunchOpen(true);
+    fetch("/api/crm/opportunities", { headers: auth.headers() })
+      .then((r) => r.json())
+      .then((j) => setOpps(j.data ?? []));
+  };
+
+  const submitLaunch = () => {
+    const opportunity_id = Number(launchOpp);
+    if (!opportunity_id) return;
+    fetch("/api/crm/samples/launch", {
+      method: "POST",
+      headers: { ...auth.headers(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        opportunity_id,
+        due_date: launchDue,
+        item_draft_name: launchItem,
+        submit: true,
+      }),
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.code !== 0) throw new Error(j.detail || j.message);
+        setLaunchMsg(`已创建 ${j.data.code}`);
+        setLaunchOpen(false);
+        window.location.reload();
+      })
+      .catch((e) => setLaunchMsg(String(e)));
+  };
+
   return (
     <div className="px-6 py-4">
-      <h2 className="text-lg font-semibold">样品流程</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold">打样</h2>
+        <button
+          type="button"
+          className="rounded bg-[var(--accent)] px-3 py-1.5 text-xs text-white"
+          onClick={openLaunch}
+        >
+          发起流程
+        </button>
+      </div>
       <p className="text-xs text-[var(--text-muted)]">
         每条样品独立表单 · 点击「详情」查看打样过程子表
       </p>
+      {launchMsg && <p className="mt-1 text-xs text-emerald-400">{launchMsg}</p>}
       {activeOnly && (
         <p className="text-xs text-amber-200/80">筛选：在途打样（未结案）</p>
       )}
@@ -355,9 +371,10 @@ export function CrmSamplesPage() {
               <th className="px-3 py-2 text-left">样品号</th>
               <th className="text-left">产品</th>
               <th className="text-left">客户</th>
-              <th className="text-left">阶段</th>
+              <th className="text-left">打样进度</th>
+              <th className="text-left">预交</th>
+              <th className="text-left">超时</th>
               <th className="text-left">销售</th>
-              <th className="text-left">节点</th>
               <th className="text-left">操作</th>
             </tr>
           </thead>
@@ -369,9 +386,10 @@ export function CrmSamplesPage() {
                 <td>
                   <span className="font-mono text-[var(--text-muted)]">{s.customer_code}</span> {s.customer_name}
                 </td>
-                <td>{renderSampleStageTag(s.current_stage)}</td>
-                <td>{s.owner_sales}</td>
+                <td>{(s as { progress_label?: string }).progress_label ?? renderSampleStageTag(s.current_stage)}</td>
                 <td className="tabular-nums">{s.due_date ?? "—"}</td>
+                <td>{(s as { is_overdue?: boolean }).is_overdue ? <span className="text-rose-400">是</span> : "否"}</td>
+                <td>{s.owner_sales}</td>
                 <td>
                   <button
                     type="button"
@@ -387,6 +405,40 @@ export function CrmSamplesPage() {
         </table>
       </div>
       <SampleDetailDrawer sampleCode={detailCode} onClose={() => setDetailCode(null)} />
+      {launchOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setLaunchOpen(false)}>
+          <div className="w-full max-w-md rounded-lg border p-4 text-sm" style={{ borderColor: "var(--line)", background: "var(--bg-card)" }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-medium">发起打样流程</h3>
+            <label className="mt-3 block text-xs text-[var(--text-muted)]">
+              对应商机
+              <select className="mt-1 w-full rounded border px-2 py-1.5" style={{ borderColor: "var(--line)" }} value={launchOpp} onChange={(e) => setLaunchOpp(e.target.value)}>
+                <option value="">请选择</option>
+                {opps.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name} · {o.customer_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-2 block text-xs text-[var(--text-muted)]">
+              预交时间（必填）
+              <input type="date" className="mt-1 w-full rounded border px-2 py-1.5" style={{ borderColor: "var(--line)" }} value={launchDue} onChange={(e) => setLaunchDue(e.target.value)} />
+            </label>
+            <label className="mt-2 block text-xs text-[var(--text-muted)]">
+              品项名称
+              <input className="mt-1 w-full rounded border px-2 py-1.5" style={{ borderColor: "var(--line)" }} value={launchItem} onChange={(e) => setLaunchItem(e.target.value)} placeholder="默认取商机名" />
+            </label>
+            <div className="mt-4 flex justify-end gap-2 text-xs">
+              <button type="button" className="rounded border px-3 py-1.5" style={{ borderColor: "var(--line)" }} onClick={() => setLaunchOpen(false)}>
+                取消
+              </button>
+              <button type="button" className="rounded bg-[var(--accent)] px-3 py-1.5 text-white" onClick={submitLaunch}>
+                提交
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -402,19 +454,17 @@ export function CrmReportsPage() {
     <div className="px-6 py-4">
       <h2 className="text-lg font-semibold">销售固定报表</h2>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
-          <h3 className="text-sm font-medium">漏斗</h3>
-          <p className="text-[10px] text-slate-500">{funnel?.note}</p>
-          <ul className="mt-2 text-xs">
-            {funnel?.stages.map((st) => (
-              <li key={st} className="flex justify-between border-b border-slate-800 py-1">
-                <span>{st}</span>
-                <span>{funnel.counts[st] ?? 0}</span>
-              </li>
-            ))}
-          </ul>
+        <div className="rounded-lg border p-4 text-sm" style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}>
+          <h3 className="text-sm font-medium">过程漏斗</h3>
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
+            打单转化看商机大盘上的漏斗，这里不再另做一张阶段表。
+            {funnel?.note ? ` ${funnel.note}` : ""}
+          </p>
+          <Link to="/crm/opportunities" className="mt-3 inline-block text-xs text-[var(--accent)]">
+            打开商机大盘
+          </Link>
         </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-xs">
+        <div className="rounded-lg border p-4 text-xs" style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}>
           <h3 className="text-sm font-medium">样品周报</h3>
           <p className="mt-2">在途 {weekly?.active_count ?? "—"} · 超期 {weekly?.overdue_count ?? "—"}</p>
           <p className="mt-1 text-slate-500">{weekly?.note}</p>

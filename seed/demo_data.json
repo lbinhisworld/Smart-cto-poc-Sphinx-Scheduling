@@ -2,6 +2,8 @@
   "meta": {
     "name": "斯芬克斯一体化 POC 演示扩展",
     "demo_version": "2026-09-17-quote-v1",
+    "order_lines_version": "2026-09-24-multi-sku-v1",
+    "project_demo_version": "2026-09-22-project-board-v1",
     "hr_demo_version": "2026-09-16-hr-contract-v2",
     "today": "2026-09-15",
     "scheduling_seed": "seed/seed_data.json"
@@ -265,24 +267,16 @@
     ]
   },
   "order_lines": {
-    "SO-001": [
-      {"line_no": 1, "item_code": "P1", "item_name": "巧克力装饰片", "qty": 60, "unit": "BOX", "unit_price": 72, "line_amount": 4320},
-      {"line_no": 2, "item_code": "P1M", "item_name": "铲花插件", "qty": 40, "unit": "BOX", "unit_price": 96, "line_amount": 3840},
-      {"line_no": 3, "item_code": "P1L", "item_name": "LOGO 牌", "qty": 20, "unit": "BOX", "unit_price": 192, "line_amount": 3840}
-    ],
-    "SO-002": [
-      {"line_no": 1, "item_code": "P2", "item_name": "造型糖花", "qty": 120, "unit": "BOX", "unit_price": 240, "line_amount": 28800},
-      {"line_no": 2, "item_code": "P5", "item_name": "婚庆插件", "qty": 50, "unit": "BOX", "unit_price": 280, "line_amount": 14000},
-      {"line_no": 3, "item_code": "P6", "item_name": "巧克力币", "qty": 30, "unit": "BOX", "unit_price": 173.33, "line_amount": 5200}
-    ],
-    "SO-303": [
-      {"line_no": 1, "item_code": "P9", "item_name": "庆典组合雕塑", "qty": 40, "unit": "BOX", "unit_price": 900, "line_amount": 36000},
-      {"line_no": 2, "item_code": "PKG-P9", "item_name": "礼盒包装", "qty": 40, "unit": "BOX", "unit_price": 450, "line_amount": 18000}
-    ],
     "SO-005": [
-      {"line_no": 1, "item_code": "P1", "item_name": "巧克力装饰片", "qty": 50, "unit": "BOX", "unit_price": 80, "line_amount": 4000},
-      {"line_no": 2, "item_code": "P2", "item_name": "造型糖花", "qty": 35, "unit": "BOX", "unit_price": 177.14, "line_amount": 6200}
+      {"line_no": 1, "item_code": "P1", "qty": 85, "unit": "BOX", "unit_price": 80, "line_amount": 6800, "spec": "铲花插件"},
+      {"line_no": 2, "item_code": "P2", "qty": 120, "unit": "BOX", "unit_price": 75, "line_amount": 9000, "spec": "雪花造型"}
     ]
+  },
+  "order_line_progress": {
+    "SO-005": {
+      "1": {"reported_qty": 60, "inbound_qty": 40, "purchased": true, "received_qty": 3, "need_qty": 4},
+      "2": {"reported_qty": 0, "inbound_qty": 0, "purchased": false, "received_qty": 0, "need_qty": 4}
+    }
   },
   "order_enrichment": {
     "SO-001": {"customer_code": "C-006", "contract_no": "CT-202609-0003", "kitting_rate_pct": 95, "order_status": "SCHEDULED"},
@@ -400,5 +394,53 @@
       {"emp_no": "E2003", "punch_at": "2026-09-15T08:12:55", "punch_type": "上班", "device_code": "KQ-001", "device_name": "南门考勤机", "synced_at": "2026-09-15T08:13:40"},
       {"emp_no": "E6002", "punch_at": "2026-09-15T09:05:17", "punch_type": "上班", "device_code": "KQ-003", "device_name": "行政楼考勤机", "synced_at": "2026-09-15T09:06:00"}
     ]
-  }
+  },
+  "projects": [
+    {
+      "code": "PJ-001",
+      "name": "浇注设备导入",
+      "customer_code": "C-001",
+      "order_no": "SO-005",
+      "steps": [
+        {"stage_code": "INIT", "step_no": 1, "event_date": "2026-06-02", "note": "确认好利来要上专用浇注线"},
+        {"stage_code": "INIT", "step_no": 2, "event_date": "2026-06-12", "note": "方案演示通过"},
+        {"stage_code": "INIT", "step_no": 3, "event_date": "2026-06-18", "note": "立项批准"},
+        {"stage_code": "PROCURE", "step_no": 1, "event_date": "2026-06-25", "note": "选定浇注设备"},
+        {"stage_code": "PROCURE", "step_no": 2, "event_date": "2026-07-08", "note": "采购下单"},
+        {"stage_code": "PROCURE", "step_no": 3, "event_date": "2026-08-01", "note": "设备到货"},
+        {"stage_code": "TRIAL", "step_no": 1, "event_date": "2026-08-10", "note": "进场"},
+        {"stage_code": "TRIAL", "step_no": 2, "event_date": "2026-08-20", "note": "调试完成"},
+        {"stage_code": "TRIAL", "step_no": 3, "event_date": "2026-08-28", "note": "试产通过"},
+        {"stage_code": "RAMP", "step_no": 1, "event_date": "2026-09-02", "note": "试产结论确认"},
+        {"stage_code": "RAMP", "step_no": 2, "event_date": "2026-09-08", "note": "转入正式生产"},
+        {"stage_code": "RAMP", "step_no": 3, "event_date": "2026-09-12", "note": "已交排程，对应 SO-005"}
+      ]
+    },
+    {
+      "code": "PJ-002",
+      "name": "伴手礼试机线",
+      "customer_code": "C-009",
+      "steps": [
+        {"stage_code": "INIT", "step_no": 1, "event_date": "2026-07-06", "note": "酒店集采意向"},
+        {"stage_code": "INIT", "step_no": 2, "event_date": "2026-07-18", "note": "伴手礼方案演示"},
+        {"stage_code": "INIT", "step_no": 3, "event_date": "2026-07-28", "note": "立项批准"},
+        {"stage_code": "PROCURE", "step_no": 1, "event_date": "2026-08-04", "note": "设备选型"},
+        {"stage_code": "PROCURE", "step_no": 2, "event_date": "2026-08-15", "note": "采购下单"},
+        {"stage_code": "PROCURE", "step_no": 3, "event_date": "2026-08-29", "note": "到货"},
+        {"stage_code": "TRIAL", "step_no": 1, "event_date": "2026-09-08", "note": "已进场，调试未开始"}
+      ]
+    },
+    {
+      "code": "PJ-003",
+      "name": "模具线导入",
+      "customer_code": "C-002",
+      "steps": [
+        {"stage_code": "INIT", "step_no": 1, "event_date": "2026-08-03", "note": "元祖提出模具线"},
+        {"stage_code": "INIT", "step_no": 2, "event_date": "2026-08-14", "note": "方案演示"},
+        {"stage_code": "INIT", "step_no": 3, "event_date": "2026-08-21", "note": "立项批准"},
+        {"stage_code": "PROCURE", "step_no": 1, "event_date": "2026-09-01", "note": "选型完成，尚未下单"},
+        {"stage_code": "TRIAL", "step_no": 1, "event_date": "2026-09-05", "note": "现场先看了机位，采购单还没下"}
+      ]
+    }
+  ]
 }

@@ -87,6 +87,9 @@ export function InsertTrialPanel({ today, defaultOrderNo = "SO-004", onApplied }
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4">
           <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 p-4 text-sm">
             <p className="font-semibold">插单四策略 · {orderNo}</p>
+            <p className="mt-1 text-xs text-slate-400">
+              确认后该单进入排程中。保存发布沿用这一版计划，不再整池重算。
+            </p>
             <input
               className="mt-2 w-full rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
               value={orderNo}
@@ -103,7 +106,7 @@ export function InsertTrialPanel({ today, defaultOrderNo = "SO-004", onApplied }
                     disabled={busy}
                     onClick={() => void apply(s.strategy)}
                   >
-                    应用此策略
+                    确认，进入排程
                   </button>
                 </li>
               ))}

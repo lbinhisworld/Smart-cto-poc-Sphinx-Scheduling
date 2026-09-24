@@ -44,7 +44,55 @@ type Props = {
   orderNo: string | null;
   onClose: () => void;
   onChanged?: () => void;
-  initialTab?: "detail" | "breakdown" | "due";
+  initialTab?: "detail" | "breakdown" | "due" | "sales360";
+};
+
+type Sales360 = {
+  payment_plans?: {
+    line_no?: number;
+    milestone?: string;
+    plan_date?: string;
+    plan_amount?: number;
+    actual_amount?: number;
+    actual_date?: string | null;
+    status_label?: string;
+    status?: string;
+  }[];
+  header?: {
+    order_no: string;
+    customer: string;
+    sales_name: string;
+    amount: number;
+    quote_no?: string | null;
+    contract_no?: string | null;
+    due_date: string;
+    order_status: string;
+    schedule_phase?: string;
+  };
+  product_lines?: {
+    line_no: number;
+    item_name: string;
+    spec?: string;
+    qty: number;
+    unit: string;
+    unit_price: number;
+    suggest_price?: number | null;
+    discount_label?: string;
+    line_amount: number;
+    tags: Record<string, { label: string }>;
+  }[];
+  payments: {
+    kind?: string;
+    milestone?: string;
+    plan_date?: string;
+    plan_amount?: number;
+    receipt_date?: string;
+    amount?: number;
+    status?: string;
+  }[];
+  invoices: { invoice_no: string; amount: number; status: string; invoice_date: string; source?: string }[];
+  production_lines: { line_no: number; item_name: string; tags: Record<string, { label: string }> }[];
+  shipments: { ship_date: string | null; qty: number; pending_qty?: number; status: string; note: string; source?: string }[];
 };
 
 export function OrderDetailDrawer({ orderNo, onClose, onChanged, initialTab = "detail" }: Props) {
@@ -52,7 +100,9 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged, initialTab = "d
   const navigate = useNavigate();
   const role = auth.role;
   const [data, setData] = useState<Breakdown | null>(null);
-  const [tab, setTab] = useState<"detail" | "breakdown" | "due">("detail");
+  const [tab, setTab] = useState<"detail" | "breakdown" | "due" | "sales360">("detail");
+  const [sales360, setSales360] = useState<Sales360 | null>(null);
+  const [salesSub, setSalesSub] = useState<"回款信息" | "开票记录" | "生产记录" | "发货记录">("回款信息");
   const [dueEvents, setDueEvents] = useState<
     { id: number; event_type: string; actor_role: string; payload: Record<string, string>; created_at: string | null }[]
   >([]);
@@ -87,6 +137,9 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged, initialTab = "d
         setDueEvents([]);
         setOpenNeg([]);
       });
+    requestWithRole<Sales360>(`/api/crm/orders/${encodeURIComponent(orderNo)}/sales-360`, role)
+      .then(setSales360)
+      .catch(() => setSales360(null));
   }, [orderNo, role, auth]);
 
   if (!orderNo) return null;
@@ -167,10 +220,158 @@ export function OrderDetailDrawer({ orderNo, onClose, onChanged, initialTab = "d
           >
             交期动态
           </button>
+          <button
+            type="button"
+            className={`rounded px-2 py-1 ${tab === "sales360" ? "bg-[var(--nav-active-bg)] text-[var(--accent)]" : ""}`}
+            onClick={() => setTab("sales360")}
+          >
+            销售四页签
+          </button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 text-sm">
           {err && <p className="mb-3 text-xs text-rose-400">{err}</p>}
+
+          {tab === "sales360" && (
+            <div className="space-y-4 text-xs">
+              <div className="flex flex-wrap gap-1">
+                {(["回款信息", "开票记录", "生产记录", "发货记录"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`rounded px-2 py-0.5 ${salesSub === t ? "bg-[var(--nav-active-bg)] text-[var(--accent)]" : ""}`}
+                    onClick={() => setSalesSub(t)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              {sales360?.header && salesSub === "回款信息" && (
+                <section className="rounded border p-3" style={{ borderColor: "var(--line)" }}>
+                  <p className="font-medium">单头</p>
+                  <dl className="mt-2 grid grid-cols-2 gap-1">
+                    <dt className="text-[var(--text-muted)]">客户</dt>
+                    <dd>{sales360.header.customer}</dd>
+                    <dt className="text-[var(--text-muted)]">销售</dt>
+                    <dd>{sales360.header.sales_name}</dd>
+                    <dt className="text-[var(--text-muted)]">金额</dt>
+                    <dd>{renderMoney(sales360.header.amount)}</dd>
+                    <dt className="text-[var(--text-muted)]">报价号</dt>
+                    <dd className="font-mono">{sales360.header.quote_no ?? "—"}</dd>
+                    <dt className="text-[var(--text-muted)]">合同</dt>
+                    <dd className="font-mono">{sales360.header.contract_no ?? "—"}</dd>
+                    <dt className="text-[var(--text-muted)]">商机</dt>
+                    <dd>{sales360.header.opportunity_name ?? "—"}</dd>
+                    <dt className="text-[var(--text-muted)]">含税/税率</dt>
+                    <dd>
+                      {sales360.header.tax_included ? "是" : "否"} · {Math.round((sales360.header.tax_rate ?? 0) * 100)}%
+                    </dd>
+                    <dt className="text-[var(--text-muted)]">区域</dt>
+                    <dd>{sales360.header.region || "—"}</dd>
+                    <dt className="text-[var(--text-muted)]">交期</dt>
+                    <dd>{renderDate(sales360.header.due_date)}</dd>
+                  </dl>
+                </section>
+              )}
+              {salesSub === "回款信息" && (
+                <>
+                  <section>
+                    <p className="mb-2 font-medium">单头 · 销售产品</p>
+                    <table className="w-full rounded border text-[10px]" style={{ borderColor: "var(--line)" }}>
+                      <thead className="bg-[var(--table-head)]">
+                        <tr>
+                          <th className="px-1 py-1 text-left">产品</th>
+                          <th className="px-1 py-1 text-right">单价</th>
+                          <th className="px-1 py-1 text-right">建议价/折扣</th>
+                          <th className="px-1 py-1 text-right">数量</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(sales360?.product_lines ?? []).map((ln) => (
+                          <tr key={ln.line_no} className="border-t" style={{ borderColor: "var(--line)" }}>
+                            <td className="px-1 py-1">{ln.item_name}</td>
+                            <td className="px-1 py-1 text-right">{renderMoney(ln.unit_price)}</td>
+                            <td className="px-1 py-1 text-right">
+                              {ln.suggest_price != null ? `${ln.suggest_price} / ${ln.discount_label}` : "—"}
+                            </td>
+                            <td className="px-1 py-1 text-right">
+                              {ln.qty} {ln.unit}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </section>
+                  <section>
+                    <p className="mb-2 font-medium">回款计划（合同同行）</p>
+                    <table className="w-full text-[10px]" style={{ borderColor: "var(--line)" }}>
+                      <thead>
+                        <tr className="text-[var(--text-muted)]">
+                          <th className="text-left">期数</th>
+                          <th>计划</th>
+                          <th>实际</th>
+                          <th>状态</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(sales360?.payment_plans ?? sales360?.payments ?? []).map((p, i) => (
+                          <tr key={i} className="border-t" style={{ borderColor: "var(--line)" }}>
+                            <td className="py-1">{p.milestone ?? p.line_no}</td>
+                            <td className="py-1">
+                              {p.plan_date} · {p.plan_amount}
+                            </td>
+                            <td className="py-1">
+                              {p.actual_date ? `${p.actual_date} · ${p.actual_amount}` : "—"}
+                            </td>
+                            <td className="py-1">{p.status_label ?? p.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </section>
+                </>
+              )}
+              {salesSub === "开票记录" && (
+                <table className="w-full text-[10px]">
+                  <thead className="text-[var(--text-muted)]">
+                    <tr>
+                      <th>日期</th>
+                      <th>类型</th>
+                      <th>抬头</th>
+                      <th>票号</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(sales360?.invoices ?? []).map((inv, i) => (
+                      <tr key={i} className="border-t" style={{ borderColor: "var(--line)" }}>
+                        <td>{inv.invoice_date}</td>
+                        <td>{inv.invoice_type ?? "—"}</td>
+                        <td>{inv.title ?? inv.invoice_no}</td>
+                        <td className="font-mono">{inv.invoice_no}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {salesSub === "生产记录" &&
+                (sales360?.product_lines ?? sales360?.production_lines ?? []).map((ln) => (
+                  <div key={ln.line_no} className="mb-2 rounded border p-2" style={{ borderColor: "var(--line)" }}>
+                    <p>{ln.item_name}</p>
+                    <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+                      {Object.values(ln.tags)
+                        .map((t) => t.label)
+                        .join(" · ")}
+                    </p>
+                  </div>
+                ))}
+              {salesSub === "发货记录" &&
+                (sales360?.shipments ?? []).map((s, i) => (
+                  <p key={i} className="text-[var(--text-muted)]">
+                    {s.status} · 待发 {s.pending_qty ?? "—"} · {s.note}
+                  </p>
+                ))}
+            </div>
+          )}
 
           {tab === "detail" && (
             <>

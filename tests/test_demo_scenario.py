@@ -378,6 +378,8 @@ def test_generate_api_pending_and_contracts(api_client):
             assert contract is not None and contract.status == "ACTIVE"
             cust = session.get(CrmCustomerRow, o.customer_code)
             assert cust is not None
+            assert (o.sales_name or "").strip()
+            assert o.sales_name == cust.owner_sales
         assert needs_seed_reload(session, SEED_PATH) is False
     finally:
         session.close()
@@ -426,6 +428,13 @@ def test_restore_seed_returns_twelve(api_client):
     )
     r = client.post("/api/demo/scenario/restore-seed", headers=HDR_GM)
     assert r.status_code == 200, r.text
+    mis = client.get("/api/mis/orders?view=all", headers=HDR_GM)
+    assert mis.status_code == 200, mis.text
+    rows = mis.json()["data"]["rows"]
+    assert len(rows) == 12
+    assert all(not r["order_no"].startswith("SO-D1S-") for r in rows)
+    assert all(r["line_count"] == 1 for r in rows)
+    assert mis.json()["data"]["stats"]["total"] == 12
     orders = client.get("/api/orders").json()["data"]["orders"]
     assert len(orders) == 12
     phases = [o["schedule_phase"] for o in orders]

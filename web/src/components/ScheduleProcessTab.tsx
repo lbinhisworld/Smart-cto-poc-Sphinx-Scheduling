@@ -41,6 +41,17 @@ export function ScheduleProcessTab({ trace, conflicts, orders, onReplay }: Props
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [applyId, setApplyId] = useState<number | null>(null);
+  const [earliest, setEarliest] = useState<{
+    title?: string;
+    deliverable?: boolean;
+    note?: string;
+    sales_sentences?: string[];
+    suggested_due?: string;
+    stuck?: string;
+    hours_wall?: string;
+    hours_man?: string;
+    tasks?: { task_date: string; qty_board: number; group_code: string }[];
+  } | null>(null);
 
   const loadOpen = () => {
     fetch("/api/due-negotiations", { headers: auth.headers() })
@@ -60,6 +71,7 @@ export function ScheduleProcessTab({ trace, conflicts, orders, onReplay }: Props
     const suggested = a.suggestedDue || order?.due_date || null;
     const card = { ...a, orderNo: headerOrderNo(a.orderNo), suggestedDue: suggested };
     setErr(null);
+    setEarliest(null);
     setBriefFor(card);
     setBriefText(
       localBriefText({
@@ -103,6 +115,23 @@ export function ScheduleProcessTab({ trace, conflicts, orders, onReplay }: Props
       }
     } catch {
       setErr("预览接口连不上。已用本地口径，仍可发送。");
+    }
+    try {
+      const er = await fetch("/api/schedule/earliest-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_no: card.orderNo, today: "2026-09-15" }),
+      });
+      const ej = await er.json().catch(() => ({}));
+      if (er.ok && ej.code === 0 && ej.data?.eligible) {
+        setEarliest(ej.data);
+        if (ej.data.deliverable && Array.isArray(ej.data.sales_sentences)) {
+          const extra = ej.data.sales_sentences.join("\n");
+          setBriefText((prev) => (prev.includes("建议交期不早于") ? prev : `${prev}\n${extra}`));
+        }
+      }
+    } catch {
+      setEarliest(null);
     }
   };
 
@@ -272,6 +301,25 @@ export function ScheduleProcessTab({ trace, conflicts, orders, onReplay }: Props
             role="dialog"
           >
             <p className="text-sm font-medium text-slate-100">口径卡 · {briefFor.orderNo}</p>
+            {earliest && (
+              <div className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] text-amber-50">
+                <p className="font-medium">{earliest.title}</p>
+                <p className="mt-1 text-amber-100/90">
+                  {earliest.stuck} · 建议不早于 {earliest.suggested_due} · 墙钟 {earliest.hours_wall} h · 人·时{" "}
+                  {earliest.hours_man}
+                </p>
+                {earliest.note ? <p className="mt-1 text-rose-200">{earliest.note}</p> : null}
+                {earliest.tasks && earliest.tasks.length > 0 && (
+                  <ul className="mt-1 space-y-0.5 text-slate-300">
+                    {earliest.tasks.slice(0, 6).map((t) => (
+                      <li key={`${t.task_date}-${t.group_code}-${t.qty_board}`}>
+                        {t.task_date} · {t.group_code} · {t.qty_board} 版
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
             {err && <p className="mt-2 text-[11px] text-amber-300">{err}</p>}
             <label className="mt-2 block text-[10px] text-slate-400">
               建议不早于

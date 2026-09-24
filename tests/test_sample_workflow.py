@@ -135,3 +135,36 @@ def test_sample_add_step_and_final_requires_evidence():
         json={"stage": "打样", "event_date": "2026-09-17", "is_final": False},
     )
     assert blocked.status_code == 400
+
+
+def test_sample_customer_confirm_does_not_write_due_date():
+    client.post("/api/demo/ensure-crm-seed")
+    before = client.get("/api/crm/samples/SP-001", headers=HDR).json()["data"]
+    due = before["due_date"]
+    fail = client.post(
+        "/api/crm/samples/SP-001/customer-confirm",
+        headers=HDR,
+        json={"passed": False, "fail_reason": "", "ship_date": "2026-09-12"},
+    )
+    assert fail.status_code == 400
+    ok = client.post(
+        "/api/crm/samples/SP-001/customer-confirm",
+        headers=HDR,
+        json={"passed": False, "fail_reason": "口味偏甜", "ship_date": "2026-09-12"},
+    )
+    assert ok.status_code == 200, ok.text
+    data = ok.json()["data"]
+    assert data["customer_passed"] == "不通过"
+    assert data["fail_reason"] == "口味偏甜"
+    assert data["ship_date"] == "2026-09-12"
+    assert data["due_date"] == due
+    passed = client.post(
+        "/api/crm/samples/SP-001/customer-confirm",
+        headers=HDR,
+        json={"passed": True, "fail_reason": "旧原因", "ship_date": "2026-09-12"},
+    )
+    assert passed.status_code == 200
+    again = passed.json()["data"]
+    assert again["customer_passed"] == "通过"
+    assert again["fail_reason"] == ""
+    assert again["due_date"] == due

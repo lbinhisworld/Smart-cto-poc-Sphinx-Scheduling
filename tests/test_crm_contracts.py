@@ -38,6 +38,19 @@ def test_customer_360_contracts_and_payment_summary():
         assert data["contracts"][0].get("contract_no", "").startswith("CT-")
 
 
+def test_customers_mine_not_shadowed_by_code_route():
+    """静态路径 /mine 须先于 /{code} 注册，否则会被当成客户编码返回 404。"""
+    r = client.get(
+        "/api/crm/customers/mine?today=2026-09-15",
+        headers={"X-Demo-Role": "GM"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["code"] == 0
+    assert "items" in body["data"]
+    assert "status_counts" in body["data"]
+
+
 def test_customer_metrics():
     r = client.get("/api/crm/customers/metrics", headers={"X-Demo-Role": "GM"})
     assert r.status_code == 200

@@ -1,3 +1,4 @@
+import { headerOrderNo } from "./coline";
 import type {
   Conflict,
   ConflictLevel,
@@ -136,7 +137,16 @@ export function mergedItemCodes(
 }
 
 function orderByNo(orders: OrderRow[]): Map<string, OrderRow> {
-  return new Map(orders.map((o) => [o.order_no, o]));
+  const m = new Map<string, OrderRow>();
+  for (const o of orders) {
+    m.set(o.order_no, o);
+    m.set(headerOrderNo(o.order_no), o);
+  }
+  return m;
+}
+
+function findOrder(omap: Map<string, OrderRow>, orderNo: string): OrderRow | undefined {
+  return omap.get(orderNo) ?? omap.get(headerOrderNo(orderNo));
 }
 
 function woByNo(wos: Wo[]): Map<string, Wo> {
@@ -224,14 +234,14 @@ export function groupConflictsByOrder(
     } else if (cellOrders.length > 1) {
       groupKey = `cell:${c.dept ?? ""}:${c.group_code ?? ""}:${c.cell_date ?? ""}`;
       cross = cellOrders.map((no) => {
-        const o = omap.get(no);
-        return `${no} ${salesOf(o)}`;
+        const o = findOrder(omap, no);
+        return `${headerOrderNo(no)} ${salesOf(o)}`;
       });
     } else {
       groupKey = "unlinked";
     }
 
-    const order = orderNo ? omap.get(orderNo) : undefined;
+    const order = orderNo ? findOrder(omap, orderNo) : undefined;
     const g = ensure(groupKey, {
       orderNo,
       salesName: orderNo ? salesOf(order) : cross.length ? "多销售" : "销售未填",

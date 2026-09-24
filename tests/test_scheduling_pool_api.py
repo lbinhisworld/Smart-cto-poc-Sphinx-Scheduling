@@ -65,6 +65,33 @@ def _mis_rows(client: TestClient, view: str) -> list[dict]:
     return r.json()["data"]["rows"]
 
 
+def test_remove_all_from_scheduling_pool(api_client: TestClient):
+    api_client.post(
+        "/api/orders/scheduling-pool",
+        json={"action": "add", "order_nos": ["SO-004"]},
+    )
+    phases = _phases(api_client)
+    pool = sorted(no for no, ph in phases.items() if ph == "IN_SCHEDULING")
+    assert "SO-004" in pool
+    assert len(pool) >= 4
+
+    r = api_client.post(
+        "/api/orders/scheduling-pool",
+        json={"action": "remove", "order_nos": pool},
+    )
+    assert r.status_code == 200
+    assert r.json()["data"]["pool"] == []
+
+    phases = _phases(api_client)
+    for no in pool:
+        assert phases[no] == "PENDING"
+    rows = {row["order_no"]: row for row in _mis_rows(api_client, "all")}
+    assert rows["SO-004"]["schedule_phase"] == "PENDING"
+    assert rows["SO-004"]["order_status"] == "CONFIRMED"
+    assert "SO-004" in {row["order_no"] for row in _mis_rows(api_client, "pending")}
+    assert "SO-004" not in {row["order_no"] for row in _mis_rows(api_client, "in_scheduling")}
+
+
 def test_add_to_pool_syncs_sales_order_list(api_client: TestClient):
     """排程池与销售列表共用 schedule_phase；进池后不应再出现在待排程。"""
     api_client.post(

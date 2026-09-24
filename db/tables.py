@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db.base import Base
@@ -185,6 +185,16 @@ class CrmOpportunityRow(Base):
     owner_sales: Mapped[str] = mapped_column(String)
     expect_close_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     sample_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    grade: Mapped[str | None] = mapped_column(String, nullable=True)
+    lost_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    project_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    sample_cost_qty: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sample_cost_material: Mapped[str | None] = mapped_column(Numeric(18, 2), nullable=True)
+    sample_cost_labor: Mapped[str | None] = mapped_column(Numeric(18, 2), nullable=True)
+    planned_labor_amount: Mapped[str | None] = mapped_column(Numeric(18, 2), nullable=True)
+    customer_quote_amount: Mapped[str | None] = mapped_column(Numeric(18, 2), nullable=True)
+    urgent_order_no: Mapped[str | None] = mapped_column(String, nullable=True)
+    meta_json: Mapped[str] = mapped_column(Text, default="{}")
 
 
 class CrmSampleStepRow(Base):
@@ -213,6 +223,9 @@ class CrmSampleRow(Base):
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_old_product: Mapped[bool] = mapped_column(Boolean, default=False)
     result: Mapped[str | None] = mapped_column(String, nullable=True)
+    customer_passed: Mapped[str | None] = mapped_column(String, nullable=True)
+    fail_reason: Mapped[str] = mapped_column(String, default="")
+    ship_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 
 class PlanVersionRow(Base):
@@ -499,6 +512,66 @@ class AppSettingRow(Base):
     __tablename__ = "app_setting"
     key: Mapped[str] = mapped_column(String, primary_key=True)
     value: Mapped[str] = mapped_column(Text, default="")
+
+
+class DemoRunRow(Base):
+    __tablename__ = "demo_run"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    title: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String, default="DRAFT")
+    path_template: Mapped[str] = mapped_column(String, default="full_chain_17")
+    current_step_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_by_role: Mapped[str] = mapped_column(String, default="")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class DemoRunSeedEventRow(Base):
+    __tablename__ = "demo_run_seed_event"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(String, index=True)
+    step_id: Mapped[str] = mapped_column(String, index=True)
+    batch_index: Mapped[int] = mapped_column(Integer, default=1)
+    refs_json: Mapped[str] = mapped_column(Text, default="[]")
+    summary: Mapped[str] = mapped_column(Text, default="")
+    snapshot_json: Mapped[str] = mapped_column(Text, default="{}")
+    actor_role: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class DemoRunFeedbackRow(Base):
+    __tablename__ = "demo_run_feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(String, index=True)
+    step_id: Mapped[str] = mapped_column(String, index=True)
+    story_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    category: Mapped[str] = mapped_column(String)
+    severity: Mapped[str] = mapped_column(String)
+    body: Mapped[str] = mapped_column(Text)
+    expectation: Mapped[str] = mapped_column(Text, default="")
+    refs_json: Mapped[str] = mapped_column(Text, default="[]")
+    seed_event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reporter_role: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class DemoRunStepSnapshotRow(Base):
+    """演示结束后每环节最终数据快照（重放只读）。"""
+
+    __tablename__ = "demo_run_step_snapshot"
+
+    run_id: Mapped[str] = mapped_column(String, primary_key=True)
+    step_id: Mapped[str] = mapped_column(String, primary_key=True)
+    refs_json: Mapped[str] = mapped_column(Text, default="[]")
+    summary: Mapped[str] = mapped_column(Text, default="")
+    snapshot_json: Mapped[str] = mapped_column(Text, default="{}")
+    seed_event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    seeded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    archived_at: Mapped[datetime] = mapped_column(DateTime)
 
 
 class ProdQtyReportRow(Base):
@@ -798,3 +871,185 @@ class InvIssueRow(Base):
     kg_per_board_snap: Mapped[str | None] = mapped_column(Numeric(18, 6), nullable=True)
     note: Mapped[str] = mapped_column(Text, default="")
     created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class DeliveryProjectRow(Base):
+    """大客户专项。进度在步骤表，不挂销售订单交期。"""
+
+    __tablename__ = "delivery_project"
+    code: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String)
+    customer_code: Mapped[str] = mapped_column(String, index=True)
+    order_no: Mapped[str] = mapped_column(String, default="")
+
+
+class DeliveryProjectStepRow(Base):
+    """专项环节内的一步。大盘一格 = 同一 stage 的全部步骤都有发生日期。"""
+
+    __tablename__ = "delivery_project_step"
+    __table_args__ = (UniqueConstraint("project_code", "stage_code", "step_no"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    project_code: Mapped[str] = mapped_column(String, index=True)
+    stage_code: Mapped[str] = mapped_column(String)
+    step_no: Mapped[int] = mapped_column(Integer)
+    step_name: Mapped[str] = mapped_column(String)
+    event_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+
+
+class CrmVisitRow(Base):
+    """销售拜访。草稿不进时间线、有效拜访和分布。"""
+
+    __tablename__ = "crm_visit"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    status: Mapped[str] = mapped_column(String, default="CONFIRMED")
+    owner_sales: Mapped[str] = mapped_column(String, index=True)
+    customer_code: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    customer_name: Mapped[str] = mapped_column(String, default="")
+    visit_kind: Mapped[str] = mapped_column(String, default="现有客户")
+    narrative: Mapped[str] = mapped_column(Text, default="")
+    outcome: Mapped[str] = mapped_column(String, default="关系建联")
+    next_step: Mapped[str] = mapped_column(String, default="")
+    next_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    opportunity_name: Mapped[str] = mapped_column(String, default="")
+    opportunity_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    check_in_at: Mapped[datetime] = mapped_column(DateTime)
+    check_out_at: Mapped[datetime] = mapped_column(DateTime)
+    is_valid: Mapped[bool] = mapped_column(Boolean, default=False)
+    location_note: Mapped[str] = mapped_column(String, default="")
+    photo_note: Mapped[str] = mapped_column(String, default="")
+    created_customer: Mapped[bool] = mapped_column(Boolean, default=False)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class CrmSalesGoalRow(Base):
+    """销售目标。完成数另算，不在这里记。"""
+
+    __tablename__ = "crm_sales_goal"
+    __table_args__ = (UniqueConstraint("owner_sales", "metric"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    owner_sales: Mapped[str] = mapped_column(String, index=True)
+    metric: Mapped[str] = mapped_column(String)
+    target_qty: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class CrmSalesGoalPeriodRow(Base):
+    """销售目标 · 年 / 月 / 周。"""
+
+    __tablename__ = "crm_sales_goal_period"
+    __table_args__ = (UniqueConstraint("owner_sales", "period_kind", "period_key", "metric"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    owner_sales: Mapped[str] = mapped_column(String, index=True)
+    owner_dept: Mapped[str] = mapped_column(String, default="销售部")
+    period_kind: Mapped[str] = mapped_column(String)
+    period_key: Mapped[str] = mapped_column(String)
+    metric: Mapped[str] = mapped_column(String)
+    target_qty: Mapped[int] = mapped_column(Integer, default=0)
+    target_amount: Mapped[str] = mapped_column(Numeric(18, 2), default="0")
+    created_by: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class CrmLeadRow(Base):
+    __tablename__ = "crm_lead"
+    code: Mapped[str] = mapped_column(String, primary_key=True)
+    status: Mapped[str] = mapped_column(String, default="待分配")
+    contact_name: Mapped[str] = mapped_column(String)
+    gender: Mapped[str] = mapped_column(String, default="")
+    phone: Mapped[str] = mapped_column(String, default="", index=True)
+    wechat: Mapped[str] = mapped_column(String, default="")
+    company_name: Mapped[str] = mapped_column(String, default="")
+    address_region: Mapped[str] = mapped_column(String, default="")
+    address_detail: Mapped[str] = mapped_column(String, default="")
+    annual_revenue: Mapped[str] = mapped_column(String, default="")
+    industry: Mapped[str] = mapped_column(String, default="")
+    source: Mapped[str] = mapped_column(String, default="")
+    detail_text: Mapped[str] = mapped_column(Text, default="")
+    customer_level: Mapped[str] = mapped_column(String, default="")
+    tags: Mapped[str] = mapped_column(String, default="")
+    convert_note: Mapped[str] = mapped_column(Text, default="")
+    lost_reason: Mapped[str] = mapped_column(String, default="")
+    owner_sales: Mapped[str] = mapped_column(String, default="", index=True)
+    owner_dept: Mapped[str] = mapped_column(String, default="")
+    pool_name: Mapped[str] = mapped_column(String, default="默认线索池")
+    assigned_by: Mapped[str] = mapped_column(String, default="")
+    assigned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    customer_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_by: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class CrmLeadPoolRuleRow(Base):
+    __tablename__ = "crm_lead_pool_rule"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    pool_name: Mapped[str] = mapped_column(String, unique=True)
+    admin_name: Mapped[str] = mapped_column(String)
+    member_names_json: Mapped[str] = mapped_column(Text, default="[]")
+    recycle_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_by: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class CrmFieldVisitRow(Base):
+    """电脑端拜访签到 · 外勤单。"""
+
+    __tablename__ = "crm_field_visit"
+    code: Mapped[str] = mapped_column(String, primary_key=True)
+    owner_sales: Mapped[str] = mapped_column(String, index=True)
+    visit_plan: Mapped[str] = mapped_column(String, default="")
+    title: Mapped[str] = mapped_column(String, default="")
+    customer_code: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    customer_name: Mapped[str] = mapped_column(String, default="")
+    visit_kind: Mapped[str] = mapped_column(String, default="老客户拜访")
+    expected_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expected_address: Mapped[str] = mapped_column(String, default="")
+    before_note: Mapped[str] = mapped_column(Text, default="")
+    situation_note: Mapped[str] = mapped_column(Text, default="")
+    photo_note: Mapped[str] = mapped_column(String, default="")
+    status: Mapped[str] = mapped_column(String, default="待签到")
+    check_in_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    check_out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    check_in_location: Mapped[str] = mapped_column(String, default="")
+    check_out_location: Mapped[str] = mapped_column(String, default="")
+    linked_visit_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finalized_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    progress_tags_json: Mapped[str] = mapped_column(Text, default="[]")
+    meets_standard: Mapped[bool | None] = mapped_column(nullable=True)
+    eval_source: Mapped[str] = mapped_column(String, default="")
+    standard_reason: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class CrmFieldVisitLogRow(Base):
+    """外勤拜访时间线条目。"""
+
+    __tablename__ = "crm_field_visit_log"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    visit_code: Mapped[str] = mapped_column(String, index=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime)
+    body: Mapped[str] = mapped_column(Text, default="")
+    created_by: Mapped[str] = mapped_column(String, default="")
+
+
+class CrmFollowRecordRow(Base):
+    """跟进记录 · 线索 / 商机 / 客户共用。"""
+
+    __tablename__ = "crm_follow_record"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    record_type: Mapped[str] = mapped_column(String, index=True)
+    lead_code: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    opportunity_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    customer_code: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    visit_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    follow_date: Mapped[date] = mapped_column(Date)
+    content: Mapped[str] = mapped_column(Text, default="")
+    next_follow_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    owner_sales: Mapped[str] = mapped_column(String, default="")
+    photo_note: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime)

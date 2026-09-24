@@ -17,6 +17,24 @@ class ScheduleBody(BaseModel):
     reserved_ratio: float | None = 0.0
 
 
+class HeadcountTrialBody(BaseModel):
+    order_nos: list[str]
+    today: date
+    dept: str
+    group_code: str
+    mode: str = "add_people"
+    add_people: int = 0
+    item_code: str | None = None
+    sph_value: float | None = None
+    reserved_ratio: float | None = 0.0
+
+
+class HeadcountAdoptBody(BaseModel):
+    dept: str
+    group_code: str
+    headcount: int
+
+
 class OrderDuePatch(BaseModel):
     due_date: date
 

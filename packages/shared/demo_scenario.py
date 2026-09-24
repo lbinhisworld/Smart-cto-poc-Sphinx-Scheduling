@@ -360,6 +360,8 @@ def plan_orders(
         due = next_workday_on_or_after(max(dues[i], min_due_for_skus(skus, today)))
         histo[_due_bucket(due, today)] += 1
         cust_code, cust_name, sales, level = CUSTOMERS[i % len(CUSTOMERS)]
+        if not str(sales).strip():
+            raise ScenarioPlanError(f"{cust_code} 缺少销售姓名")
         lines = [
             {
                 "item_code": code,

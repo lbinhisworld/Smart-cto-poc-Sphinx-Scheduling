@@ -439,6 +439,18 @@ def approve_quote(session: Session, code: str) -> dict:
     return serialize_quote(session, q)
 
 
+def mark_requote(session: Session, code: str) -> dict:
+    q = session.get(CrmQuoteRow, code)
+    if q is None:
+        raise KeyError("报价单不存在")
+    q.status = "DRAFT"
+    note = (q.note or "").strip()
+    if "需重新报价" not in note:
+        q.note = (note + " 需重新报价").strip()
+    session.flush()
+    return serialize_quote(session, q)
+
+
 def void_quote(session: Session, code: str) -> dict:
     q = session.get(CrmQuoteRow, code)
     if q is None:

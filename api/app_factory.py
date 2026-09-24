@@ -23,14 +23,17 @@ ensure_schema(engine)
 
 session = factory()
 try:
-    if needs_seed_reload(session, SEED):
-        reload_seed_json(session, SEED)
-        session.commit()
-    else:
-        item_count = session.scalar(select(func.count()).select_from(MdItemRow)) or 0
-        if item_count == 0:
-            import_seed_json(session, SEED)
+    from db.demo_manual_data import is_manual_data_mode
+
+    if not is_manual_data_mode(session):
+        if needs_seed_reload(session, SEED):
+            reload_seed_json(session, SEED)
             session.commit()
+        else:
+            item_count = session.scalar(select(func.count()).select_from(MdItemRow)) or 0
+            if item_count == 0:
+                import_seed_json(session, SEED)
+                session.commit()
 except Exception:
     session.rollback()
     raise
@@ -39,18 +42,21 @@ finally:
 
 session = factory()
 try:
-    from db.demo_crm_seed import ensure_demo_crm
-    from db.order_lines import ensure_order_lines
+    from db.demo_manual_data import is_manual_data_mode
 
-    ensure_demo_crm(session)
-    ensure_order_lines(session)
-    from db.hr_seed import ensure_hr_seed
+    if not is_manual_data_mode(session):
+        from db.demo_crm_seed import ensure_demo_crm
+        from db.order_lines import ensure_order_lines
 
-    ensure_hr_seed(session)
-    from db.prod_stats_seed import ensure_dept1_stats_seed
+        ensure_demo_crm(session)
+        ensure_order_lines(session)
+        from db.hr_seed import ensure_hr_seed
 
-    ensure_dept1_stats_seed(session)
-    session.commit()
+        ensure_hr_seed(session)
+        from db.prod_stats_seed import ensure_dept1_stats_seed
+
+        ensure_dept1_stats_seed(session)
+        session.commit()
 except Exception:
     session.rollback()
 finally:

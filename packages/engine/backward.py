@@ -3,30 +3,73 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 
-from engine.capacity import day_capacity, hours_man, hours_wall, is_workday
+from engine.capacity import (
+    available_person_hours,
+    day_capacity,
+    hours_man,
+    hours_wall,
+    is_workday,
+    sph_board_rate,
+)
 from engine.errors import SchedulingLoopError, SphMissingError
-from engine.models import ScheduleInput, TraceAct, TraceEvent, Unplaced, Wo, WoTask
+from engine.models import ScheduleInput, SphBasis, TraceAct, TraceEvent, Unplaced, Wo, WoTask
 from engine.trace import append_event, place_message, unplaced_audit_message
 from engine.work_center import wc_key
 
 GUARD_LIMIT = 365
+_MAN_Q = Decimal("0.0001")
 
 
-def seed_occupied(inp: ScheduleInput) -> dict[tuple[str, str, date], int]:
+class DayLoad:
+    """同一组日上，单人口径占人·时，多人配合占版，两套不相加。"""
+
+    def __init__(self) -> None:
+        self.boards: dict[tuple[str, str, date], int] = {}
+        self.man: dict[tuple[str, str, date], Decimal] = {}
+
+
+def _basis_for_task(inp: ScheduleInput, task: WoTask, wos: list[Wo]) -> SphBasis:
+    by_wo = {wo.wo_no: wo for wo in wos}
+    wo = by_wo.get(task.wo_no)
+    if wo is not None:
+        try:
+            return inp.sph_of(wo.item_code, task.group_code).sph_basis
+        except KeyError:
+            pass
+    bases = {
+        row.sph_basis
+        for (item_code, group_code), row in inp.sph.items()
+        if group_code == task.group_code.value and item_code
+    }
+    if bases == {SphBasis.CREW}:
+        return SphBasis.CREW
+    return SphBasis.SINGLE
+
+
+def seed_occupied(inp: ScheduleInput, wos: list[Wo] | None = None) -> DayLoad:
     """锁定/已下发任务先占位（BR-26）。"""
-    occupied: dict[tuple[str, str, date], int] = {}
+    load = DayLoad()
+    known = list(wos or [])
     for task in inp.locked_tasks:
         key = wc_key(task.dept, task.group_code, task.task_date)
-        occupied[key] = occupied.get(key, 0) + task.qty_board
-    return occupied
+        if _basis_for_task(inp, task, known) == SphBasis.CREW:
+            load.boards[key] = load.boards.get(key, 0) + task.qty_board
+        else:
+            load.man[key] = load.man.get(key, Decimal(0)) + task.hours_man
+    return load
+
+
+def _crew_sets(inp: ScheduleInput, wo: Wo) -> int:
+    raw = inp.crew_sets.get(f"{wo.dept.value}|{wo.group_code.value}", 1)
+    return raw if raw > 0 else 1
 
 
 def backward_place(
     wo: Wo,
     inp: ScheduleInput,
-    occupied: dict[tuple[str, str, date], int],
+    occupied: DayLoad,
     next_task_id: int,
     trace: list[TraceEvent] | None = None,
     trace_act: TraceAct = TraceAct.PLACE,
@@ -111,10 +154,30 @@ def backward_place(
             converts,
             inp.config.reserved_ratio,
             inp.capacity_overrides,
+            crew_sets=_crew_sets(inp, wo),
         )
         key = wc_key(wo.dept, wo.group_code, cursor)
-        occupied_before = occupied.get(key, 0)
-        free = cap - occupied_before
+        if sph.sph_basis == SphBasis.SINGLE:
+            rate = sph_board_rate(sph, converts)
+            avail_man = available_person_hours(
+                inp.calendar,
+                wo.dept,
+                wo.group_code,
+                cursor,
+                inp.config.reserved_ratio,
+                inp.capacity_overrides,
+            )
+            used_man = occupied.man.get(key, Decimal(0))
+            free_man = avail_man - used_man
+            free = (
+                int((free_man * rate).to_integral_value(rounding=ROUND_DOWN))
+                if rate > 0 and free_man > 0
+                else 0
+            )
+            occupied_before = cap - free if cap >= free else 0
+        else:
+            occupied_before = occupied.boards.get(key, 0)
+            free = cap - occupied_before
         if free <= 0:
             attempts.append({"date": cursor, "kind": "skip", "reason": "FULL", "cap": cap})
             append_event(
@@ -153,7 +216,12 @@ def backward_place(
         )
         next_task_id += 1
         tasks.append(task)
-        occupied[key] = occupied.get(key, 0) + qty
+        if sph.sph_basis == SphBasis.SINGLE:
+            rate = sph_board_rate(sph, converts)
+            consumed = (Decimal(qty) / rate).quantize(_MAN_Q) if rate > 0 else Decimal(0)
+            occupied.man[key] = occupied.man.get(key, Decimal(0)) + consumed
+        else:
+            occupied.boards[key] = occupied.boards.get(key, 0) + qty
         remaining -= qty
         attempts.append(
             {"date": cursor, "kind": "place", "qty": qty, "cap": cap, "occupied": occupied_before}

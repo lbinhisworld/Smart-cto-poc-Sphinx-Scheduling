@@ -352,6 +352,75 @@ def ensure_schema(engine: Engine) -> None:
                     conn.execute(text(f"ALTER TABLE prod_time_report ADD COLUMN {name} {ddl}"))
 
     tables = set(inspect(engine).get_table_names())
-    for name in ("inv_inbound_daily", "inv_issue"):
+    for name in (
+        "inv_inbound_daily",
+        "inv_issue",
+        "crm_visit",
+        "crm_sales_goal",
+        "crm_sales_goal_period",
+        "crm_lead",
+        "crm_lead_pool_rule",
+        "crm_follow_record",
+        "crm_field_visit",
+        "crm_field_visit_log",
+    ):
         if name not in tables:
             Base.metadata.tables[name].create(engine)
+
+    if "crm_field_visit" in tables:
+        cols = {c["name"] for c in inspect(engine).get_columns("crm_field_visit")}
+        alters_fv: list[tuple[str, str]] = []
+        for name, ddl in (
+            ("started_at", "DATETIME"),
+            ("finalized_at", "DATETIME"),
+            ("summary", "TEXT NOT NULL DEFAULT ''"),
+            ("progress_tags_json", "TEXT NOT NULL DEFAULT '[]'"),
+            ("meets_standard", "INTEGER"),
+            ("eval_source", "TEXT NOT NULL DEFAULT ''"),
+            ("standard_reason", "TEXT NOT NULL DEFAULT ''"),
+        ):
+            if name not in cols:
+                alters_fv.append((name, ddl))
+        if alters_fv:
+            with engine.begin() as conn:
+                for name, ddl in alters_fv:
+                    conn.execute(text(f"ALTER TABLE crm_field_visit ADD COLUMN {name} {ddl}"))
+
+    if "crm_opportunity" in tables:
+        cols = {c["name"] for c in inspect(engine).get_columns("crm_opportunity")}
+        alters_opp: list[tuple[str, str]] = []
+        for name, ddl in (
+            ("grade", "TEXT"),
+            ("lost_reason", "TEXT"),
+            ("project_code", "TEXT"),
+            ("sample_cost_qty", "INTEGER"),
+            ("sample_cost_material", "NUMERIC"),
+            ("sample_cost_labor", "NUMERIC"),
+            ("planned_labor_amount", "NUMERIC"),
+            ("customer_quote_amount", "NUMERIC"),
+            ("urgent_order_no", "TEXT"),
+        ):
+            if name not in cols:
+                alters_opp.append((name, ddl))
+        if alters_opp:
+            with engine.begin() as conn:
+                for name, ddl in alters_opp:
+                    conn.execute(text(f"ALTER TABLE crm_opportunity ADD COLUMN {name} {ddl}"))
+        cols = {c["name"] for c in inspect(engine).get_columns("crm_opportunity")}
+        if "meta_json" not in cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE crm_opportunity ADD COLUMN meta_json TEXT DEFAULT '{}'"))
+
+    if "crm_sample" in tables:
+        cols = {c["name"] for c in inspect(engine).get_columns("crm_sample")}
+        alters_sample: list[tuple[str, str]] = []
+        if "customer_passed" not in cols:
+            alters_sample.append(("customer_passed", "TEXT"))
+        if "fail_reason" not in cols:
+            alters_sample.append(("fail_reason", "TEXT NOT NULL DEFAULT ''"))
+        if "ship_date" not in cols:
+            alters_sample.append(("ship_date", "DATE"))
+        if alters_sample:
+            with engine.begin() as conn:
+                for name, ddl in alters_sample:
+                    conn.execute(text(f"ALTER TABLE crm_sample ADD COLUMN {name} {ddl}"))

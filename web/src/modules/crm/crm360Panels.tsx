@@ -12,6 +12,7 @@ import {
   renderStatusTag,
 } from "../../ui/cellRenderers";
 import { useAuth } from "../../shell/auth";
+import { FollowAddForm, FollowTimeline } from "./FollowSection";
 
 export type Customer360Data = {
   customer: {
@@ -64,6 +65,13 @@ export type Customer360Data = {
     status: string;
     content: string;
     corrective_action: string;
+  }[];
+  follow_timeline?: {
+    id: number;
+    record_type: string;
+    follow_date: string;
+    content: string;
+    owner_sales: string;
   }[];
 };
 
@@ -127,6 +135,23 @@ export function Customer360Panel({
           新建合同
         </button>
       </div>
+
+      {(data.follow_timeline?.length ?? 0) > 0 && (
+        <section className="rounded-lg border p-3 text-xs" style={{ borderColor: "var(--line)" }}>
+          <p className="mb-2 font-medium">跟进时间线</p>
+          <ul className="space-y-2">
+            {data.follow_timeline!.map((f) => (
+              <li key={f.id} className="border-l-2 pl-3" style={{ borderColor: "var(--line)" }}>
+                <p className="text-[10px] text-[var(--text-muted)]">
+                  {f.follow_date} · <span className="text-[var(--accent)]">{f.record_type}</span> · {f.owner_sales}
+                </p>
+                <p className="mt-0.5">{f.content}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <SubTable
         title="客诉登记"
         empty="暂无客诉"
@@ -305,6 +330,9 @@ export type SampleDetail = {
   round_no: number;
   owner_sales: string;
   due_date: string | null;
+  customer_passed?: string | null;
+  fail_reason?: string;
+  ship_date?: string | null;
   customer: { code: string; name: string };
   steps: {
     step_no: number;
@@ -330,6 +358,13 @@ export function SampleDetailBody({ data }: { data: SampleDetail }) {
       </p>
       <p className="text-[var(--text-muted)]">
         客户 {data.customer.code} {data.customer.name} · 销售 {data.owner_sales}
+      </p>
+      <p className="text-[var(--text-muted)]">
+        送样日期 {data.ship_date ?? "未记"} · 客户确认{" "}
+        <span className={data.customer_passed === "通过" ? "text-emerald-300" : data.customer_passed === "不通过" ? "text-rose-300" : ""}>
+          {data.customer_passed ?? "未确认"}
+        </span>
+        {data.customer_passed === "不通过" && data.fail_reason ? ` · ${data.fail_reason}` : ""}
       </p>
       <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">打样过程</h4>
       <table className="w-full rounded border" style={{ borderColor: "var(--line)" }}>
@@ -399,6 +434,9 @@ export function SampleDetailPanel({ sampleCode }: { sampleCode: string }) {
   const [images, setImages] = useState<string[]>([]);
   const [isFinal, setIsFinal] = useState(false);
   const [isRework, setIsRework] = useState(false);
+  const [passed, setPassed] = useState(true);
+  const [failReason, setFailReason] = useState("");
+  const [shipDate, setShipDate] = useState("2026-09-15");
   const [previewRound, setPreviewRound] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -408,6 +446,11 @@ export function SampleDetailPanel({ sampleCode }: { sampleCode: string }) {
     requestWithRole<SampleDetail>(`/api/crm/samples/${encodeURIComponent(sampleCode)}`, role).then((d) => {
       setData(d);
       setProductDesc((prev) => prev || d.item_draft_name);
+      if (d.ship_date) setShipDate(d.ship_date);
+      if (d.customer_passed === "不通过") {
+        setPassed(false);
+        setFailReason(d.fail_reason || "");
+      }
     });
   };
 
@@ -432,6 +475,7 @@ export function SampleDetailPanel({ sampleCode }: { sampleCode: string }) {
   }, [sampleCode, role, stage, isRework, isFinal]);
 
   const canEdit = role === "GM" || role === "SALES_MGR" || role === "SALES";
+  const canConfirm = canEdit || role === "RD";
   const stageOptions = data?.step_stages?.length ? data.step_stages : [...DEFAULT_STEP_STAGES];
 
   const onPickFiles = (files: FileList | null) => {
@@ -445,6 +489,32 @@ export function SampleDetailPanel({ sampleCode }: { sampleCode: string }) {
       };
       reader.readAsDataURL(file);
     });
+  };
+
+  const confirmCustomer = async () => {
+    if (!role) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const next = await requestWithRole<SampleDetail>(
+        `/api/crm/samples/${encodeURIComponent(sampleCode)}/customer-confirm`,
+        role,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            passed,
+            fail_reason: passed ? "" : failReason,
+            ship_date: shipDate || null,
+          }),
+        },
+      );
+      setData(next);
+    } catch (e) {
+      setErr(String(e));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const addStep = async () => {
@@ -492,6 +562,56 @@ export function SampleDetailPanel({ sampleCode }: { sampleCode: string }) {
   return (
     <div className="space-y-4">
       <SampleDetailBody data={data} />
+      {canConfirm && (
+        <section className="space-y-2 border-t pt-3" style={{ borderColor: "var(--line)" }}>
+          <h4 className="text-xs font-semibold">客户确认</h4>
+          <p className="text-[10px] text-[var(--text-muted)]">是否通过、不通过原因、送样日期。不自动建报价或合同。</p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <label className="grid gap-1 text-[10px] text-[var(--text-muted)]">
+              是否通过
+              <select
+                className="rounded border px-2 py-1 text-xs"
+                style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}
+                value={passed ? "通过" : "不通过"}
+                onChange={(e) => setPassed(e.target.value === "通过")}
+              >
+                <option value="通过">通过</option>
+                <option value="不通过">不通过</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-[10px] text-[var(--text-muted)]">
+              送样日期
+              <input
+                type="date"
+                className="rounded border px-2 py-1 text-xs"
+                style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}
+                value={shipDate}
+                onChange={(e) => setShipDate(e.target.value)}
+              />
+            </label>
+            {!passed && (
+              <label className="grid gap-1 text-[10px] text-[var(--text-muted)] sm:col-span-3">
+                不通过原因
+                <input
+                  className="rounded border px-2 py-1 text-xs"
+                  style={{ borderColor: "var(--line)", background: "var(--bg-card)" }}
+                  value={failReason}
+                  onChange={(e) => setFailReason(e.target.value)}
+                />
+              </label>
+            )}
+          </div>
+          <button
+            type="button"
+            className="rounded border px-3 py-1 text-xs"
+            style={{ borderColor: "var(--line)" }}
+            disabled={busy}
+            onClick={() => void confirmCustomer()}
+          >
+            保存客户确认
+          </button>
+        </section>
+      )}
       {canEdit && data.current_stage !== "结案" && (
         <section className="space-y-2 border-t pt-3" style={{ borderColor: "var(--line)" }}>
           <div className="flex flex-wrap items-center gap-2">
@@ -603,13 +723,18 @@ export type OpportunityDetail = {
   id: number;
   name: string;
   stage: string;
-  amount: number;
+  stage_label?: string;
+  source?: string;
+  win_rate?: number | null;
+  amount: number | null;
   sales_name: string;
   owner_sales: string;
   expect_close_date: string | null;
   sample_code: string | null;
   customer: { code: string; name: string };
   sample: SampleDetail | null;
+  intent_products?: { item_name: string; spec?: string; unit?: string; suggest_price?: number; qty?: number }[];
+  follow_records?: { id: number; follow_date: string; record_type: string; content: string }[];
 };
 
 export function OpportunityDetailPanel({ oppId }: { oppId: number }) {
@@ -632,8 +757,16 @@ export function OpportunityDetailPanel({ oppId }: { oppId: number }) {
           <dd className="font-medium">{data.name}</dd>
         </div>
         <div>
+          <dt className="text-xs text-[var(--text-muted)]">来源</dt>
+          <dd>{data.source ?? "—"}</dd>
+        </div>
+        <div>
           <dt className="text-xs text-[var(--text-muted)]">阶段</dt>
-          <dd>{renderOppStageTag(data.stage)}</dd>
+          <dd>{data.stage_label ?? renderOppStageTag(data.stage)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-[var(--text-muted)]">赢单率</dt>
+          <dd>{data.win_rate != null ? `${data.win_rate}%` : "—"}</dd>
         </div>
         <div>
           <dt className="text-xs text-[var(--text-muted)]">金额</dt>
@@ -654,6 +787,33 @@ export function OpportunityDetailPanel({ oppId }: { oppId: number }) {
           <dd>{data.expect_close_date ?? "—"}</dd>
         </div>
       </dl>
+      {(data.intent_products ?? []).length > 0 && (
+        <section className="border-t pt-4" style={{ borderColor: "var(--line)" }}>
+          <h3 className="mb-2 text-sm font-semibold">意向产品</h3>
+          <table className="w-full text-xs">
+            <thead className="text-[var(--text-muted)]">
+              <tr>
+                <th className="text-left">产品</th>
+                <th>规格</th>
+                <th>数量</th>
+                <th className="text-right">建议价</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.intent_products!.map((p, i) => (
+                <tr key={i} className="border-t" style={{ borderColor: "var(--line)" }}>
+                  <td className="py-1">{p.item_name}</td>
+                  <td>{p.spec || "—"}</td>
+                  <td>
+                    {p.qty} {p.unit || ""}
+                  </td>
+                  <td className="text-right">{renderMoney(p.suggest_price ?? null)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
       {data.sample ? (
         <section className="border-t pt-4" style={{ borderColor: "var(--line)" }}>
           <h3 className="mb-2 text-sm font-semibold">关联打样单</h3>
@@ -662,6 +822,19 @@ export function OpportunityDetailPanel({ oppId }: { oppId: number }) {
       ) : (
         <p className="text-xs text-[var(--text-muted)]">暂无关联打样单</p>
       )}
+      <section className="border-t pt-4" style={{ borderColor: "var(--line)" }}>
+        <h3 className="mb-2 text-sm font-semibold">跟进记录</h3>
+        <FollowTimeline rows={data.follow_records ?? []} />
+        <FollowAddForm
+          recordType="商机"
+          customerCode={data.customer.code}
+          opportunityId={data.id}
+          onSaved={() => {
+            if (!role) return;
+            requestWithRole<OpportunityDetail>(`/api/crm/opportunities/${oppId}`, role).then(setData);
+          }}
+        />
+      </section>
     </div>
   );
 }

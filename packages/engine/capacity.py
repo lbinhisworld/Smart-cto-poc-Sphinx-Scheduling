@@ -17,7 +17,7 @@ from engine.models import (
     SphBasis,
     UomConvert,
 )
-from engine.attendance import scaled_day_hours
+from engine.attendance import effective_headcount, scaled_day_hours
 from engine.uom import sph_to_board_per_hour
 
 HOURS_Q = Decimal("0.0001")
@@ -116,6 +116,44 @@ def calendar_hours(
     return scaled_day_hours(row, row.hours_per_day, scale=attendance_scale)
 
 
+def sph_board_rate(sph: Sph, converts: Sequence[UomConvert]) -> Decimal:
+    """单人（或 CREW 整组）小时产能，单位：版/小时。"""
+    return sph_to_board_per_hour(sph.sph_value, sph.sph_uom, converts)
+
+
+def person_day_hours(
+    calendar: Sequence[CalendarDay],
+    dept: Dept,
+    group_code: GroupCode,
+    work_date: date,
+    reserved_ratio: Decimal,
+    overrides: Sequence[CapacityOverride] | None = None,
+) -> Decimal:
+    """一个人当天可用墙钟。"""
+    hours = calendar_hours(calendar, dept, group_code, work_date, overrides) * (
+        Decimal(1) - reserved_ratio
+    )
+    return _q4(hours)
+
+
+def available_person_hours(
+    calendar: Sequence[CalendarDay],
+    dept: Dept,
+    group_code: GroupCode,
+    work_date: date,
+    reserved_ratio: Decimal,
+    overrides: Sequence[CapacityOverride] | None = None,
+) -> Decimal:
+    """当天可用人·时 = 在编（有实到则用实到）× 一个人的可用工时。"""
+    row = calendar_day(calendar, dept, group_code, work_date)
+    if row is None:
+        return Decimal(0)
+    one = person_day_hours(
+        calendar, dept, group_code, work_date, reserved_ratio, overrides
+    )
+    return _q4(one * Decimal(effective_headcount(row)))
+
+
 def day_capacity(
     calendar: Sequence[CalendarDay],
     dept: Dept,
@@ -126,13 +164,21 @@ def day_capacity(
     converts: Sequence[UomConvert],
     reserved_ratio: Decimal,
     overrides: Sequence[CapacityOverride] | None = None,
+    crew_sets: int = 1,
 ) -> int:
-    """组日容量（版），向下取整（BR-13）。
+    """组日容量（版），向下取整。
 
-    有效工时 = hours_per_day × (1 − reserved_ratio)
+    单人口径：在编人数 × 有效工时 × 单人小时产能。`crew_plan` 不决定上限。
+    多人配合：有效工时 × 标准小时产能 × 组套数。在编不乘进产量（BR-11）。
     """
-    hours = calendar_hours(calendar, dept, group_code, work_date, overrides) * (
-        Decimal(1) - reserved_ratio
+    hours = person_day_hours(
+        calendar, dept, group_code, work_date, reserved_ratio, overrides
     )
-    raw = hours * group_rate(sph, crew_plan, converts)
+    sets = crew_sets if crew_sets > 0 else 1
+    if sph.sph_basis == SphBasis.SINGLE:
+        row = calendar_day(calendar, dept, group_code, work_date)
+        head = effective_headcount(row) if row is not None else 0
+        raw = hours * Decimal(head) * sph_board_rate(sph, converts)
+    else:
+        raw = hours * group_rate(sph, crew_plan, converts) * Decimal(sets)
     return int(raw.to_integral_value(rounding=ROUND_DOWN))

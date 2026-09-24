@@ -7,9 +7,10 @@ import {
   renderPunchTypeTag,
   renderRenewalCountdown,
 } from "../../ui/cellRenderers";
+import { useGuidedDemoSeedReload } from "../../hooks/guidedDemoSeed";
 import { EmployeeDetailDrawer } from "./EmployeeDetailDrawer";
 
-function useFetch<T>(url: string): { data: T | null; error: string | null } {
+function useFetch<T>(url: string, reloadToken = 0): { data: T | null; error: string | null } {
   const auth = useAuth();
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ function useFetch<T>(url: string): { data: T | null; error: string | null } {
       .then((r) => r.json())
       .then((j) => setData(j.data))
       .catch((e) => setError(String(e)));
-  }, [url, auth]);
+  }, [url, auth, reloadToken]);
   return { data, error };
 }
 
@@ -180,10 +181,11 @@ function RosterRenewalMetrics({
 export function HrRosterPage() {
   const params = useParams<{ empNo?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const rosterReload = useGuidedDemoSeedReload("roster");
   const renewalParam = searchParams.get("renewal");
   const renewalFilter =
     renewalParam && RENEWAL_KEYS.has(renewalParam as RenewalStatus) ? (renewalParam as RenewalStatus) : null;
-  const { data, error } = useFetch<EmployeeRow[]>("/api/hr/employees");
+  const { data, error } = useFetch<EmployeeRow[]>("/api/hr/employees", rosterReload);
   const rows = useMemo(() => data ?? [], [data]);
   const visible = useMemo(
     () => (renewalFilter ? rows.filter((r) => r.contract_status === renewalFilter) : rows),

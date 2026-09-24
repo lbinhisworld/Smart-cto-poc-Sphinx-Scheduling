@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { cleanItemDisplayName } from "../utils/itemDisplayName";
 import { fetchBomCatalog, fetchBomDesign, fetchBomExplode, requestWithRole } from "../api/client";
 import { useAuth } from "../shell/auth";
 import type { BomCatalog, BomDesign, BomExplode } from "../types/bom";
 import { DEMO_TODAY } from "../constants/groups";
+import { useGuidedDemoSeedReload } from "../hooks/guidedDemoSeed";
 import { BomDiagram } from "./BomDiagram";
 import { OPS_PANEL, OpsDarkPage } from "./OpsDarkPage";
 
@@ -18,29 +20,30 @@ export function BomExplorerPage() {
   const auth = useAuth();
   const [catalog, setCatalog] = useState<BomCatalog | null>(null);
   const [productLabor, setProductLabor] = useState<ProductLabor | null>(null);
-  const [selected, setSelected] = useState("P2");
+  const [selected, setSelected] = useState<string | null>(null);
   const [design, setDesign] = useState<BomDesign | null>(null);
   const [explodeQty, setExplodeQty] = useState(200);
   const [explode, setExplode] = useState<BomExplode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const productSeedReload = useGuidedDemoSeedReload("product");
 
   const loadCatalog = useCallback(async () => {
     const c = await fetchBomCatalog();
     setCatalog(c);
     setSelected((prev) => {
-      if (c.items.some((i) => i.item_code === prev)) return prev;
-      return c.items[0]?.item_code ?? prev;
+      if (prev && c.items.some((i) => i.item_code === prev)) return prev;
+      return c.items[0]?.item_code ?? null;
     });
   }, []);
 
   useEffect(() => {
     setError(null);
     loadCatalog().catch((e) => setError(String(e)));
-  }, [loadCatalog]);
+  }, [loadCatalog, productSeedReload]);
 
   useEffect(() => {
-    if (!catalog) return;
+    if (!catalog || !selected) return;
     let cancelled = false;
     setBusy(true);
     setError(null);
@@ -75,12 +78,19 @@ export function BomExplorerPage() {
       .catch(() => setProductLabor(null));
   }, [selected, auth.role]);
 
+  const finishedProducts = useMemo(() => catalog?.items ?? [], [catalog?.items]);
+  const selectedProduct = useMemo(
+    () => finishedProducts.find((p) => p.item_code === selected) ?? null,
+    [finishedProducts, selected],
+  );
+
   return (
     <OpsDarkPage>
       <div className={`${OPS_PANEL} px-4 py-3`}>
         <h2 className="text-sm font-semibold">工艺 / BOM · 设计态</h2>
         <p className="mt-1 text-xs text-slate-400">
-          子件扇入成品（半成品并列、外购齐套；成品单节点）。一部组是并行工作中心，二部片材可流向一部三组。种子版本{" "}
+          选左侧<strong className="font-normal text-slate-300">成品</strong>
+          查看 BOM 与工艺路线（半成品、外购件扇入成品）。默认工作中心为手工/模具/浇注三组，不是完整工序清单。种子{" "}
           {catalog?.seed_version ?? "—"} · 基准日 {catalog?.today ?? DEMO_TODAY}
         </p>
       </div>
@@ -92,48 +102,88 @@ export function BomExplorerPage() {
         >
           <p>{error}</p>
           <p className="mt-2 text-rose-300/80">
-            重启后端后会自动对齐 9 单演示种子；订单池也可点「重新加载演示数据」。
+            演示线模式下请在本页顶栏先点「生成数据」；若仍报错请确认后端已重启（8000 端口）。
           </p>
         </div>
       )}
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
-        <aside
-          className={`${OPS_PANEL} lg:w-72 shrink-0 overflow-y-auto p-3`}
-        >
-          {catalog?.catalog.map((block) => (
-            <div key={block.key} className="mb-4 last:mb-0">
-              <p className="text-[11px] font-medium text-slate-300">{block.desc}</p>
-              <ul className="mt-2 space-y-1">
-                {block.items.map((it) => (
+        <aside className={`${OPS_PANEL} lg:w-80 shrink-0 overflow-y-auto p-3`}>
+          <div className="mb-3 rounded-lg border border-slate-700/80 bg-slate-950/60 px-2.5 py-2 text-[10px] leading-relaxed text-slate-400">
+            <p className="text-[11px] font-medium text-slate-300">列表怎么读</p>
+            <ul className="mt-1.5 list-inside list-disc space-y-0.5">
+              <li>
+                第一行 <span className="text-slate-200">中文品名</span> = 对客户说的产品名
+              </li>
+              <li>
+                <span className="font-mono text-slate-300">P1、P2…</span> = 内部品项编码，不是工序名
+              </li>
+              <li>标签「一部·××组」= 默认倒排工作中心，不是 ERP 工序号</li>
+            </ul>
+          </div>
+          <p className="text-[11px] font-medium text-slate-300">
+            成品列表
+            <span className="ml-1 font-normal text-slate-500">（{finishedProducts.length}）</span>
+          </p>
+          {finishedProducts.length === 0 ? (
+            <p className="mt-2 text-[11px] text-slate-500">暂无成品主数据，请先在演示线第 2 步「生成数据」。</p>
+          ) : (
+            <ul className="mt-2 space-y-1">
+              {finishedProducts.map((it) => {
+                const name = cleanItemDisplayName(it.item_name);
+                const active = selected === it.item_code;
+                return (
                   <li key={it.item_code}>
                     <button
                       type="button"
                       onClick={() => setSelected(it.item_code)}
-                      className={`w-full rounded px-2 py-1.5 text-left text-xs ${
-                        selected === it.item_code
-                          ? "bg-slate-800 text-slate-100 ring-1 ring-sky-600"
-                          : "text-slate-400 hover:bg-slate-800/90"
+                      className={`w-full rounded-lg border px-2.5 py-2 text-left transition ${
+                        active
+                          ? "border-sky-600/80 bg-slate-800 ring-1 ring-sky-600/50"
+                          : "border-transparent hover:border-slate-700 hover:bg-slate-800/80"
                       }`}
                     >
-                      <span className="font-medium text-slate-200">{it.item_code}</span>
-                      <span className="block truncate text-[10px] text-slate-500">
-                        {it.item_name}
+                      <span className="block text-sm font-medium leading-snug text-slate-100">{name}</span>
+                      <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
+                        <span className="font-mono text-slate-400">{it.item_code}</span>
+                        <span className="rounded bg-slate-800 px-1.5 py-0.5 text-slate-400">{it.group_label}</span>
+                        {it.needs_semi ? (
+                          <span className="rounded bg-violet-950/80 px-1.5 py-0.5 text-violet-300/90">含半成品</span>
+                        ) : null}
                       </span>
                     </button>
                   </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                );
+              })}
+            </ul>
+          )}
         </aside>
 
         <main className={`${OPS_PANEL} min-w-0 flex-1 overflow-y-auto p-4`}>
-          {busy && !design && (
+          {!selected && !error && (
+            <p className="text-xs text-slate-400">
+              暂无产品主数据。演示线第 2 步请点顶栏「生成数据」写入 5 条故事线品项后再浏览 BOM。
+            </p>
+          )}
+          {busy && !design && selected && (
             <p className="text-xs text-slate-500">加载中…</p>
           )}
           {design && (
             <>
+              {selectedProduct && (
+                <div className="mb-3 rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-2.5">
+                  <p className="text-base font-semibold text-slate-100">
+                    {cleanItemDisplayName(selectedProduct.item_name)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    品项编码{" "}
+                    <span className="font-mono text-slate-300">{selectedProduct.item_code}</span>
+                    <span className="mx-2 text-slate-600">·</span>
+                    默认工作中心 {selectedProduct.group_label}
+                    {selectedProduct.needs_semi ? " · 需先排二部半成品" : " · 无半成品层"}
+                  </p>
+                </div>
+              )}
               <div className="mb-3 flex flex-wrap items-end gap-3 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2">
                 <label className="text-xs text-slate-300">
                   试算订货量（盒）

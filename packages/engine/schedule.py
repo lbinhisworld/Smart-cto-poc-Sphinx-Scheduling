@@ -124,9 +124,8 @@ def _ripple_stats(baseline: ScheduleResult | None, result: ScheduleResult) -> tu
     return affected, False
 
 
-def schedule(inp: ScheduleInput) -> ScheduleResult:
+def schedule(inp: ScheduleInput, *, with_headcount_exact: bool = True) -> ScheduleResult:
     """纯函数倒排。先成品后半成品（BR-34）。不写 so_order.due_date。"""
-    occupied = seed_occupied(inp)
     orders_by_no = {o.order_no: o for o in inp.orders}
     max_amount = max((o.amount for o in inp.orders), default=Decimal(0))
     events: list[TraceEvent] = []
@@ -193,6 +192,7 @@ def schedule(inp: ScheduleInput) -> ScheduleResult:
     all_tasks: list = []
     unplaced: list = []
     next_task_id = 1
+    occupied = seed_occupied(inp, ordered_finished)
     fin_tasks, fin_unplaced, next_task_id = _schedule_wos(
         ordered_finished,
         inp,
@@ -361,4 +361,7 @@ def schedule(inp: ScheduleInput) -> ScheduleResult:
         ),
     )
     result.trace = ScheduleTrace(sort_mode=inp.config.sort_mode.value, events=events)
+    from engine.headcount_gap import attach_headcount_gaps
+
+    attach_headcount_gaps(inp, result, with_exact=with_headcount_exact)
     return result

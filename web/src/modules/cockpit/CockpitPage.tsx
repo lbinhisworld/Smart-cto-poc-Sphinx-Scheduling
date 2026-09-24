@@ -13,6 +13,13 @@ type CockpitSnapshot = {
   };
   crm?: { opportunities?: number; active_samples?: number };
   production?: { plan_version?: number; wo_count?: number };
+  schedule_progress?: {
+    counts?: { placed?: number; not_placed?: number; pool_open?: number };
+    pending_component_count?: number;
+    pending_wall?: string;
+    pending_man?: string;
+    pending_label?: string;
+  };
   labor_cost?: {
     plan_version?: number;
     totals?: { hours_man?: number; cost_planned?: number };
@@ -154,6 +161,24 @@ export function CockpitPage() {
               to="/orders?view=in_scheduling"
             />
             <StatCard
+              label="已排产"
+              value={snap?.schedule_progress?.counts?.placed ?? "—"}
+              hint="当前计划已有任务且没有未安置"
+              to="/orders?view=in_production"
+            />
+            <StatCard
+              label="已下单未排"
+              value={snap?.schedule_progress?.counts?.not_placed ?? "—"}
+              hint={`${snap?.schedule_progress?.pending_label ?? "需求工时"} · 墙钟 ${snap?.schedule_progress?.pending_wall ?? "—"} h · 人·时 ${snap?.schedule_progress?.pending_man ?? "—"} · 子件 ${snap?.schedule_progress?.pending_component_count ?? "—"}`}
+              to="/orders?view=pending"
+            />
+            <StatCard
+              label="池内未跑完"
+              value={snap?.schedule_progress?.counts?.pool_open ?? "—"}
+              hint="已进排程池，本轮还没排完。不计入已排，也不计入待排负荷"
+              to="/orders?view=in_scheduling"
+            />
+            <StatCard
               label="7 日内交期"
               value={orders.near_due_7d ?? "—"}
               to="/orders?view=near_due"
@@ -282,16 +307,30 @@ export function ModuleSummaryPage({
         </p>
       )}
       {data && (
-        <dl className="mt-4 grid max-w-md gap-2 text-sm">
-          {Object.entries(data)
-            .filter(([k]) => k !== "note")
-            .map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-4 border-b border-[var(--line)] py-1">
-                <dt className="text-[var(--text-muted)]">{k}</dt>
-                <dd className="font-medium tabular-nums">{String(v)}</dd>
-              </div>
-            ))}
-        </dl>
+        <>
+          <dl className="mt-4 grid max-w-md gap-2 text-sm">
+            {Object.entries(data)
+              .filter(([k]) => k !== "note" && k !== "qc_alerts")
+              .map(([k, v]) => (
+                <div key={k} className="flex justify-between gap-4 border-b border-[var(--line)] py-1">
+                  <dt className="text-[var(--text-muted)]">{k}</dt>
+                  <dd className="font-medium tabular-nums">{String(v)}</dd>
+                </div>
+              ))}
+          </dl>
+          {Array.isArray(data.qc_alerts) && data.qc_alerts.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-sm font-medium">品控异常</h3>
+              <ul className="mt-2 space-y-1 text-xs text-[var(--text-muted)]">
+                {(data.qc_alerts as { item: string; phenomenon: string; at: string; actor: string }[]).map((row) => (
+                  <li key={`${row.at}-${row.item}-${row.phenomenon}`}>
+                    {row.item} · {row.phenomenon} · {row.at} · {row.actor || "未记"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
       {data?.note != null && (
         <p className="mt-3 text-xs text-[var(--text-muted)]">{String(data.note)}</p>

@@ -1,6 +1,7 @@
 import { Link, NavLink, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { requestWithRole } from "../../api/client";
+import { useGuidedDemoSeedReload } from "../../hooks/guidedDemoSeed";
 import { useAuth } from "../../shell/auth";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -307,11 +308,12 @@ export function QcSwabTestsPage() {
 
 export function QcProductTestsPage() {
   const { role } = useAuth();
+  const demoSeedReload = useGuidedDemoSeedReload("qc");
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   useEffect(() => {
     if (!role) return;
     requestWithRole<Record<string, unknown>[]>("/api/qc/product-tests", role).then(setRows);
-  }, [role]);
+  }, [role, demoSeedReload]);
   return (
     <LedgerShell title="产品检测台账">
       <SimpleTable

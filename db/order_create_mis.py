@@ -94,7 +94,9 @@ def create_mis_order(
 
     first = parsed[0]
     order_no = _next_order_no(session)
-    owner = sales_name or customer.owner_sales
+    owner = (sales_name or customer.owner_sales or "").strip()
+    if not owner:
+        raise ValueError("必须填写销售姓名")
     session.add(
         SoOrderRow(
             order_no=order_no,

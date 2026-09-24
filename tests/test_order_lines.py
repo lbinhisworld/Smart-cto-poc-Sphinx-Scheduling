@@ -10,18 +10,28 @@ client = TestClient(app)
 HDR = {"X-Demo-Role": "GM"}
 
 
-def test_mis_order_has_multi_lines():
-    client.post("/api/demo/ensure-crm-seed")
-    r = client.get("/api/mis/orders/SO-002/breakdown", headers=HDR)
-    assert r.status_code == 200
-    lines = r.json()["data"]["lines"]
-    assert len(lines) >= 2
-    assert lines[0]["unit"] == "BOX"
-
-
-def test_mis_list_lines_summary():
+def test_official_seed_orders_stay_single_item():
+    """官方 12 单以表头为准。明细不得再抄进其他单的品项。"""
     client.post("/api/demo/ensure-crm-seed")
     rows = client.get("/api/mis/orders?view=all", headers=HDR).json()["data"]["rows"]
-    so2 = next(x for x in rows if x["order_no"] == "SO-002")
-    assert so2["line_count"] >= 2
-    assert "P2" in so2["lines_summary"]
+    official_nos = {
+        "SO-001",
+        "SO-002",
+        "SO-003",
+        "SO-004",
+        "SO-005",
+        "SO-101",
+        "SO-102",
+        "SO-201",
+        "SO-202",
+        "SO-301",
+        "SO-302",
+        "SO-303",
+    }
+    official = [r for r in rows if r["order_no"] in official_nos]
+    assert len(official) == 12
+    assert all(r["line_count"] == 1 for r in official)
+    so2 = next(x for x in official if x["order_no"] == "SO-002")
+    assert so2["lines_summary"].startswith("P2×")
+    assert "P5" not in so2["lines_summary"]
+    assert "P6" not in so2["lines_summary"]

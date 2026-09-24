@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from db.qc_period import month_key, period_fields
 from db.qc_verdict import compute_product_verdict, compute_swab_verdict, validate_override
+from db.qc_material import list_exceptions
 from db.tables import (
     CrmCustomerRow,
     MdItemRow,
@@ -80,6 +81,7 @@ def _daily_dict(r: QcDailyDefectRow) -> dict:
         "handling_result": r.handling_result,
         "dept_responsible": r.dept_responsible,
         "case_no": r.case_no,
+        "created_by": r.created_by,
     }
 
 
@@ -405,3 +407,33 @@ def _product_dict(r: QcProductTestRow) -> dict:
         "fail_reason": r.fail_reason,
         "remark": r.remark,
     }
+
+
+def production_qc_alerts(session: Session, *, limit: int = 20) -> list[dict]:
+    """生产看板用：品项、现象、时间、登记人。不加图片。"""
+    rows: list[dict] = []
+    for e in list_exceptions(session, limit=limit):
+        if e.get("status") == "CLOSED":
+            continue
+        receipt = e.get("receipt") or {}
+        rows.append(
+            {
+                "item": receipt.get("material_name") or receipt.get("material_code") or "",
+                "phenomenon": e.get("phenomenon") or "",
+                "at": e.get("discovered_at") or "",
+                "actor": e.get("created_by") or "",
+                "source": "来料异常",
+            }
+        )
+    for d in list_daily_defects(session, limit=limit):
+        rows.append(
+            {
+                "item": d.get("product_name") or d.get("item_code") or "",
+                "phenomenon": d.get("defect_detail") or d.get("defect_specific") or d.get("defect_category") or "",
+                "at": d.get("record_date") or "",
+                "actor": d.get("created_by") or "",
+                "source": "每日异常",
+            }
+        )
+    rows.sort(key=lambda row: row["at"], reverse=True)
+    return rows[:limit]

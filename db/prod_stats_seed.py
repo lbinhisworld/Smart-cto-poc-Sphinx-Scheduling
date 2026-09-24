@@ -6,7 +6,7 @@ import math
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from db.tables import (
@@ -22,13 +22,27 @@ from db.tables import (
 )
 
 STATS_VERSION_KEY = "dept1_stats_demo_version"
-STATS_VERSION = "2026-09-17-dept1-v2"
+STATS_VERSION = "2026-09-22-dept1-v3"
 DEMO_PLAN_VERSION = 9001
 WO_PREFIX = "WO-D1S-"
 SO_PREFIX = "SO-D1S-"
 SOURCE = "DEMO_D1"
 DEPT = "FINISHED_DEPT"
 ANCHOR_TODAY = date(2026, 9, 15)
+
+
+def is_capacity_fixture_order(order_no: str | None = None, order_source: str | None = None) -> bool:
+    """一部产能拟真不是销售订单，不进订单列表、排程池和待排汇总。"""
+    if (order_source or "") == SOURCE:
+        return True
+    return (order_no or "").startswith(SO_PREFIX)
+
+
+def capacity_fixture_clause():
+    return or_(
+        SoOrderRow.order_source == SOURCE,
+        SoOrderRow.order_no.startswith(SO_PREFIX),
+    )
 
 def _weekdays(start: date, end: date) -> tuple[date, ...]:
     out: list[date] = []
@@ -138,22 +152,6 @@ def _plant(session: Session) -> dict:
             kg = item.kg_per_board
             wo_no = f"{WO_PREFIX}{item_code}-{work_date.strftime('%m%d')}"
             so_no = f"{SO_PREFIX}{item_code}-{work_date.strftime('%m%d')}"
-            session.add(
-                SoOrderRow(
-                    order_no=so_no,
-                    customer="一部日报拟真（不进排程池）",
-                    sales_name="演示",
-                    item_code=item_code,
-                    qty_order=str(plan),
-                    unit="BOARD",
-                    due_date=work_date + timedelta(days=2),
-                    customer_level=3,
-                    amount="0",
-                    is_urgent=False,
-                    schedule_phase="DONE",
-                    order_source=SOURCE,
-                )
-            )
             session.add(
                 WoRow(
                     wo_no=wo_no,
@@ -297,22 +295,6 @@ def _plant(session: Session) -> dict:
             wo_no = f"{WO_PREFIX}{item_code}-{work_date.strftime('%m%d')}"
             so_no = f"{SO_PREFIX}{item_code}-{work_date.strftime('%m%d')}"
             session.add(
-                SoOrderRow(
-                    order_no=so_no,
-                    customer="一部日报拟真（不进排程池）",
-                    sales_name="演示",
-                    item_code=item_code,
-                    qty_order=str(plan),
-                    unit="BOARD",
-                    due_date=work_date + timedelta(days=2),
-                    customer_level=3,
-                    amount="0",
-                    is_urgent=False,
-                    schedule_phase="DONE",
-                    order_source=SOURCE,
-                )
-            )
-            session.add(
                 WoRow(
                     wo_no=wo_no,
                     wo_type="FINISHED",
@@ -362,6 +344,16 @@ def _q(value: Decimal) -> Decimal:
 
 
 def ensure_dept1_stats_seed(session: Session) -> dict:
+    from db.demo_manual_data import is_manual_data_mode
+
+    if is_manual_data_mode(session):
+        return {
+            "version": STATS_VERSION,
+            "planted": False,
+            "skipped": True,
+            "manual_data_mode": True,
+            "task_days": 0,
+        }
     stored = _stored_version(session)
     n_rep = int(
         session.scalar(

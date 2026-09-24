@@ -1,7 +1,9 @@
+import { buildDemoAuthHeaders } from "../utils/demoAuthHeaders";
 import type { BomCatalog, BomDesign, BomExplode } from "../types/bom";
 import type { KitAllocation, KitCheck } from "../types/kit";
 import type {
   ApiResponse,
+  HeadcountTrial,
   OrderRow,
   ScheduleResult,
 } from "../types/schedule";
@@ -40,6 +42,11 @@ export async function request<T>(
     const backendHint =
       ".venv/bin/python -m uvicorn api.app_factory:app --host 127.0.0.1 --port 8000";
     if (res.status === 404 && path.startsWith("/api/bom")) {
+      if (detail.includes("品项不存在") || detail.includes("not found")) {
+        throw new Error(
+          "当前没有可展示的品项。请在本演示线第 2 步「产品列表」点击「生成数据」，或确认该品号已录入。",
+        );
+      }
       throw new Error(
         `BOM 接口不可用（后端可能未重启）。请在本项目根目录执行：${backendHint}`,
       );
@@ -92,10 +99,14 @@ export function requestWithRole<T>(
   path: string,
   role: string,
   init?: RequestInit,
+  userName?: string,
 ): Promise<T> {
   return request<T>(path, {
     ...init,
-    headers: { "X-Demo-Role": role, ...init?.headers },
+    headers: {
+      ...buildDemoAuthHeaders(role, userName),
+      ...(init?.headers as Record<string, string> | undefined),
+    },
   });
 }
 
@@ -228,6 +239,47 @@ export async function scheduleRun(
       order_nos: orderNos,
       today,
       reserved_ratio: 0,
+    }),
+  });
+}
+
+export async function scheduleHeadcountTrial(body: {
+  orderNos: string[];
+  today: string;
+  dept: string;
+  groupCode: string;
+  mode: "add_people" | "recalibrate" | "extra_crew";
+  addPeople?: number;
+  itemCode?: string;
+  sphValue?: number;
+}): Promise<{ trial: HeadcountTrial; due_dates_unchanged: boolean }> {
+  return request("/api/schedule/headcount-trial", {
+    method: "POST",
+    body: JSON.stringify({
+      order_nos: body.orderNos,
+      today: body.today,
+      dept: body.dept,
+      group_code: body.groupCode,
+      mode: body.mode,
+      add_people: body.addPeople ?? 0,
+      item_code: body.itemCode,
+      sph_value: body.sphValue,
+      reserved_ratio: 0,
+    }),
+  });
+}
+
+export async function scheduleHeadcountAdopt(body: {
+  dept: string;
+  groupCode: string;
+  headcount: number;
+}): Promise<{ headcount: number; days: number; rescheduled: boolean }> {
+  return request("/api/schedule/headcount-adopt", {
+    method: "POST",
+    body: JSON.stringify({
+      dept: body.dept,
+      group_code: body.groupCode,
+      headcount: body.headcount,
     }),
   });
 }

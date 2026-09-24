@@ -8,10 +8,11 @@ from decimal import Decimal
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
+from db.plan_store import current_plan_version, load_schedule_result
 from db.repositories import run_schedule
 from db.snapshot import header_order_no
-from db.tables import SoOrderRow, WoRow
-from engine.models import ConflictLv, ScheduleResult, WoType
+from db.tables import PlanVersionRow, SoOrderRow, WoRow
+from engine.models import ConflictLv, ScheduleResult, WoStatus, WoType
 
 PHASE_PENDING = "PENDING"
 PHASE_IN_SCHEDULING = "IN_SCHEDULING"
@@ -125,6 +126,43 @@ def pool_has_blocking_reds(result: ScheduleResult, order_nos: list[str]) -> list
     return hits
 
 
+def _confirmed_insert_plan(session: Session) -> tuple[int, ScheduleResult] | None:
+    """当前计划若来自已确认插单，发布沿用该版，不再倒排。"""
+    version = current_plan_version(session)
+    if version <= 0:
+        return None
+    row = session.get(PlanVersionRow, version)
+    if row is None or not (row.trigger or "").startswith("插单"):
+        return None
+    return version, load_schedule_result(session, version)
+
+
+def _release_pool(
+    session: Session,
+    result: ScheduleResult,
+    order_nos: list[str],
+) -> tuple[ScheduleResult, list[dict]]:
+    wanted = set(order_nos)
+    like_conds = [WoRow.source_order_no.like(f"{no}#L%") for no in order_nos]
+    session.execute(
+        update(WoRow)
+        .where(or_(WoRow.source_order_no.in_(order_nos), *like_conds))
+        .values(status="RELEASED")
+    )
+    for no in order_nos:
+        row = session.get(SoOrderRow, no)
+        if row:
+            row.schedule_phase = PHASE_IN_PRODUCTION
+    released = [
+        wo.model_copy(update={"status": WoStatus.RELEASED})
+        if header_order_no(wo.source_order_no) in wanted
+        else wo
+        for wo in result.wos
+    ]
+    result = result.model_copy(update={"wos": released})
+    return result, commitments_for_orders(result, order_nos)
+
+
 def publish_scheduling_pool(
     session: Session,
     *,
@@ -133,12 +171,32 @@ def publish_scheduling_pool(
     reserved_ratio: Decimal = Decimal("0"),
     force_red: bool = False,
 ) -> tuple[ScheduleResult, int, list[dict]]:
-    """整池发布：倒排落库 + 工单 RELEASED + 订单进生产中。"""
+    """整池发布：工单 RELEASED + 订单进生产中。
+
+    当前计划来自已确认插单时，沿用该版，不再按默认顺序重算。
+    """
     pool = scheduling_pool_order_nos(session)
     if set(pool) != set(order_nos):
         raise ValueError("发布须覆盖排程中池全部订单（整池同进退）")
     if not order_nos:
         raise ValueError("排程中池为空")
+
+    confirmed = _confirmed_insert_plan(session)
+    if confirmed is not None:
+        version, result = confirmed
+        covered = {header_order_no(wo.source_order_no) for wo in result.wos}
+        missing = sorted(set(order_nos) - covered)
+        if missing:
+            raise ValueError(
+                "排程中池含已确认插单计划之外的订单（"
+                + "、".join(missing)
+                + "），请重新插单试排或一键倒排后再发布"
+            )
+        blocks = pool_has_blocking_reds(result, order_nos)
+        if blocks and not force_red:
+            raise PublishBlockedError(blocks, result)
+        result, commits = _release_pool(session, result, order_nos)
+        return result, version, commits
 
     result, _, _ = run_schedule(
         session,
@@ -160,17 +218,7 @@ def publish_scheduling_pool(
         persist=True,
         trigger="保存发布",
     )
-    like_conds = [WoRow.source_order_no.like(f"{no}#L%") for no in order_nos]
-    session.execute(
-        update(WoRow)
-        .where(or_(WoRow.source_order_no.in_(order_nos), *like_conds))
-        .values(status="RELEASED")
-    )
-    for no in order_nos:
-        row = session.get(SoOrderRow, no)
-        if row:
-            row.schedule_phase = PHASE_IN_PRODUCTION
-    commits = commitments_for_orders(result, order_nos)
+    result, commits = _release_pool(session, result, order_nos)
     return result, version, commits
 
 

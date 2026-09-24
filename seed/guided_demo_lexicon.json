@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "version": "2026-09-24-p0",
+    "note": "演示线拟真词库；展示名禁止测试味与职能+姓"
+  },
+  "sales_names": ["陈雨桐", "张伟", "周婷", "王芷若", "孙悦", "韩磊", "李明轩", "林佳"],
+  "operator_names": [
+    "李芳", "张磊", "孙丽", "王敏", "刘洋", "陈晨", "杨帆", "黄伟", "徐静", "马超"
+  ],
+  "story_bundles": [
+    {
+      "story_index": 1,
+      "customer_name": "蓝岛烘焙供应链（无锡）有限公司",
+      "channel": "烘焙 · 工厂",
+      "owner_sales": "陈雨桐",
+      "item_code": "P1",
+      "item_name": "巧克力装饰片A",
+      "opportunity_title": "无锡仓秋季补货框架",
+      "visit_summary": "陌拜厂区采购，确认插件需求",
+      "contract_title": "2026 秋补货框架协议"
+    },
+    {
+      "story_index": 2,
+      "customer_name": "童乐坊创意礼品有限公司",
+      "channel": "礼品 · 企业",
+      "owner_sales": "张伟",
+      "item_code": "P2",
+      "item_name": "卡通造型件B",
+      "opportunity_title": "礼品公司年度造型标",
+      "visit_summary": "展会接触，决策人同意打样",
+      "contract_title": "造型件年度采购框架"
+    },
+    {
+      "story_index": 3,
+      "customer_name": "甜研西点工坊（杭州）",
+      "channel": "烘焙 · 门店",
+      "owner_sales": "周婷",
+      "item_code": "P4",
+      "item_name": "浇注件C",
+      "opportunity_title": "杭州门店联名浇注款",
+      "visit_summary": "门店试吃后提出浇注小批",
+      "contract_title": "门店联名浇注供货"
+    },
+    {
+      "story_index": 4,
+      "customer_name": "云顶精选酒店集采中心",
+      "channel": "餐饮 · 酒店",
+      "owner_sales": "王芷若",
+      "item_code": "P5",
+      "item_name": "糖艺糖花D",
+      "opportunity_title": "酒店中秋伴手礼",
+      "visit_summary": "拜访集采总监，确认糖花规格",
+      "contract_title": "中秋伴手礼供货合同"
+    },
+    {
+      "story_index": 5,
+      "customer_name": "臻选味来电商事业部",
+      "channel": "电商 · 平台",
+      "owner_sales": "孙悦",
+      "item_code": "P7",
+      "item_name": "淋酱装饰插件G",
+      "opportunity_title": "电商 11.11 预售款",
+      "visit_summary": "线上招商会后线下确认 SKU",
+      "contract_title": "平台预售款供货协议"
+    }
+  ]
+}

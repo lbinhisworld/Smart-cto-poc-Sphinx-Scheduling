@@ -28,3 +28,17 @@
       - F.l3.backward_place
       - F.l3.fence_ripple
     说明: 不捎带 D.trace / D.conflict / D.plan_version
+  - 主题: 二演后履约叶子
+    轨: 运营
+    叶子:
+      - F.l3.earliest_whatif
+      - F.l3.dispatch_daily_kit
+      - F.l3.unplaced_three_kinds
+      - F.l3.semi_progress_on_order
+      - F.l3.headcount_to_capacity
+      - F.l3.sup.visit
+      - F.l3.sup.sample
+      - F.l3.sup.a_to_project
+      - F.l3.sup.finance_slice
+      - F.l3.sup.qc_on_board
+    说明: 复用已封印交期锚与按单履约流。点头不等于封印。

@@ -16,6 +16,9 @@
   - D.wo_task.hours_man
   - D.bom
   - D.item_route
+  - D.visit
+  - D.opportunity
+  - D.project
 运行结果林:
   - D.schedule_io
   - D.kit

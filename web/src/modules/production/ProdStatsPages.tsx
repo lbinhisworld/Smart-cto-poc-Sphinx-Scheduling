@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { requestWithRole } from "../../api/client";
+import { useGuidedDemoSeedReload } from "../../hooks/guidedDemoSeed";
 import { useAuth } from "../../shell/auth";
 
 const ANCHOR_FROM = "2026-09-01";
@@ -103,6 +104,7 @@ function TabBtn({
 
 export function Dept1StatsPage() {
   const { role } = useAuth();
+  const demoSeedReload = useGuidedDemoSeedReload(["inbound", "qc", "labor_report"]);
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") || "detail";
   const dateFrom = params.get("from") || ANCHOR_FROM;
@@ -168,9 +170,15 @@ export function Dept1StatsPage() {
           </TabBtn>
         </div>
       </div>
-      {tab === "detail" && <DetailTab role={role} dateFrom={dateFrom} dateTo={dateTo} />}
-      {tab === "daily" && <DailyTab role={role} dateFrom={dateFrom} dateTo={dateTo} />}
-      {tab === "efficiency" && <EffTab role={role} dateFrom={dateFrom} dateTo={dateTo} />}
+      {tab === "detail" && (
+        <DetailTab role={role} dateFrom={dateFrom} dateTo={dateTo} reloadKey={demoSeedReload} />
+      )}
+      {tab === "daily" && (
+        <DailyTab role={role} dateFrom={dateFrom} dateTo={dateTo} reloadKey={demoSeedReload} />
+      )}
+      {tab === "efficiency" && (
+        <EffTab role={role} dateFrom={dateFrom} dateTo={dateTo} reloadKey={demoSeedReload} />
+      )}
     </div>
   );
 }
@@ -179,10 +187,12 @@ function DetailTab({
   role,
   dateFrom,
   dateTo,
+  reloadKey,
 }: {
   role: string | null;
   dateFrom: string;
   dateTo: string;
+  reloadKey: number;
 }) {
   const [data, setData] = useState<DetailData | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -198,7 +208,7 @@ function DetailTab({
   }, [role, dateFrom, dateTo]);
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, reloadKey]);
 
   const dates = data?.dates ?? [];
   const rows = useMemo(() => {
@@ -310,10 +320,12 @@ function DailyTab({
   role,
   dateFrom,
   dateTo,
+  reloadKey,
 }: {
   role: string | null;
   dateFrom: string;
   dateTo: string;
+  reloadKey: number;
 }) {
   const [data, setData] = useState<DailyData | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -330,7 +342,7 @@ function DailyTab({
   }, [role, dateFrom, dateTo]);
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, reloadKey]);
 
   const submitInbound = async () => {
     if (!role) return;
@@ -436,10 +448,12 @@ function EffTab({
   role,
   dateFrom,
   dateTo,
+  reloadKey,
 }: {
   role: string | null;
   dateFrom: string;
   dateTo: string;
+  reloadKey: number;
 }) {
   const [data, setData] = useState<EffData | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -451,7 +465,7 @@ function EffTab({
     )
       .then(setData)
       .catch((e) => setErr(String(e)));
-  }, [role, dateFrom, dateTo]);
+  }, [role, dateFrom, dateTo, reloadKey]);
 
   return (
     <div className="mt-4">

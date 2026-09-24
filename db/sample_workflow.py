@@ -228,6 +228,8 @@ def add_sample_step(
         sample.current_stage = stage
         if stage == "打样" and step_round is not None:
             sample.round_no = step_round
+        if stage == "寄样" and sample.ship_date is None:
+            sample.ship_date = event_date
     session.flush()
     detail = sample_detail(session, code)
     if detail is None:
@@ -256,6 +258,32 @@ def close_sample(
     )
 
 
+def confirm_sample_customer(
+    session: Session,
+    code: str,
+    *,
+    passed: bool,
+    fail_reason: str = "",
+    ship_date: date | None = None,
+) -> dict:
+    """客户确认三列。不建下一张单，不写订单交期。"""
+    sample = session.get(CrmSampleRow, code)
+    if sample is None:
+        raise KeyError(code)
+    reason = (fail_reason or "").strip()
+    if not passed and not reason:
+        raise ValueError("不通过必须写原因")
+    sample.customer_passed = "通过" if passed else "不通过"
+    sample.fail_reason = "" if passed else reason
+    if ship_date is not None:
+        sample.ship_date = ship_date
+    session.flush()
+    detail = sample_detail(session, code)
+    if detail is None:
+        raise KeyError(code)
+    return detail
+
+
 def sample_detail(session: Session, code: str) -> dict | None:
     sample = session.get(CrmSampleRow, code)
     if sample is None:
@@ -273,6 +301,9 @@ def sample_detail(session: Session, code: str) -> dict | None:
         "due_date": sample.due_date.isoformat() if sample.due_date else None,
         "is_old_product": sample.is_old_product,
         "result": sample.result,
+        "customer_passed": sample.customer_passed,
+        "fail_reason": sample.fail_reason or "",
+        "ship_date": sample.ship_date.isoformat() if sample.ship_date else None,
         "customer": {
             "code": sample.customer_code,
             "name": customer.name if customer else sample.customer_code,

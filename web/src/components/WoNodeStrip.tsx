@@ -25,17 +25,24 @@ export function WoNodeStrip({ nodes, onOpenNode }: Props) {
   }
   return (
     <div className="flex items-stretch gap-1 overflow-x-auto pb-1">
-      {nodes.map((node, i) => (
+      {nodes.map((node, i) => {
+        const semiComplete =
+          node.woType === "SEMI" && node.qtyBoardPlan > 0 && node.qtyBoardDone >= node.qtyBoardPlan;
+        return (
         <div key={node.woNo} className="flex shrink-0 items-center gap-1">
           {i > 0 ? (
             <span className="px-1 text-slate-500" aria-hidden>
               →
             </span>
           ) : null}
-          <button
+            <button
             type="button"
             onClick={() => onOpenNode(node)}
-            className={`min-w-[168px] max-w-[220px] rounded-lg border border-slate-700 bg-slate-900/80 px-2.5 py-2 text-left text-[11px] hover:border-sky-600 ${
+            className={`min-w-[168px] max-w-[220px] rounded-lg border px-2.5 py-2 text-left text-[11px] hover:border-sky-600 ${
+              semiComplete
+                ? "border-emerald-500 bg-emerald-950/50"
+                : "border-slate-700 bg-slate-900/80"
+            } ${
               node.conflictLevel
                 ? `border-l-4 ${BORDER[node.conflictLevel]}`
                 : "border-l-4 border-l-slate-700"
@@ -49,7 +56,9 @@ export function WoNodeStrip({ nodes, onOpenNode }: Props) {
               {node.itemCode} · 计划 {node.qtyScheduled}/{node.qtyBoardPlan} 版
             </p>
             {node.qtyBoardDone > 0 ? (
-              <p className="text-emerald-400/90">已完工 {node.qtyBoardDone} 版</p>
+              <p className={semiComplete ? "text-emerald-300" : "text-emerald-400/90"}>
+                {semiComplete ? "半成品已完成" : "已完工"} {node.qtyBoardDone} 版
+              </p>
             ) : null}
             {node.unplacedRemaining > 0 ? (
               <p className="text-rose-300">未排余量 {node.unplacedRemaining} 版</p>
@@ -71,7 +80,8 @@ export function WoNodeStrip({ nodes, onOpenNode }: Props) {
             </div>
           </button>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

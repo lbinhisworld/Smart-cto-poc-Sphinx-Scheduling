@@ -6,7 +6,7 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from db.tables import MdItemRow, SoOrderLineRow, SoOrderRow
@@ -79,16 +79,39 @@ def lines_summary(lines: list[dict]) -> str:
     return " · ".join(parts)
 
 
+def _official_order_nos() -> set[str]:
+    path = ROOT / "seed" / "seed_data.json"
+    if not path.is_file():
+        return set()
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {str(row["order_no"]) for row in data.get("orders") or []}
+
+
 def ensure_order_lines(session: Session) -> dict:
-    """按 demo_data.order_lines 灌入；版本变更时重建行表。"""
+    """按 demo_data.order_lines 灌入；版本变更时重建行表。
+
+    官方种子单若没有写进行表，清掉以前叠上去的明细，避免和另一张单的品项重复。
+    """
+    from db.demo_manual_data import is_manual_data_mode
     from db.tables import AppSettingRow
+
+    if is_manual_data_mode(session):
+        n = int(session.scalar(select(func.count()).select_from(SoOrderLineRow)) or 0)
+        return {"synced": False, "lines": n, "removed": 0, "skipped": True, "manual_data_mode": True}
 
     spec = _load_lines_spec()
     meta = json.loads(DEMO_PATH.read_text(encoding="utf-8")).get("meta", {}) if DEMO_PATH.is_file() else {}
-    version = str(meta.get("demo_version", "lines-v1"))
+    version = str(meta.get("order_lines_version") or meta.get("demo_version") or "lines-v1")
+    stray = _official_order_nos() - set(spec)
+    removed = 0
+    if stray:
+        removed = (
+            session.execute(delete(SoOrderLineRow).where(SoOrderLineRow.order_no.in_(sorted(stray)))).rowcount
+            or 0
+        )
     stored = session.get(AppSettingRow, LINES_VERSION_KEY)
     if stored and stored.value == version:
-        return {"synced": False, "lines": 0}
+        return {"synced": removed > 0, "lines": 0, "removed": removed}
 
     session.execute(delete(SoOrderLineRow))
     count = 0

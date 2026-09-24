@@ -136,12 +136,43 @@ export type LotSummary = {
   qty_board_total: number;
 };
 
+export type HeadcountGap = {
+  dept: string;
+  group_code: string;
+  basis_code: string;
+  basis_label: string;
+  headcount: number;
+  sph_crew?: number | null;
+  crew_matches?: boolean | null;
+  hours_man_need: number | string;
+  hours_man_have: number | string;
+  add_people_estimate?: number | null;
+  includes_unplaced: boolean;
+  add_people_exact?: number | null;
+  exact_infeasible: boolean;
+  note: string;
+};
+
+export type HeadcountTrial = {
+  dept: string;
+  group_code: string;
+  mode: string;
+  headcount: number;
+  added_people?: number | null;
+  cleared_wo_nos: string[];
+  still_late: string[];
+  earliest_finish: Record<string, string>;
+  infeasible: boolean;
+  note: string;
+};
+
 export type ScheduleResult = {
   wos: Wo[];
   tasks: WoTask[];
   dependencies: { pred_wo_no: string; succ_wo_no: string }[];
   unplaced?: UnplacedEntry[];
   conflicts: Conflict[];
+  headcount_gaps?: HeadcountGap[];
   kit_checks?: import("./kit").KitCheck[];
   kit_allocations?: import("./kit").KitAllocation[];
   coline_groups?: ColineGroup[];

@@ -46,6 +46,8 @@
       - F.l3.due_change_via_approval
       - F.l3.normalize_to_board
       - F.l3.sup.sample
+      - F.l3.sup.visit
+      - F.l3.sup.a_to_project
     出处:
       - 客户会议反馈/运营本体生成-升级方案.md
     对外怎么说:
@@ -69,6 +71,7 @@
       - F.l3.kitting
       - F.l3.fence_ripple
       - F.l3.sph_and_hours
+      - F.l3.headcount_to_capacity
     出处:
       - 客户会议反馈/运营本体生成-升级方案.md
     对外怎么说:
@@ -90,6 +93,9 @@
     其下:
       - F.l3.attendance_cap
       - F.l3.unfinished_to_pool
+      - F.l3.dispatch_daily_kit
+      - F.l3.semi_progress_on_order
+      - F.l3.sup.qc_on_board
     出处:
       - docs/POC范围说明.md
     对外怎么说:
@@ -111,6 +117,9 @@
     其下:
       - F.l3.soft_conflicts
       - F.l3.sup.payment
+      - F.l3.earliest_whatif
+      - F.l3.unplaced_three_kinds
+      - F.l3.sup.finance_slice
     出处:
       - 客户会议反馈/运营本体生成-升级方案.md
     对外怎么说:

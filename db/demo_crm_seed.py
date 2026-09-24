@@ -283,6 +283,22 @@ def _seed_pending_change(session: Session, spec: dict | None) -> int:
 
 def ensure_demo_crm(session: Session) -> dict:
     """灌入 CRM、订单扩展、企微与待办演示数据；demo_version 变更时重建 CRM 子表。"""
+    from db.demo_manual_data import is_manual_data_mode
+
+    if is_manual_data_mode(session):
+        return {
+            "demo_version": "manual",
+            "resynced": False,
+            "skipped": True,
+            "manual_data_mode": True,
+            "customers": int(session.scalar(select(func.count()).select_from(CrmCustomerRow)) or 0),
+            "opportunities": int(session.scalar(select(func.count()).select_from(CrmOpportunityRow)) or 0),
+            "samples": int(session.scalar(select(func.count()).select_from(CrmSampleRow)) or 0),
+            "quotes": int(session.scalar(select(func.count()).select_from(CrmQuoteRow)) or 0),
+            "orders_patched": 0,
+            "wecom_added": 0,
+            "pending_changes": 0,
+        }
     data = _load_demo()
     meta = data.get("meta") or {}
     target_version = str(meta.get("demo_version") or "legacy")
@@ -328,5 +344,17 @@ def ensure_demo_crm(session: Session) -> dict:
     stats["orders_patched"] = _patch_orders(session, data.get("order_enrichment") or {})
     stats["wecom_added"] = _seed_wecom_messages(session, data.get("wecom_messages") or [])
     stats["pending_changes"] = _seed_pending_change(session, data.get("pending_order_change"))
+
+    from db.crm_leads import ensure_demo_leads
+
+    ensure_demo_leads(session)
+
+    from db.crm_customer_portal import ensure_demo_customer_portal
+    from db.crm_field_visit import ensure_demo_field_visits
+    from db.crm_follows import ensure_demo_follows
+
+    ensure_demo_customer_portal(session)
+    ensure_demo_follows(session)
+    ensure_demo_field_visits(session)
 
     return stats

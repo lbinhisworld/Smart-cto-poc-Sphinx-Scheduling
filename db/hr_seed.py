@@ -96,6 +96,18 @@ def _reload_hr(session: Session, hr: dict) -> dict:
 
 
 def ensure_hr_seed(session: Session) -> dict:
+    from db.demo_manual_data import is_manual_data_mode
+
+    if is_manual_data_mode(session):
+        return {
+            "hr_demo_version": "manual",
+            "resynced": False,
+            "skipped": True,
+            "manual_data_mode": True,
+            "employees": int(session.scalar(select(func.count()).select_from(HrEmployeeRow)) or 0),
+            "punches": int(session.scalar(select(func.count()).select_from(HrAttendancePunchRow)) or 0),
+            "labor_rates": int(session.scalar(select(func.count()).select_from(HrLaborRateRow)) or 0),
+        }
     data = _load_demo()
     meta = data.get("meta") or {}
     hr = data.get("hr") or {}

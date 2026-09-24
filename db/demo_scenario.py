@@ -328,13 +328,16 @@ def apply_order_plan(
             raise ValueError(f"{o['order_no']} 交期 {o['due_date']} 早于演示日 {DEMO_TODAY}")
         first = o["lines"][0]
         item = session.get(MdItemRow, first["item_code"])
+        sales = str(o.get("sales_name") or "").strip()
+        if not sales:
+            raise ValueError(f"{o['order_no']} 缺少销售姓名")
         session.add(
             SoOrderRow(
                 order_no=o["order_no"],
                 customer=o["customer_name"],
-                sales_name=o["sales_name"],
+                sales_name=sales,
                 customer_code=o["customer_code"],
-                owner_sales=o["sales_name"],
+                owner_sales=sales,
                 item_code=first["item_code"],
                 qty_order=str(first["qty"]),
                 unit=first["unit"],
@@ -428,14 +431,23 @@ def restore_official_seed(session: Session) -> dict:
         session.flush()
     ensure_dept1_stats_seed(session)
     session.flush()
+    from db.prod_stats_seed import capacity_fixture_clause
+
     return {
         "locked": False,
-        "orders": int(session.scalar(select(func.count()).select_from(SoOrderRow)) or 0),
+        "orders": int(
+            session.scalar(
+                select(func.count()).select_from(SoOrderRow).where(~capacity_fixture_clause())
+            )
+            or 0
+        ),
         **manifest,
     }
 
 
 def scenario_status(session: Session) -> dict:
+    from db.prod_stats_seed import capacity_fixture_clause
+
     stock_rows = list(session.scalars(select(StockRow)).all())
     stock_zero = all(float(r.qty_available) == 0 for r in stock_rows) if stock_rows else True
     groups = []
@@ -454,7 +466,14 @@ def scenario_status(session: Session) -> dict:
     return {
         "today": DEMO_TODAY.isoformat(),
         "locked": is_scenario_locked(session),
-        "order_count": int(session.scalar(select(func.count()).select_from(SoOrderRow)) or 0),
+        "order_count": int(
+            session.scalar(
+                select(func.count())
+                .select_from(SoOrderRow)
+                .where(~capacity_fixture_clause())
+            )
+            or 0
+        ),
         "item_count": int(session.scalar(select(func.count()).select_from(MdItemRow)) or 0),
         "stock_zero": stock_zero,
         "groups": groups,
